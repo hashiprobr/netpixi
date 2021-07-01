@@ -1,0 +1,9 @@
+node_modules
+netpixi/env
+netpixi/netpixi.min.js
+netpixi/netpixi.min.map
+**/__pycache__
+**/.ipynb_checkpoints
+**/*.ipynb
+**/*.net
+**/*.net.gz
