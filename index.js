@@ -262,36 +262,40 @@ function NetPixi() {
                     source = u;
                     target = neighbor.v;
                 }
-                const sx = vertices[source].sprite.position.x;
-                const sy = vertices[source].sprite.position.y;
-                const tx = vertices[target].sprite.position.x;
-                const ty = vertices[target].sprite.position.y;
-                if (compare(sx, tx) !== 0 || compare(sy, ty) !== 0) {
-                    const props = merge(settings.edge, conditions.edge, neighbor.props);
-                    let alpha = props.alpha * vertices[source].alpha * vertices[target].alpha;
-                    if (!vertices[source].visibleX || !vertices[source].visibleY || !vertices[target].visibleX || !vertices[target].visibleY) {
-                        alpha *= props.outAlpha;
-                    }
-                    graphics.lineStyle({
-                        width: props.width,
-                        color: props.color,
-                        alpha: alpha,
-                    });
-                    graphics.moveTo(sx, sy);
-                    const c1 = props.curve1;
-                    const c2 = props.curve2;
-                    if (compare(c1, 0) !== 0 || compare(c2, 0) !== 0) {
-                        const dx = 0.2 * (tx - sx);
-                        const dy = 0.2 * (ty - sy);
-                        const nx = -dy;
-                        const ny = dx;
-                        const x1 = sx + dx + c1 * nx;
-                        const y1 = sy + dy + c1 * ny;
-                        const x2 = tx - dx + c2 * nx;
-                        const y2 = ty - dy + c2 * ny;
-                        graphics.bezierCurveTo(x1, y1, x2, y2, tx, ty);
-                    } else {
-                        graphics.lineTo(tx, ty);
+                const sourceVisible = vertices[source].visibleX && vertices[source].visibleY;
+                const targetVisible = vertices[target].visibleX && vertices[target].visibleY;
+                if (sourceVisible || targetVisible) {
+                    const sx = vertices[source].sprite.position.x;
+                    const sy = vertices[source].sprite.position.y;
+                    const tx = vertices[target].sprite.position.x;
+                    const ty = vertices[target].sprite.position.y;
+                    if (compare(sx, tx) !== 0 || compare(sy, ty) !== 0) {
+                        const props = merge(settings.edge, conditions.edge, neighbor.props);
+                        let alpha = props.alpha * vertices[source].alpha * vertices[target].alpha;
+                        if (!sourceVisible || !targetVisible) {
+                            alpha *= props.outAlpha;
+                        }
+                        graphics.lineStyle({
+                            width: props.width,
+                            color: props.color,
+                            alpha: alpha,
+                        });
+                        graphics.moveTo(sx, sy);
+                        const c1 = props.curve1;
+                        const c2 = props.curve2;
+                        if (compare(c1, 0) !== 0 || compare(c2, 0) !== 0) {
+                            const dx = 0.2 * (tx - sx);
+                            const dy = 0.2 * (ty - sy);
+                            const nx = -dy;
+                            const ny = dx;
+                            const x1 = sx + dx + c1 * nx;
+                            const y1 = sy + dy + c1 * ny;
+                            const x2 = tx - dx + c2 * nx;
+                            const y2 = ty - dy + c2 * ny;
+                            graphics.bezierCurveTo(x1, y1, x2, y2, tx, ty);
+                        } else {
+                            graphics.lineTo(tx, ty);
+                        }
                     }
                 }
             }
