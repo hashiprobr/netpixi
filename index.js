@@ -260,7 +260,7 @@ function NetPixi() {
                 const ty = vertices[target].sprite.position.y;
                 if (compare(sx, tx) !== 0 || compare(sy, ty) !== 0) {
                     const props = merge(settings.edge, conditions.edge, neighbor.props);
-                    let alpha = props.alpha;
+                    let alpha = props.alpha * vertices[source].alpha * vertices[target].alpha;
                     if (!vertices[source].visibleX || !vertices[source].visibleY || !vertices[target].visibleX || !vertices[target].visibleY) {
                         alpha *= props.outAlpha;
                     }
@@ -301,6 +301,7 @@ function NetPixi() {
             delete vertex.degree;
             vertex.visibleX = true;
             vertex.visibleY = true;
+            vertex.alpha = 1;
             vertex.sprite = new PIXI.Sprite();
             vertex.sprite.anchor.x = 0.5;
             vertex.sprite.anchor.y = 0.5;
@@ -366,6 +367,16 @@ function NetPixi() {
             });
             vertex.sprite.on('mouseup', () => {
                 vertex.stop();
+            });
+            vertex.sprite.on('mouseover', () => {
+                if (hoveredVertex === null) {
+                    hoveredVertex = vertex;
+                }
+            });
+            vertex.sprite.on('mouseout', () => {
+                if (hoveredVertex === vertex) {
+                    hoveredVertex = null;
+                }
             });
             drawSprite(vertex);
             app.stage.addChild(vertex.sprite);
@@ -555,6 +566,7 @@ function NetPixi() {
         });
         observer.observe(element);
 
+        let hoveredVertex = null;
         let draggedVertex = null;
         let dragging = false;
 
@@ -618,19 +630,39 @@ function NetPixi() {
         element.addEventListener('wheel', (event) => {
             event.preventDefault();
             const result = compare(event.deltaY, 0);
-            if (result === -1 || (result === 1 && zoom > 10)) {
-                const shift = -result * Math.round(zoom / 10);
-                const error = (zoom + shift) / zoom - 1;
-                app.stage.pivot.x += error * (app.stage.pivot.x + event.offsetX);
-                app.stage.pivot.y += error * (app.stage.pivot.y + event.offsetY);
-                zoom += shift;
-                const scale = zoom / 100;
-                for (const vertex of Object.values(vertices)) {
-                    vertex.sprite.position.x = scale * vertex.x;
-                    vertex.sprite.position.y = scale * vertex.y;
+            if (result !== 0) {
+                if (hoveredVertex === null) {
+                    if (result === -1 || (result === 1 && zoom > 10)) {
+                        const shift = -result * Math.round(zoom / 10);
+                        const error = (zoom + shift) / zoom - 1;
+                        app.stage.pivot.x += error * (app.stage.pivot.x + event.offsetX);
+                        app.stage.pivot.y += error * (app.stage.pivot.y + event.offsetY);
+                        zoom += shift;
+                        const scale = zoom / 100;
+                        for (const vertex of Object.values(vertices)) {
+                            vertex.sprite.position.x = scale * vertex.x;
+                            vertex.sprite.position.y = scale * vertex.y;
+                        }
+                        updateViewport();
+                        drawAreas();
+                    }
+                } else {
+                    if (result === -1) {
+                        if (compare(hoveredVertex.alpha, 1) < 0) {
+                            hoveredVertex.alpha += 0.1;
+                            for (const u of hoveredVertex.leaders) {
+                                drawEdges(u);
+                            }
+                        }
+                    } else {
+                        if (compare(hoveredVertex.alpha, 0.1) > 0) {
+                            hoveredVertex.alpha -= 0.1;
+                            for (const u of hoveredVertex.leaders) {
+                                drawEdges(u);
+                            }
+                        }
+                    }
                 }
-                updateViewport();
-                drawAreas();
             }
         });
         element.addEventListener('dblclick', (event) => {
