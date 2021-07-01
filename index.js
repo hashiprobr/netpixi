@@ -54,6 +54,9 @@ function NetPixi() {
 
     let line;
 
+    let n;
+    let m;
+
     let minX;
     let maxX;
 
@@ -66,6 +69,9 @@ function NetPixi() {
 
     function initialize() {
         line = 0;
+
+        n = 0;
+        m = 0;
 
         minX = Number.POSITIVE_INFINITY;
         maxX = Number.NEGATIVE_INFINITY;
@@ -168,6 +174,7 @@ function NetPixi() {
                 const degree = 0;
                 const leaders = [];
                 vertices[id] = { x, y, degree, leaders, props };
+                n++;
                 break;
 
             case 'edge':
@@ -197,6 +204,7 @@ function NetPixi() {
                 vertices[source].degree++;
                 vertices[target].degree++;
                 edges[source][target] = props;
+                m++;
                 break;
 
             default:
@@ -319,7 +327,7 @@ function NetPixi() {
                 const scale = zoom / 100;
                 vertex.x = vertex.sprite.position.x / scale;
                 vertex.y = vertex.sprite.position.y / scale;
-                if (idsX.length > 0) {
+                if (n > 0) {
                     let i;
                     let j;
                     let id;
@@ -332,7 +340,7 @@ function NetPixi() {
                         idsX[j] = idsX[j - 1];
                     }
                     i = j;
-                    for (j = i; j < idsX.length - 1; j++) {
+                    for (j = i; j < n - 1; j++) {
                         if (compare(vertex.x, vertices[idsX[j + 1]].x) <= 0) {
                             break;
                         }
@@ -350,7 +358,7 @@ function NetPixi() {
                         idsY[j] = idsY[j - 1];
                     }
                     i = j;
-                    for (j = i; j < idsY.length - 1; j++) {
+                    for (j = i; j < n - 1; j++) {
                         if (compare(vertex.y, vertices[idsY[j + 1]].y) <= 0) {
                             break;
                         }
@@ -405,7 +413,7 @@ function NetPixi() {
                 leftX--;
                 updateVisibilityX(leaders, leftX);
             }
-            while (leftX < idsX.length && compare(vertices[idsX[leftX]].sprite.position.x, left) < 0) {
+            while (leftX < n && compare(vertices[idsX[leftX]].sprite.position.x, left) < 0) {
                 updateVisibilityX(leaders, leftX);
                 leftX++;
             }
@@ -414,7 +422,7 @@ function NetPixi() {
                 rightX--;
                 updateVisibilityX(leaders, rightX);
             }
-            while (rightX < idsX.length && compare(vertices[idsX[rightX]].sprite.position.x, right) < 0) {
+            while (rightX < n && compare(vertices[idsX[rightX]].sprite.position.x, right) < 0) {
                 updateVisibilityX(leaders, rightX);
                 rightX++;
             }
@@ -423,7 +431,7 @@ function NetPixi() {
                 leftY--;
                 updateVisibilityY(leaders, leftY);
             }
-            while (leftY < idsY.length && compare(vertices[idsY[leftY]].sprite.position.y, top) < 0) {
+            while (leftY < n && compare(vertices[idsY[leftY]].sprite.position.y, top) < 0) {
                 updateVisibilityY(leaders, leftY);
                 leftY++;
             }
@@ -432,7 +440,7 @@ function NetPixi() {
                 rightY--;
                 updateVisibilityY(leaders, rightY);
             }
-            while (rightY < idsY.length && compare(vertices[idsY[rightY]].sprite.position.y, bottom) < 0) {
+            while (rightY < n && compare(vertices[idsY[rightY]].sprite.position.y, bottom) < 0) {
                 updateVisibilityY(leaders, rightY);
                 rightY++;
             }
@@ -499,14 +507,14 @@ function NetPixi() {
 
         const idsX = Object.keys(vertices);
         let leftX = 0;
-        let rightX = idsX.length;
+        let rightX = n;
 
         const idsY = idsX.slice();
         let leftY = leftX;
         let rightY = rightX;
 
-        if (idsX.length > 0) {
-            if (idsX.length === 1) {
+        if (n > 0) {
+            if (n === 1) {
                 const vertex = vertices[idsX[0]];
                 vertex.x = 0.5;
                 vertex.y = 0.5;
@@ -550,7 +558,7 @@ function NetPixi() {
                 }
                 idsX.sort((a, b) => compare(vertices[a].x, vertices[b].x));
                 idsY.sort((a, b) => compare(vertices[a].y, vertices[b].y));
-                for (let i = 0; i < idsX.length; i++) {
+                for (let i = 0; i < n; i++) {
                     vertices[idsX[i]].indexX = i;
                     vertices[idsY[i]].indexY = i;
                 }
@@ -686,6 +694,8 @@ function NetPixi() {
     }
 
     return function (uid, path, horizontal, vertical, fine) {
+        const start = Date.now();
+
         element = document.getElementById(uid);
 
         app = new PIXI.Application({
@@ -725,6 +735,8 @@ function NetPixi() {
                         process(buffer);
                     }
                     finalize(horizontal / vertical, fine);
+                    const elapsed = (Date.now() - start) / 1000;
+                    console.log(`Rendered ${n} vertices and ${m} edges in ${elapsed} seconds`);
                 };
                 const reader = response.body.getReader();
                 function pipe({ done, value }) {
