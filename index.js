@@ -204,7 +204,7 @@ function NetPixi() {
         }
     }
 
-    function finalize(ratio) {
+    function finalize(ratio, fine) {
         function compare(a, b) {
             if (Math.abs(a - b) < 0.000001) {
                 return 0;
@@ -341,6 +341,9 @@ function NetPixi() {
                     } else {
                         reversed = false;
                     }
+                }
+                if (fine) {
+                    reversed = !reversed;
                 }
                 let u;
                 let v;
@@ -513,7 +516,7 @@ function NetPixi() {
         element.appendChild(app.view);
     }
 
-    return function (uid, path, horizontal, vertical) {
+    return function (uid, path, horizontal, vertical, fine) {
         element = document.getElementById(uid);
 
         app = new PIXI.Application({
@@ -552,7 +555,7 @@ function NetPixi() {
                     if (buffer.length > 0) {
                         process(buffer);
                     }
-                    finalize(horizontal / vertical);
+                    finalize(horizontal / vertical, fine);
                 };
                 const reader = response.body.getReader();
                 function pipe({ done, value }) {

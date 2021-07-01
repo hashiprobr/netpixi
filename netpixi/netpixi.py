@@ -46,11 +46,12 @@ def open(path, props=None):
     return ZipNet(path, props)
 
 
-def render(path, horizontal=16, vertical=9):
+def render(path, horizontal=16, vertical=9, fine=False):
+    fineJS = str(fine).lower()
     uid = uuid()
     display(HTML(f'''
         <div id="{uid}"></div>
-        <script>window.netpixi(\'{uid}\', \'{path}\', {horizontal}, {vertical});</script>
+        <script>window.netpixi(\'{uid}\', \'{path}\', {horizontal}, {vertical}, {fineJS});</script>
     '''))
 
 
