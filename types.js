@@ -18,10 +18,11 @@ const conditions = {
     },
     edge: {
         width: isPositive,
-        curve1: isNumber,
-        curve2: isNumber,
         color: isColor,
         alpha: isAlpha,
+        outAlpha: isAlpha,
+        curve1: isNumber,
+        curve2: isNumber,
     },
 };
 

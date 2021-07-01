@@ -260,10 +260,14 @@ function NetPixi() {
                 const ty = vertices[target].sprite.position.y;
                 if (compare(sx, tx) !== 0 || compare(sy, ty) !== 0) {
                     const props = merge(settings.edge, conditions.edge, neighbor.props);
+                    let alpha = props.alpha;
+                    if (!vertices[source].visibleX || !vertices[source].visibleY || !vertices[target].visibleX || !vertices[target].visibleY) {
+                        alpha *= props.outAlpha;
+                    }
                     graphics.lineStyle({
                         width: props.width,
                         color: props.color,
-                        alpha: props.alpha,
+                        alpha: alpha,
                     });
                     graphics.moveTo(sx, sy);
                     const c1 = props.curve1;
@@ -295,18 +299,14 @@ function NetPixi() {
             vertex.x = settings.graph.borderX + vertex.x * (width - 2 * settings.graph.borderX);
             vertex.y = settings.graph.borderY + vertex.y * (height - 2 * settings.graph.borderY);
             delete vertex.degree;
+            vertex.visibleX = true;
+            vertex.visibleY = true;
             vertex.sprite = new PIXI.Sprite();
             vertex.sprite.anchor.x = 0.5;
             vertex.sprite.anchor.y = 0.5;
             vertex.sprite.position.x = vertex.x;
             vertex.sprite.position.y = vertex.y;
             vertex.sprite.interactive = true;
-            vertex.sprite.on('mousedown', () => {
-                draggedVertex = vertex;
-            });
-            vertex.sprite.on('mouseup', () => {
-                draggedVertex = null;
-            });
             vertex.move = (x, y) => {
                 vertex.sprite.position.x = x;
                 vertex.sprite.position.y = y;
@@ -314,8 +314,118 @@ function NetPixi() {
                     drawEdges(u);
                 }
             };
+            vertex.stop = () => {
+                const scale = zoom / 100;
+                vertex.x = vertex.sprite.position.x / scale;
+                vertex.y = vertex.sprite.position.y / scale;
+                if (idsX.length > 0) {
+                    let i;
+                    let j;
+                    let id;
+                    i = vertex.indexX;
+                    id = idsX[i];
+                    for (j = i; j > 0; j--) {
+                        if (compare(vertex.x, vertices[idsX[j - 1]].x) >= 0) {
+                            break;
+                        }
+                        idsX[j] = idsX[j - 1];
+                    }
+                    i = j;
+                    for (j = i; j < idsX.length - 1; j++) {
+                        if (compare(vertex.x, vertices[idsX[j + 1]].x) <= 0) {
+                            break;
+                        }
+                        idsX[j] = idsX[j + 1];
+                    }
+                    i = j;
+                    idsX[i] = id;
+                    vertex.indexX = i;
+                    i = vertex.indexY;
+                    id = idsY[i];
+                    for (j = i; j > 0; j--) {
+                        if (compare(vertex.y, vertices[idsY[j - 1]].y) >= 0) {
+                            break;
+                        }
+                        idsY[j] = idsY[j - 1];
+                    }
+                    i = j;
+                    for (j = i; j < idsY.length - 1; j++) {
+                        if (compare(vertex.y, vertices[idsY[j + 1]].y) <= 0) {
+                            break;
+                        }
+                        idsY[j] = idsY[j + 1];
+                    }
+                    i = j;
+                    idsY[i] = id;
+                    vertex.indexY = i;
+                }
+                draggedVertex = null;
+            };
+            vertex.sprite.on('mousedown', () => {
+                draggedVertex = vertex;
+            });
+            vertex.sprite.on('mouseup', () => {
+                vertex.stop();
+            });
             drawSprite(vertex);
             app.stage.addChild(vertex.sprite);
+        }
+
+        function updateVisibilityX(leaders, i) {
+            const vertex = vertices[idsX[i]];
+            vertex.visibleX = !vertex.visibleX;
+            for (const u of vertex.leaders) {
+                leaders.add(u);
+            }
+        }
+
+        function updateVisibilityY(leaders, i) {
+            const vertex = vertices[idsY[i]];
+            vertex.visibleY = !vertex.visibleY;
+            for (const u of vertex.leaders) {
+                leaders.add(u);
+            }
+        }
+
+        function updateViewport() {
+            const leaders = new Set();
+            const left = app.stage.pivot.x;
+            while (leftX > 0 && compare(vertices[idsX[leftX - 1]].sprite.position.x, left) > 0) {
+                leftX--;
+                updateVisibilityX(leaders, leftX);
+            }
+            while (leftX < idsX.length && compare(vertices[idsX[leftX]].sprite.position.x, left) < 0) {
+                updateVisibilityX(leaders, leftX);
+                leftX++;
+            }
+            const right = left + width;
+            while (rightX > 0 && compare(vertices[idsX[rightX - 1]].sprite.position.x, right) > 0) {
+                rightX--;
+                updateVisibilityX(leaders, rightX);
+            }
+            while (rightX < idsX.length && compare(vertices[idsX[rightX]].sprite.position.x, right) < 0) {
+                updateVisibilityX(leaders, rightX);
+                rightX++;
+            }
+            const top = app.stage.pivot.y;
+            while (leftY > 0 && compare(vertices[idsY[leftY - 1]].sprite.position.y, top) > 0) {
+                leftY--;
+                updateVisibilityY(leaders, leftY);
+            }
+            while (leftY < idsY.length && compare(vertices[idsY[leftY]].sprite.position.y, top) < 0) {
+                updateVisibilityY(leaders, leftY);
+                leftY++;
+            }
+            const bottom = top + height;
+            while (rightY > 0 && compare(vertices[idsY[rightY - 1]].sprite.position.y, bottom) > 0) {
+                rightY--;
+                updateVisibilityY(leaders, rightY);
+            }
+            while (rightY < idsY.length && compare(vertices[idsY[rightY]].sprite.position.y, bottom) < 0) {
+                updateVisibilityY(leaders, rightY);
+                rightY++;
+            }
+            return leaders;
         }
 
         if (settings === null) {
@@ -376,13 +486,22 @@ function NetPixi() {
 
         const defaultTexture = drawVertex(settings.vertex);
 
-        if (Object.keys(vertices).length > 0) {
-            const values = Object.values(vertices);
-            if (values.length === 1) {
-                const vertex = values[0];
+        const idsX = Object.keys(vertices);
+        let leftX = 0;
+        let rightX = idsX.length;
+
+        const idsY = idsX.slice();
+        let leftY = leftX;
+        let rightY = rightX;
+
+        if (idsX.length > 0) {
+            if (idsX.length === 1) {
+                const vertex = vertices[idsX[0]];
                 vertex.x = 0.5;
                 vertex.y = 0.5;
                 buildSprite(vertex);
+                vertex.indexX = 0;
+                vertex.indexY = 0;
             } else {
                 let difX;
                 if (Number.isFinite(minX) && Number.isFinite(maxX) && compare(minX, maxX) !== 0) {
@@ -396,7 +515,8 @@ function NetPixi() {
                 } else {
                     difY = 0;
                 }
-                for (const vertex of values) {
+                for (const id of idsX) {
+                    const vertex = vertices[id];
                     if (vertex.x === null) {
                         vertex.x = Math.random();
                     } else {
@@ -417,16 +537,26 @@ function NetPixi() {
                     }
                     buildSprite(vertex);
                 }
+                idsX.sort((a, b) => compare(vertices[a].x, vertices[b].x));
+                idsY.sort((a, b) => compare(vertices[a].y, vertices[b].y));
+                for (let i = 0; i < idsX.length; i++) {
+                    vertices[idsX[i]].indexX = i;
+                    vertices[idsY[i]].indexY = i;
+                }
             }
         }
 
         const observer = new ResizeObserver(() => {
             resize();
+            const leaders = updateViewport();
+            for (const u of leaders) {
+                drawEdges(u);
+            }
         });
         observer.observe(element);
 
-        let draggedVertex;
-        let dragging;
+        let draggedVertex = null;
+        let dragging = false;
 
         let mouseX;
         let mouseY;
@@ -445,7 +575,9 @@ function NetPixi() {
         }
         function release() {
             dragging = false;
-            draggedVertex = null;
+            if (draggedVertex !== null) {
+                draggedVertex.stop();
+            }
         }
         element.addEventListener('mousedown', (event) => {
             event.preventDefault();
@@ -469,6 +601,10 @@ function NetPixi() {
                 if (dragging) {
                     app.stage.pivot.x = pivotX - (event.offsetX - mouseX);
                     app.stage.pivot.y = pivotY - (event.offsetY - mouseY);
+                    const leaders = updateViewport();
+                    for (const u of leaders) {
+                        drawEdges(u);
+                    }
                 }
             } else {
                 const x = app.stage.pivot.x + event.offsetX;
@@ -476,7 +612,6 @@ function NetPixi() {
                 draggedVertex.move(x, y);
             }
         });
-        release();
 
         let zoom = 100;
 
@@ -494,6 +629,7 @@ function NetPixi() {
                     vertex.sprite.position.x = scale * vertex.x;
                     vertex.sprite.position.y = scale * vertex.y;
                 }
+                updateViewport();
                 drawAreas();
             }
         });
@@ -507,6 +643,7 @@ function NetPixi() {
                     vertex.sprite.position.x = vertex.x;
                     vertex.sprite.position.y = vertex.y;
                 }
+                updateViewport();
                 drawAreas();
             }
         });
