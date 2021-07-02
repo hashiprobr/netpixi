@@ -31,7 +31,7 @@ export default function (path, initialize, process, finalize, exit) {
             };
             inflate.onEnd = (status) => {
                 if (status !== 0) {
-                    throw inflate.err;
+                    throw inflate.msg;
                 }
                 if (buffer.length > 0) {
                     process(buffer);
