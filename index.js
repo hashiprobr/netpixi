@@ -8,6 +8,8 @@ import defaults from './defaults.js';
 
 function NetPixi() {
     let element;
+    let fine;
+    let ratio;
     let app;
 
     function exit(error) {
@@ -212,7 +214,7 @@ function NetPixi() {
         }
     }
 
-    function finalize(ratio, fine) {
+    function finalize() {
         function compare(a, b) {
             if (Math.abs(a - b) < 0.000001) {
                 return 0;
@@ -695,18 +697,24 @@ function NetPixi() {
         drawAreas();
 
         element.appendChild(app.view);
+
+        console.log(`${n} vertices\n${m} edges`);
     }
 
-    return function (uid, path, horizontal, vertical, fine) {
-        const start = Date.now();
-
+    return function (path, horizontal, vertical, finePY, uid) {
         element = document.getElementById(uid);
+
+        fine = JSON.parse(finePY.toLowerCase());
+
+        ratio = horizontal / vertical;
 
         app = new PIXI.Application({
             autoDensity: true,
             antialias: true,
             resolution: 2,
         });
+
+        const start = Date.now();
 
         const uri = window.location.pathname;
         const left = uri.indexOf('/', 1);
@@ -738,9 +746,8 @@ function NetPixi() {
                     if (buffer.length > 0) {
                         process(buffer);
                     }
-                    finalize(horizontal / vertical, fine);
-                    const elapsed = (Date.now() - start) / 1000;
-                    console.log(`Rendered ${n} vertices and ${m} edges in ${elapsed} seconds`);
+                    finalize();
+                    console.log(`${(Date.now() - start) / 1000} seconds`);
                 };
                 const reader = response.body.getReader();
                 function pipe({ done, value }) {

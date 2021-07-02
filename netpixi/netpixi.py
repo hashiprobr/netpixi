@@ -47,11 +47,10 @@ def open(path, props=None):
 
 
 def render(path, horizontal=16, vertical=9, fine=False):
-    fineJS = str(fine).lower()
     uid = uuid()
     display(HTML(f'''
         <div id="{uid}"></div>
-        <script>window.netpixi(\'{uid}\', \'{path}\', {horizontal}, {vertical}, {fineJS});</script>
+        <script>window.netpixi(\'{path}\', {horizontal}, {vertical}, \'{fine}\', \'{uid}\');</script>
     '''))
 
 
