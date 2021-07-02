@@ -584,21 +584,13 @@ export default function () {
         });
         resizeObserver.observe(element);
 
-        //const outputArea = element.parentElement.parentElement;
-        //const output = outputArea.parentElement;
-        //const cell = output.parentElement.parentElement;
-        //const notebook = cell.parentElement;
         const mutationObserver = new MutationObserver(() => {
-            //if (outputArea.parentElement !== output || cell.parentElement !== notebook) {
             if (!document.body.contains(element)) {
                 mutationObserver.disconnect();
                 resizeObserver.disconnect();
                 destroy();
             }
         });
-        //mutationObserver.observe(output, { childList: true });
-        //mutationObserver.observe(notebook, { childList: true });
-        //mutationObserver.observe(output, { childList: true });
         mutationObserver.observe(document.body, { childList: true, subtree: true });
 
         let hoveredVertex = null;
