@@ -12,12 +12,16 @@ export default function () {
     let ratio;
     let app;
 
-    function exit(error) {
+    function destroy() {
         app.destroy(true, {
             children: true,
             texture: true,
             baseTexture: true,
         });
+    }
+
+    function exit(error) {
+        destroy();
         if (typeof error === 'string') {
             element.innerHTML = error;
         } else {
@@ -571,14 +575,28 @@ export default function () {
             }
         }
 
-        const observer = new ResizeObserver(() => {
+        const resizeObserver = new ResizeObserver(() => {
             resize();
             const leaders = updateViewport();
             for (const u of leaders) {
                 drawEdges(u);
             }
         });
-        observer.observe(element);
+        resizeObserver.observe(element);
+
+        const outputArea = element.parentElement.parentElement;
+        const output = outputArea.parentElement;
+        const cell = output.parentElement.parentElement;
+        const notebook = cell.parentElement;
+        const mutationObserver = new MutationObserver(() => {
+            if (outputArea.parentElement !== output || cell.parentElement !== notebook) {
+                mutationObserver.disconnect();
+                resizeObserver.disconnect();
+                destroy();
+            }
+        });
+        mutationObserver.observe(output, { childList: true });
+        mutationObserver.observe(notebook, { childList: true });
 
         let hoveredVertex = null;
         let draggedVertex = null;
