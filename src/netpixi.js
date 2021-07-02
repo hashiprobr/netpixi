@@ -1,12 +1,16 @@
 import * as PIXI from 'pixi.js';
 import { gsap } from 'gsap';
 
-import { isNumber, conditions } from './types';
+import { isBoolean, isNumber, conditions } from './types';
 import defaults from './defaults';
+import Control from './control';
 import load from './load';
 
 
 export default function () {
+    let filename;
+    let output;
+    let panel;
     let element;
     let fine;
     let ratio;
@@ -20,13 +24,17 @@ export default function () {
         });
     }
 
+    function warn(error) {
+        if (typeof error === 'string') {
+            output.innerHTML = error;
+        } else {
+            output.innerHTML = error.message;
+        }
+    }
+
     function exit(error) {
         destroy();
-        if (typeof error === 'string') {
-            element.innerHTML = error;
-        } else {
-            element.innerHTML = error.message;
-        }
+        warn(error);
     }
 
     function pop(object, name) {
@@ -136,11 +144,7 @@ export default function () {
         switch (data.type) {
             case 'settings':
                 if (settings === null) {
-                    settings = {
-                        graph: merge(defaults.graph, conditions.graph, loosePop(props, 'graph')),
-                        vertex: merge(defaults.vertex, conditions.vertex, loosePop(props, 'vertex')),
-                        edge: merge(defaults.edge, conditions.edge, loosePop(props, 'edge')),
-                    };
+                    settings = { props };
                 } else {
                     fail('duplicate settings');
                 }
@@ -201,10 +205,8 @@ export default function () {
                 if (target in edges[source]) {
                     fail(`duplicate edge with source ${source} and target ${target}`);
                 }
-                if (settings === null) {
-                    fail('missing settings');
-                }
-                if (!settings.graph.directed && target in edges && source in edges[target]) {
+                const directed = settings !== null && 'graph' in settings && isBoolean(settings.graph.directed) && settings.graph.directed;
+                if (!directed && target in edges && source in edges[target]) {
                     fail(`existing edge with source ${target} and target ${source} but graph is not directed`);
                 }
                 vertices[source].degree++;
@@ -458,8 +460,11 @@ export default function () {
         }
 
         if (settings === null) {
-            settings = defaults;
+            settings = { props: null };
         }
+        settings.graph = merge(defaults.graph, conditions.graph, settings.props.graph);
+        settings.vertex = merge(defaults.vertex, conditions.vertex, settings.props.vertex);
+        settings.edge = merge(defaults.edge, conditions.edge, settings.props.edge);
 
         const areas = {};
 
@@ -707,15 +712,30 @@ export default function () {
             }
         });
 
-        drawAreas();
+        const control = Control(filename, settings, vertices, areas, warn);
+        panel.appendChild(control);
 
+        drawAreas();
         element.appendChild(app.view);
 
         console.log(`${n} vertices\n${m} edges`);
     }
 
     return function (path, horizontal, vertical, finePY, uid) {
+        filename = path.slice(path.lastIndexOf('/') + 1);
+
+        output = document.createElement('p');
+        output.style.margin = '1rem';
+        output.style.color = '#ff0000';
+
+        panel = document.createElement('div');
+        panel.style.display = 'flex';
+        panel.style.flexDirection = 'row-reverse';
+        panel.style.justifyContent = 'flex-end';
+        panel.appendChild(output);
+
         element = document.getElementById(uid);
+        element.appendChild(panel);
 
         fine = JSON.parse(finePY.toLowerCase());
 

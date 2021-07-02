@@ -26,4 +26,4 @@ const conditions = {
     },
 };
 
-export { isNumber, conditions };
+export { isBoolean, isNumber, conditions };

@@ -37,13 +37,13 @@ export default function (path, initialize, process, finalize, exit) {
                     process(buffer);
                 }
                 finalize();
-                console.log(`${(Date.now() - start) / 1000} seconds`);
+                console.log(`Loaded in ${(Date.now() - start) / 1000} seconds`);
             };
 
             const reader = response.body.getReader();
             function pipe({ done, value }) {
                 if (done) {
-                    inflate.push(null, true);
+                    inflate.push(new Uint8Array(), true);
                     return;
                 }
                 inflate.push(value, false);

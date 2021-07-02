@@ -50,10 +50,11 @@ def render(path, horizontal=16, vertical=9, fine=False):
     uid = uuid()
     display(HTML(f'''
         <div id="{uid}"></div>
-        <script>window.netpixi(\'{path}\', {horizontal}, {vertical}, \'{fine}\', \'{uid}\');</script>
+        <script>netpixi(\'{path}\', {horizontal}, {vertical}, \'{fine}\', \'{uid}\');</script>
     '''))
 
 
 display(HTML(f'''
+    <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@3.0.3/dist/ponyfill.min.js"></script>
     <script src="/files/netpixi.min.js"></script>
 '''))
