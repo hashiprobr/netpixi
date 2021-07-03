@@ -255,6 +255,11 @@ export default function () {
             }
         }
 
+        function drawBackground() {
+            app.renderer.backgroundColor = settings.graph.color;
+            app.renderer.backgroundAlpha = settings.graph.alpha;
+        }
+
         function drawVertex(props) {
             const graphics = new PIXI.Graphics()
                 .beginFill(props.color, props.alpha)
@@ -749,6 +754,7 @@ export default function () {
         element.appendChild(main);
         element.appendChild(bottomPanel);
 
+        drawBackground();
         drawAreas();
 
         main.appendChild(app.view);

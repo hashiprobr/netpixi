@@ -54,11 +54,16 @@ export default function (filename, zoom, settings, vertices, areas, main, app, w
 
     const imageButton = createButton('Save Image');
     imageButton.addEventListener('click', () => {
-        const scale = zoom / 100;
         const bounds = app.stage.getBounds();
+        const scale = zoom / 100;
         const width = bounds.width + 2 * scale * settings.graph.borderX;
         const height = bounds.height + 2 * scale * settings.graph.borderY;
         const texture = PIXI.RenderTexture.create(width, height);
+        const graphics = new PIXI.Graphics()
+            .beginFill(settings.graph.color, settings.graph.alpha)
+            .drawRect(0, 0, width + 1, height + 1)
+            .endFill();
+        app.renderer.render(graphics, texture, false);
         const tx = scale * settings.graph.borderX - bounds.x;
         const ty = scale * settings.graph.borderY - bounds.y;
         const matrix = new PIXI.Matrix(1, 0, 0, 1, tx, ty);
