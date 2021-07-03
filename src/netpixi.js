@@ -247,15 +247,6 @@ export default function () {
             return app.renderer.generateTexture(graphics);
         }
 
-        function drawSprite(vertex) {
-            const props = merge(settings.vertex, conditions.vertex, vertex.props);
-            if (props === settings.vertex) {
-                vertex.sprite.texture = defaultTexture;
-            } else {
-                vertex.sprite.texture = drawVertex(props);
-            }
-        }
-
         function drawEdges(u) {
             const graphics = areas[u].graphics;
             graphics.clear();
@@ -312,6 +303,72 @@ export default function () {
             for (const u in areas) {
                 drawEdges(u);
             }
+        }
+
+        function updateSprite(vertex) {
+            const props = merge(settings.vertex, conditions.vertex, vertex.props);
+            if (props === settings.vertex) {
+                vertex.sprite.texture = defaultTexture;
+            } else {
+                vertex.sprite.texture = drawVertex(props);
+            }
+        }
+
+        function updateVisibilityX(leaders, i) {
+            const vertex = vertices[idsX[i]];
+            vertex.visibleX = !vertex.visibleX;
+            for (const u of vertex.leaders) {
+                leaders.add(u);
+            }
+        }
+
+        function updateVisibilityY(leaders, i) {
+            const vertex = vertices[idsY[i]];
+            vertex.visibleY = !vertex.visibleY;
+            for (const u of vertex.leaders) {
+                leaders.add(u);
+            }
+        }
+
+        function updateVisibility() {
+            const leaders = new Set();
+            const left = app.stage.pivot.x;
+            while (leftX > 0 && compare(vertices[idsX[leftX - 1]].sprite.position.x, left) > 0) {
+                leftX--;
+                updateVisibilityX(leaders, leftX);
+            }
+            while (leftX < n && compare(vertices[idsX[leftX]].sprite.position.x, left) < 0) {
+                updateVisibilityX(leaders, leftX);
+                leftX++;
+            }
+            const right = left + width;
+            while (rightX > 0 && compare(vertices[idsX[rightX - 1]].sprite.position.x, right) > 0) {
+                rightX--;
+                updateVisibilityX(leaders, rightX);
+            }
+            while (rightX < n && compare(vertices[idsX[rightX]].sprite.position.x, right) < 0) {
+                updateVisibilityX(leaders, rightX);
+                rightX++;
+            }
+            const top = app.stage.pivot.y;
+            while (leftY > 0 && compare(vertices[idsY[leftY - 1]].sprite.position.y, top) > 0) {
+                leftY--;
+                updateVisibilityY(leaders, leftY);
+            }
+            while (leftY < n && compare(vertices[idsY[leftY]].sprite.position.y, top) < 0) {
+                updateVisibilityY(leaders, leftY);
+                leftY++;
+            }
+            const bottom = top + height;
+            while (rightY > 0 && compare(vertices[idsY[rightY - 1]].sprite.position.y, bottom) > 0) {
+                rightY--;
+                updateVisibilityY(leaders, rightY);
+            }
+            while (rightY < n && compare(vertices[idsY[rightY]].sprite.position.y, bottom) < 0) {
+                updateVisibilityY(leaders, rightY);
+                rightY++;
+            }
+            return leaders;
         }
 
         function buildSprite(vertex) {
@@ -397,65 +454,8 @@ export default function () {
                     hoveredVertex = null;
                 }
             });
-            drawSprite(vertex);
+            updateSprite(vertex);
             app.stage.addChild(vertex.sprite);
-        }
-
-        function updateVisibilityX(leaders, i) {
-            const vertex = vertices[idsX[i]];
-            vertex.visibleX = !vertex.visibleX;
-            for (const u of vertex.leaders) {
-                leaders.add(u);
-            }
-        }
-
-        function updateVisibilityY(leaders, i) {
-            const vertex = vertices[idsY[i]];
-            vertex.visibleY = !vertex.visibleY;
-            for (const u of vertex.leaders) {
-                leaders.add(u);
-            }
-        }
-
-        function updateViewport() {
-            const leaders = new Set();
-            const left = app.stage.pivot.x;
-            while (leftX > 0 && compare(vertices[idsX[leftX - 1]].sprite.position.x, left) > 0) {
-                leftX--;
-                updateVisibilityX(leaders, leftX);
-            }
-            while (leftX < n && compare(vertices[idsX[leftX]].sprite.position.x, left) < 0) {
-                updateVisibilityX(leaders, leftX);
-                leftX++;
-            }
-            const right = left + width;
-            while (rightX > 0 && compare(vertices[idsX[rightX - 1]].sprite.position.x, right) > 0) {
-                rightX--;
-                updateVisibilityX(leaders, rightX);
-            }
-            while (rightX < n && compare(vertices[idsX[rightX]].sprite.position.x, right) < 0) {
-                updateVisibilityX(leaders, rightX);
-                rightX++;
-            }
-            const top = app.stage.pivot.y;
-            while (leftY > 0 && compare(vertices[idsY[leftY - 1]].sprite.position.y, top) > 0) {
-                leftY--;
-                updateVisibilityY(leaders, leftY);
-            }
-            while (leftY < n && compare(vertices[idsY[leftY]].sprite.position.y, top) < 0) {
-                updateVisibilityY(leaders, leftY);
-                leftY++;
-            }
-            const bottom = top + height;
-            while (rightY > 0 && compare(vertices[idsY[rightY - 1]].sprite.position.y, bottom) > 0) {
-                rightY--;
-                updateVisibilityY(leaders, rightY);
-            }
-            while (rightY < n && compare(vertices[idsY[rightY]].sprite.position.y, bottom) < 0) {
-                updateVisibilityY(leaders, rightY);
-                rightY++;
-            }
-            return leaders;
         }
 
         if (settings === null) {
@@ -581,7 +581,7 @@ export default function () {
 
         const resizeObserver = new ResizeObserver(() => {
             resize();
-            const leaders = updateViewport();
+            const leaders = updateVisibility();
             for (const u of leaders) {
                 drawEdges(u);
             }
@@ -646,7 +646,7 @@ export default function () {
                 if (dragging) {
                     app.stage.pivot.x = pivotX - (event.offsetX - mouseX);
                     app.stage.pivot.y = pivotY - (event.offsetY - mouseY);
-                    const leaders = updateViewport();
+                    const leaders = updateVisibility();
                     for (const u of leaders) {
                         drawEdges(u);
                     }
@@ -676,7 +676,7 @@ export default function () {
                             vertex.sprite.position.x = scale * vertex.x;
                             vertex.sprite.position.y = scale * vertex.y;
                         }
-                        updateViewport();
+                        updateVisibility();
                         drawAreas();
                     }
                 } else {
@@ -701,15 +701,25 @@ export default function () {
         main.addEventListener('dblclick', (event) => {
             event.preventDefault();
             if (hoveredVertex === null) {
+                let changed = false;
                 if (zoom !== 100) {
                     zoom = 100;
+                    changed = true;
+                }
+                if (app.stage.pivot.x !== 0) {
                     app.stage.pivot.x = 0;
+                    changed = true;
+                }
+                if (app.stage.pivot.y !== 0) {
                     app.stage.pivot.y = 0;
+                    changed = true;
+                }
+                if (changed) {
                     for (const vertex of Object.values(vertices)) {
                         vertex.sprite.position.x = vertex.x;
                         vertex.sprite.position.y = vertex.y;
                     }
-                    updateViewport();
+                    updateVisibility();
                     drawAreas();
                 }
             } else {
