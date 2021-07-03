@@ -700,16 +700,25 @@ export default function () {
         });
         main.addEventListener('dblclick', (event) => {
             event.preventDefault();
-            if (zoom !== 100) {
-                zoom = 100;
-                app.stage.pivot.x = 0;
-                app.stage.pivot.y = 0;
-                for (const vertex of Object.values(vertices)) {
-                    vertex.sprite.position.x = vertex.x;
-                    vertex.sprite.position.y = vertex.y;
+            if (hoveredVertex === null) {
+                if (zoom !== 100) {
+                    zoom = 100;
+                    app.stage.pivot.x = 0;
+                    app.stage.pivot.y = 0;
+                    for (const vertex of Object.values(vertices)) {
+                        vertex.sprite.position.x = vertex.x;
+                        vertex.sprite.position.y = vertex.y;
+                    }
+                    updateViewport();
+                    drawAreas();
                 }
-                updateViewport();
-                drawAreas();
+            } else {
+                if (compare(hoveredVertex.alpha, 1) !== 0) {
+                    hoveredVertex.alpha = 1;
+                    for (const u of hoveredVertex.leaders) {
+                        drawEdges(u);
+                    }
+                }
             }
         });
 
