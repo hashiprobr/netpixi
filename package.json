@@ -20,7 +20,8 @@
     "gsap": "^3.7.0",
     "pako": "^2.0.3",
     "pixi.js": "^5.3.10",
-    "streamsaver": "^2.0.5"
+    "streamsaver": "^2.0.5",
+    "web-streams-polyfill": "^2.1.1"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",

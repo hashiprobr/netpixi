@@ -55,6 +55,5 @@ def render(path, horizontal=16, vertical=9, fine=False):
 
 
 display(HTML(f'''
-    <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@3.0.3/dist/ponyfill.min.js"></script>
     <script src="/files/netpixi.min.js"></script>
 '''))

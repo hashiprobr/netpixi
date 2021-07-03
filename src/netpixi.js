@@ -3,14 +3,13 @@ import { gsap } from 'gsap';
 
 import { isBoolean, isNumber, conditions } from './types';
 import defaults from './defaults';
-import Control from './control';
+import Panel from './panel';
 import load from './load';
 
 
 export default function () {
     let filename;
     let output;
-    let panel;
     let element;
     let fine;
     let ratio;
@@ -598,6 +597,8 @@ export default function () {
         });
         mutationObserver.observe(document.body, { childList: true, subtree: true });
 
+        const main = document.createElement('div');
+
         let hoveredVertex = null;
         let draggedVertex = null;
         let dragging = false;
@@ -623,15 +624,15 @@ export default function () {
                 draggedVertex.stop();
             }
         }
-        element.addEventListener('mousedown', (event) => {
+        main.addEventListener('mousedown', (event) => {
             event.preventDefault();
             grab(event);
         });
-        element.addEventListener('mouseup', (event) => {
+        main.addEventListener('mouseup', (event) => {
             event.preventDefault();
             release();
         });
-        element.addEventListener('mouseenter', (event) => {
+        main.addEventListener('mouseenter', (event) => {
             event.preventDefault();
             if (event.buttons === 1) {
                 grab(event);
@@ -639,7 +640,7 @@ export default function () {
                 release();
             }
         });
-        element.addEventListener('mousemove', (event) => {
+        main.addEventListener('mousemove', (event) => {
             event.preventDefault();
             if (draggedVertex === null) {
                 if (dragging) {
@@ -659,7 +660,7 @@ export default function () {
 
         let zoom = 100;
 
-        element.addEventListener('wheel', (event) => {
+        main.addEventListener('wheel', (event) => {
             event.preventDefault();
             const result = compare(event.deltaY, 0);
             if (result !== 0) {
@@ -697,7 +698,7 @@ export default function () {
                 }
             }
         });
-        element.addEventListener('dblclick', (event) => {
+        main.addEventListener('dblclick', (event) => {
             event.preventDefault();
             if (zoom !== 100) {
                 zoom = 100;
@@ -712,11 +713,15 @@ export default function () {
             }
         });
 
-        const control = Control(filename, settings, vertices, areas, warn);
-        panel.appendChild(control);
+        const [topPanel, bottomPanel] = Panel(filename, settings, vertices, areas, warn);
+
+        element.appendChild(topPanel);
+        element.appendChild(main);
+        element.appendChild(bottomPanel);
 
         drawAreas();
-        element.appendChild(app.view);
+
+        main.appendChild(app.view);
 
         console.log(`${n} vertices\n${m} edges`);
     }
@@ -725,17 +730,14 @@ export default function () {
         filename = path.slice(path.lastIndexOf('/') + 1);
 
         output = document.createElement('p');
-        output.style.margin = '1rem';
+        output.style.margin = '.5rem';
+        output.style.fontSize = '11px';
+        output.style.fontFamily = 'Helvetica Neue, Helvetica, Arial, sans-serif';
+        output.style.lineHeight = 1;
         output.style.color = '#ff0000';
 
-        panel = document.createElement('div');
-        panel.style.display = 'flex';
-        panel.style.flexDirection = 'row-reverse';
-        panel.style.justifyContent = 'flex-end';
-        panel.appendChild(output);
-
         element = document.getElementById(uid);
-        element.appendChild(panel);
+        element.appendChild(output);
 
         fine = JSON.parse(finePY.toLowerCase());
 

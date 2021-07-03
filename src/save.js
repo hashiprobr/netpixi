@@ -1,5 +1,10 @@
 import pako from 'pako';
+import * as ponyfill from 'web-streams-polyfill/ponyfill';
 import streamSaver from 'streamsaver';
+
+if (!streamSaver.WritableStream) {
+    streamSaver.WritableStream = ponyfill.WritableStream;
+}
 
 
 export default function (filename, settings, vertices, areas, initialize, finalize, warn) {
@@ -72,6 +77,7 @@ export default function (filename, settings, vertices, areas, initialize, finali
             writer.close();
         }
     } catch (error) {
+        finalize();
         warn(error);
     }
 }
