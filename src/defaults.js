@@ -13,8 +13,8 @@ export default {
         width: 1,
         color: 0xffffff,
         alpha: 0.5,
-        outAlpha: 0.1,
-        curve1: 0,
-        curve2: 0,
+        outAlpha: 0.2,
+        curve1: 1,
+        curve2: 1,
     },
 };
