@@ -220,6 +220,22 @@ export default function () {
     }
 
     function finalize() {
+        let rect;
+        let width;
+        let height;
+
+        let zoom = 100;
+
+        let hoveredVertex = null;
+        let draggedVertex = null;
+        let dragging = false;
+
+        let mouseX;
+        let mouseY;
+
+        let pivotX;
+        let pivotY;
+
         function compare(a, b) {
             if (Math.abs(a - b) < 0.000001) {
                 return 0;
@@ -465,6 +481,10 @@ export default function () {
         settings.vertex = merge(defaults.vertex, conditions.vertex, settings.props.vertex);
         settings.edge = merge(defaults.edge, conditions.edge, settings.props.edge);
 
+        let edgeScale = 1;
+        let vertexScale = 1;
+        let defaultTexture = drawVertex(settings.vertex);
+
         const areas = {};
 
         for (const source of Object.keys(edges)) {
@@ -511,15 +531,7 @@ export default function () {
             delete edges[source];
         }
 
-        let rect;
-        let width;
-        let height;
-
         resize();
-
-        let vertexScale = 1;
-        let edgeScale = 1;
-        let defaultTexture = drawVertex(settings.vertex);
 
         const idsX = Object.keys(vertices);
         let leftX = 0;
@@ -601,16 +613,6 @@ export default function () {
 
         const main = document.createElement('div');
 
-        let hoveredVertex = null;
-        let draggedVertex = null;
-        let dragging = false;
-
-        let mouseX;
-        let mouseY;
-
-        let pivotX;
-        let pivotY;
-
         function grab(event) {
             if (draggedVertex === null) {
                 dragging = true;
@@ -660,8 +662,6 @@ export default function () {
             }
         });
 
-        let zoom = 100;
-
         main.addEventListener('wheel', (event) => {
             event.preventDefault();
             const result = compare(event.deltaY, 0);
@@ -675,8 +675,8 @@ export default function () {
                         zoom += shift;
                         const scale = zoom / 100;
                         const delta = zoom - 100;
-                        vertexScale = 1 + (delta * settings.graph.vertexScale) / 100;
                         edgeScale = 1 + (delta * settings.graph.edgeScale) / 100;
+                        vertexScale = 1 + (delta * settings.graph.vertexScale) / 100;
                         defaultTexture = drawVertex(settings.vertex);
                         for (const vertex of Object.values(vertices)) {
                             vertex.sprite.position.x = scale * vertex.x;
@@ -711,8 +711,8 @@ export default function () {
                 let changed = false;
                 if (zoom !== 100) {
                     zoom = 100;
-                    vertexScale = 1;
                     edgeScale = 1;
+                    vertexScale = 1;
                     defaultTexture = drawVertex(settings.vertex);
                     changed = true;
                 }
@@ -743,7 +743,7 @@ export default function () {
             }
         });
 
-        const [topPanel, bottomPanel] = Panel(filename, settings, vertices, areas, warn);
+        const [topPanel, bottomPanel] = Panel(filename, zoom, settings, vertices, areas, main, app, warn);
 
         element.appendChild(topPanel);
         element.appendChild(main);
