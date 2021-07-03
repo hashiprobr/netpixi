@@ -3,6 +3,8 @@ export default {
         directed: false,
         borderX: 9,
         borderY: 9,
+        vertexScale: 0.1,
+        edgeScale: 0.1,
     },
     vertex: {
         size: 3,

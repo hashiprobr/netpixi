@@ -242,7 +242,7 @@ export default function () {
         function drawVertex(props) {
             const graphics = new PIXI.Graphics()
                 .beginFill(props.color, props.alpha)
-                .drawCircle(0, 0, props.size)
+                .drawCircle(0, 0, vertexScale * props.size)
                 .endFill();
             return app.renderer.generateTexture(graphics);
         }
@@ -274,7 +274,7 @@ export default function () {
                             alpha *= props.outAlpha;
                         }
                         graphics.lineStyle({
-                            width: props.width,
+                            width: edgeScale * props.width,
                             color: props.color,
                             alpha: alpha,
                         });
@@ -517,7 +517,9 @@ export default function () {
 
         resize();
 
-        const defaultTexture = drawVertex(settings.vertex);
+        let vertexScale = 1;
+        let edgeScale = 1;
+        let defaultTexture = drawVertex(settings.vertex);
 
         const idsX = Object.keys(vertices);
         let leftX = 0;
@@ -672,9 +674,14 @@ export default function () {
                         app.stage.pivot.y += error * (app.stage.pivot.y + event.offsetY);
                         zoom += shift;
                         const scale = zoom / 100;
+                        const delta = zoom - 100;
+                        vertexScale = 1 + (delta * settings.graph.vertexScale) / 100;
+                        edgeScale = 1 + (delta * settings.graph.edgeScale) / 100;
+                        defaultTexture = drawVertex(settings.vertex);
                         for (const vertex of Object.values(vertices)) {
                             vertex.sprite.position.x = scale * vertex.x;
                             vertex.sprite.position.y = scale * vertex.y;
+                            updateSprite(vertex);
                         }
                         updateVisibility();
                         drawAreas();
@@ -704,6 +711,9 @@ export default function () {
                 let changed = false;
                 if (zoom !== 100) {
                     zoom = 100;
+                    vertexScale = 1;
+                    edgeScale = 1;
+                    defaultTexture = drawVertex(settings.vertex);
                     changed = true;
                 }
                 if (app.stage.pivot.x !== 0) {
@@ -718,6 +728,7 @@ export default function () {
                     for (const vertex of Object.values(vertices)) {
                         vertex.sprite.position.x = vertex.x;
                         vertex.sprite.position.y = vertex.y;
+                        updateSprite(vertex);
                     }
                     updateVisibility();
                     drawAreas();

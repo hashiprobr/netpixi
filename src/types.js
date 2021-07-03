@@ -10,6 +10,8 @@ const conditions = {
         directed: isBoolean,
         borderX: isNonNegative,
         borderY: isNonNegative,
+        vertexScale: isPositive,
+        edgeScale: isPositive,
     },
     vertex: {
         size: isPositive,
