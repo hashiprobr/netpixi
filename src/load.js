@@ -1,7 +1,64 @@
 import pako from 'pako';
 
 
-function loadLocal() {
+function loadLocal(process, finalize, warn) {
+    const input = document.createElement('input');
+    input.type = 'file';
+
+    input.addEventListener('input', () => {
+        let buffer = '';
+        const inflate = new pako.Inflate({ to: 'string' });
+        inflate.onData = (chunk) => {
+            buffer += chunk;
+            let begin = 0;
+            let index;
+            while ((index = buffer.indexOf('\n', begin)) !== -1) {
+                process(buffer.slice(begin, index));
+                begin = index + 1;
+            }
+            buffer = buffer.slice(begin);
+        };
+        inflate.onEnd = (status) => {
+            if (status === 0) {
+                if (buffer.length > 0) {
+                    process(buffer);
+                }
+                finalize();
+            } else {
+                if (inflate.msg.length === 0) {
+                    warn('Invalid ZipNet file');
+                } else {
+                    warn(inflate.msg);
+                }
+            }
+        };
+
+        const chunkSize = 16384;
+        const file = input.files[0];
+        function read(begin, end, flush) {
+            const reader = new FileReader();
+            reader.addEventListener('load', () => {
+                inflate.push(new Uint8Array(reader.result), flush);
+                if (!flush) {
+                    pipe(end, end + chunkSize);
+                }
+            });
+            reader.addEventListener('error', () => {
+                warn(reader.error);
+            });
+            reader.readAsArrayBuffer(file.slice(begin, end));
+        }
+        function pipe(begin, end) {
+            if (end < file.size) {
+                read(begin, end, false);
+            } else {
+                read(begin, file.size, true);
+            }
+        }
+        pipe(0, chunkSize);
+    });
+
+    input.click();
 }
 
 
@@ -34,14 +91,19 @@ function loadRemote(path, initialize, process, finalize, exit) {
                 buffer = buffer.slice(begin);
             };
             inflate.onEnd = (status) => {
-                if (status !== 0) {
-                    throw inflate.msg;
+                if (status === 0) {
+                    if (buffer.length > 0) {
+                        process(buffer);
+                    }
+                    finalize();
+                    console.log(`Loaded in ${(Date.now() - start) / 1000} seconds`);
+                } else {
+                    if (inflate.msg.length === 0) {
+                        throw 'Invalid ZipNet file';
+                    } else {
+                        throw inflate.msg;
+                    }
                 }
-                if (buffer.length > 0) {
-                    process(buffer);
-                }
-                finalize();
-                console.log(`Loaded in ${(Date.now() - start) / 1000} seconds`);
             };
 
             const reader = response.body.getReader();

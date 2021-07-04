@@ -50,12 +50,20 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
 
     const propertiesButton = createButton('Import Properties');
     propertiesButton.addEventListener('click', () => {
-        loadLocal();
+        function process(value) {
+        }
+        function finalize() {
+        }
+        loadLocal(process, finalize, warn);
     });
 
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
-        loadLocal();
+        function process(value) {
+        }
+        function finalize() {
+        }
+        loadLocal(process, finalize, warn);
     });
 
     const networkButton = createButton('Export Network');

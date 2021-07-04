@@ -22,6 +22,7 @@ export default function () {
             output.innerHTML = 'Internal script error';
             console.error(object);
         }
+        output.style.display = 'block';
     }
 
     function destroy() {
@@ -787,6 +788,9 @@ export default function () {
         output.style.fontFamily = 'Helvetica Neue, Helvetica, Arial, sans-serif';
         output.style.lineHeight = 1;
         output.style.color = '#ff0000';
+        output.addEventListener('click', () => {
+            output.style.display = 'none';
+        });
 
         element = document.getElementById(uid);
         element.appendChild(output);
