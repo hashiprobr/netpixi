@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { gsap } from 'gsap';
 
-import { isBoolean, isNumber, conditions } from './types';
+import { compare, isNumber, conditions } from './types';
 import defaults from './defaults';
 import Panel from './panel';
 import load from './load';
@@ -11,9 +11,18 @@ export default function () {
     let filename;
     let output;
     let element;
-    let fine;
+    let broker;
     let ratio;
     let app;
+
+    function warn(object) {
+        if (typeof object === 'string') {
+            output.innerHTML = object;
+        } else {
+            output.innerHTML = 'Internal script error';
+            console.error(object);
+        }
+    }
 
     function destroy() {
         app.destroy(true, {
@@ -23,17 +32,9 @@ export default function () {
         });
     }
 
-    function warn(error) {
-        if (typeof error === 'string') {
-            output.innerHTML = error;
-        } else {
-            output.innerHTML = error.message;
-        }
-    }
-
-    function exit(error) {
+    function exit(object) {
+        warn(object);
         destroy();
-        warn(error);
     }
 
     function pop(object, name) {
@@ -67,9 +68,6 @@ export default function () {
 
     let line;
 
-    let n;
-    let m;
-
     let minX;
     let maxX;
 
@@ -80,11 +78,11 @@ export default function () {
     let vertices;
     let edges;
 
+    let n;
+    let m;
+
     function initialize() {
         line = 0;
-
-        n = 0;
-        m = 0;
 
         minX = Number.POSITIVE_INFINITY;
         maxX = Number.NEGATIVE_INFINITY;
@@ -95,6 +93,15 @@ export default function () {
         settings = null;
         vertices = {};
         edges = {};
+
+        n = 0;
+        m = 0;
+    }
+
+    function configure() {
+        for (const name of ['graph', 'vertex', 'edge']) {
+            settings[name] = defaults[name];
+        }
     }
 
     function process(value) {
@@ -135,6 +142,7 @@ export default function () {
         if (data === null) {
             fail('cannot be null');
         }
+
         const props = pop(data, 'props');
         if (typeof props !== 'object') {
             fail('props must be an object');
@@ -144,6 +152,17 @@ export default function () {
             case 'settings':
                 if (settings === null) {
                     settings = { props };
+                    if (props === null) {
+                        configure();
+                    } else {
+                        for (const name of ['graph', 'vertex', 'edge']) {
+                            const value = pop(props, name);
+                            if (typeof value !== 'object') {
+                                fail(`${name} settings must be an object`);
+                            }
+                            settings[name] = merge(defaults[name], conditions[name], value);
+                        }
+                    }
                 } else {
                     fail('duplicate settings');
                 }
@@ -192,11 +211,11 @@ export default function () {
                     fail(`missing source with id ${source}`);
                 }
                 const target = tightPop(data, 'target');
-                if (source === target) {
-                    fail('source and target with same id');
-                }
                 if (!(target in vertices)) {
                     fail(`missing target with id ${target}`);
+                }
+                if (source === target) {
+                    fail('source and target with same id');
                 }
                 if (!(source in edges)) {
                     edges[source] = {};
@@ -204,8 +223,10 @@ export default function () {
                 if (target in edges[source]) {
                     fail(`duplicate edge with source ${source} and target ${target}`);
                 }
-                const directed = settings !== null && 'graph' in settings && isBoolean(settings.graph.directed) && settings.graph.directed;
-                if (!directed && target in edges && source in edges[target]) {
+                if (settings === null) {
+                    fail('missing settings');
+                }
+                if (!settings.graph.directed && target in edges && source && edges[target]) {
                     fail(`existing edge with source ${target} and target ${source} but graph is not directed`);
                 }
                 vertices[source].degree++;
@@ -235,16 +256,6 @@ export default function () {
 
         let pivotX;
         let pivotY;
-
-        function compare(a, b) {
-            if (Math.abs(a - b) < 0.000001) {
-                return 0;
-            }
-            if (a < b) {
-                return -1;
-            }
-            return 1;
-        }
 
         function resize() {
             rect = element.getBoundingClientRect();
@@ -292,7 +303,7 @@ export default function () {
                         const props = merge(settings.edge, conditions.edge, neighbor.props);
                         let alpha = props.alpha * vertices[source].alpha * vertices[target].alpha;
                         if (!sourceVisible || !targetVisible) {
-                            alpha *= props.outAlpha;
+                            alpha *= settings.graph.edgeFade;
                         }
                         graphics.lineStyle({
                             width: edgeScale * props.width,
@@ -475,20 +486,14 @@ export default function () {
                     hoveredVertex = null;
                 }
             });
-            updateSprite(vertex);
             app.stage.addChild(vertex.sprite);
+            updateSprite(vertex);
         }
 
         if (settings === null) {
             settings = { props: null };
+            configure();
         }
-        settings.graph = merge(defaults.graph, conditions.graph, settings.props.graph);
-        settings.vertex = merge(defaults.vertex, conditions.vertex, settings.props.vertex);
-        settings.edge = merge(defaults.edge, conditions.edge, settings.props.edge);
-
-        let edgeScale = 1;
-        let vertexScale = 1;
-        let defaultTexture = drawVertex(settings.vertex);
 
         const areas = {};
 
@@ -510,7 +515,7 @@ export default function () {
                         reversed = false;
                     }
                 }
-                if (fine) {
+                if (broker) {
                     reversed = !reversed;
                 }
                 let u;
@@ -524,17 +529,21 @@ export default function () {
                 }
                 const props = pop(edges[source], 'target');
                 if (!(u in areas)) {
-                    vertices[u].leaders.push(u);
                     const neighbors = [];
                     const graphics = new PIXI.Graphics();
-                    app.stage.addChild(graphics);
                     areas[u] = { neighbors, graphics };
+                    vertices[u].leaders.push(u);
+                    app.stage.addChild(graphics);
                 }
-                vertices[v].leaders.push(u);
                 areas[u].neighbors.push({ v, reversed, props });
+                vertices[v].leaders.push(u);
             }
             delete edges[source];
         }
+
+        let edgeScale = 1;
+        let vertexScale = 1;
+        let defaultTexture = drawVertex(settings.vertex);
 
         resize();
 
@@ -762,7 +771,7 @@ export default function () {
         console.log(`${n} vertices\n${m} edges`);
     }
 
-    return function (path, horizontal, vertical, finePY, uid) {
+    return function (path, horizontal, vertical, brokerPY, uid) {
         filename = path.slice(path.lastIndexOf('/') + 1);
 
         output = document.createElement('p');
@@ -775,7 +784,7 @@ export default function () {
         element = document.getElementById(uid);
         element.appendChild(output);
 
-        fine = JSON.parse(finePY.toLowerCase());
+        broker = JSON.parse(brokerPY.toLowerCase());
 
         ratio = horizontal / vertical;
 

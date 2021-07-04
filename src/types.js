@@ -1,9 +1,20 @@
+function compare(a, b) {
+    if (Math.abs(a - b) < 0.000001) {
+        return 0;
+    }
+    if (a < b) {
+        return -1;
+    }
+    return 1;
+}
+
 const isBoolean = (value) => typeof value === 'boolean';
-const isNumber = (value) => typeof value === 'number' && !Number.isNaN(value) && Number.isFinite(value);
-const isNonNegative = (value) => isNumber(value) && value >= 0;
-const isPositive = (value) => isNumber(value) && value > 0;
+const isNumber = (value) => typeof value === 'number' && !Number.isNaN(value);
+const isFinite = (value) => isNumber(value) && Number.isFinite(value);
+const isNonNegative = (value) => isFinite(value) && compare(value, 0) >= 0;
+const isPositive = (value) => isFinite(value) && compare(value, 0) > 0;
 const isColor = (value) => Number.isInteger(value) && value >= 0x000000 && value <= 0xffffff;
-const isAlpha = (value) => isNonNegative(value) && value <= 1;
+const isAlpha = (value) => isNonNegative(value) && compare(value, 1) <= 0;
 
 const conditions = {
     graph: {
@@ -12,8 +23,9 @@ const conditions = {
         borderY: isNonNegative,
         color: isColor,
         alpha: isAlpha,
-        vertexScale: isPositive,
+        edgeFade: isAlpha,
         edgeScale: isPositive,
+        vertexScale: isPositive,
     },
     vertex: {
         size: isPositive,
@@ -24,10 +36,9 @@ const conditions = {
         width: isPositive,
         color: isColor,
         alpha: isAlpha,
-        outAlpha: isAlpha,
-        curve1: isNumber,
-        curve2: isNumber,
+        curve1: isFinite,
+        curve2: isFinite,
     },
 };
 
-export { isBoolean, isNumber, conditions };
+export { compare, isNumber, conditions };
