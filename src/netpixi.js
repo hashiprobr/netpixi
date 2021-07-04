@@ -627,7 +627,9 @@ export default function () {
 
         const main = document.createElement('div');
 
-        function grab(event) {
+        const [topPanel, bottomPanel, updatePanel] = Panel(filename, settings, vertices, areas, main, app, warn);
+
+        main.grab = (event) => {
             if (draggedVertex === null) {
                 dragging = true;
                 mouseX = event.offsetX;
@@ -635,27 +637,27 @@ export default function () {
                 pivotX = app.stage.pivot.x;
                 pivotY = app.stage.pivot.y;
             }
-        }
-        function release() {
+        };
+        main.release = () => {
             dragging = false;
             if (draggedVertex !== null) {
                 draggedVertex.stop();
             }
-        }
+        };
         main.addEventListener('mousedown', (event) => {
             event.preventDefault();
-            grab(event);
+            main.grab(event);
         });
         main.addEventListener('mouseup', (event) => {
             event.preventDefault();
-            release();
+            main.release();
         });
         main.addEventListener('mouseenter', (event) => {
             event.preventDefault();
             if (event.buttons === 1) {
-                grab(event);
+                main.grab(event);
             } else {
-                release();
+                main.release();
             }
         });
         main.addEventListener('mousemove', (event) => {
@@ -687,11 +689,11 @@ export default function () {
                         app.stage.pivot.x += error * (app.stage.pivot.x + event.offsetX);
                         app.stage.pivot.y += error * (app.stage.pivot.y + event.offsetY);
                         zoom += shift;
-                        const scale = zoom / 100;
                         const delta = zoom - 100;
                         edgeScale = 1 + (delta * settings.graph.edgeScale) / 100;
                         vertexScale = 1 + (delta * settings.graph.vertexScale) / 100;
                         defaultTexture = drawVertex(settings.vertex);
+                        const scale = zoom / 100;
                         for (const vertex of Object.values(vertices)) {
                             vertex.sprite.position.x = scale * vertex.x;
                             vertex.sprite.position.y = scale * vertex.y;
@@ -699,6 +701,7 @@ export default function () {
                         }
                         updateVisibility();
                         drawAreas();
+                        updatePanel(zoom);
                     }
                 } else {
                     if (result === -1) {
@@ -722,23 +725,20 @@ export default function () {
         main.addEventListener('dblclick', (event) => {
             event.preventDefault();
             if (hoveredVertex === null) {
-                let changed = false;
+                let moved = false;
+                if (compare(app.stage.pivot.x, 0) !== 0) {
+                    app.stage.pivot.x = 0;
+                    moved = true;
+                }
+                if (compare(app.stage.pivot.y, 0) !== 0) {
+                    app.stage.pivot.y = 0;
+                    moved = true;
+                }
                 if (zoom !== 100) {
                     zoom = 100;
                     edgeScale = 1;
                     vertexScale = 1;
                     defaultTexture = drawVertex(settings.vertex);
-                    changed = true;
-                }
-                if (app.stage.pivot.x !== 0) {
-                    app.stage.pivot.x = 0;
-                    changed = true;
-                }
-                if (app.stage.pivot.y !== 0) {
-                    app.stage.pivot.y = 0;
-                    changed = true;
-                }
-                if (changed) {
                     for (const vertex of Object.values(vertices)) {
                         vertex.sprite.position.x = vertex.x;
                         vertex.sprite.position.y = vertex.y;
@@ -746,6 +746,14 @@ export default function () {
                     }
                     updateVisibility();
                     drawAreas();
+                    updatePanel(zoom);
+                } else {
+                    if (moved) {
+                        const leaders = updateVisibility();
+                        for (const u of leaders) {
+                            drawEdges(u);
+                        }
+                    }
                 }
             } else {
                 if (compare(hoveredVertex.alpha, 1) !== 0) {
@@ -757,14 +765,13 @@ export default function () {
             }
         });
 
-        const [topPanel, bottomPanel] = Panel(filename, zoom, settings, vertices, areas, main, app, warn);
-
         element.appendChild(topPanel);
         element.appendChild(main);
         element.appendChild(bottomPanel);
 
         drawBackground();
         drawAreas();
+        updatePanel(zoom);
 
         main.appendChild(app.view);
 
