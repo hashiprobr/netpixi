@@ -8,18 +8,15 @@ if (!streamSaver.WritableStream) {
 
 
 export default function (filename, settings, vertices, areas, initialize, finalize, warn) {
+    const start = Date.now();
     try {
-        const start = Date.now();
+        const stream = streamSaver.createWriteStream(filename);
 
         initialize();
 
-        const stream = streamSaver.createWriteStream(filename);
-
         const writer = stream.getWriter();
-        let active = true;
 
         window.addEventListener('unload', () => {
-            active = false;
             writer.abort();
         });
 
@@ -45,39 +42,31 @@ export default function (filename, settings, vertices, areas, initialize, finali
             deflate.push(encoder.encode(line), false);
         }
 
-        if (active) {
-            push('settings', {}, settings.props);
-        }
+        push('settings', {}, settings.props);
 
         for (const [id, vertex] of Object.entries(vertices)) {
-            if (active) {
-                push('vertex', { id }, { ...vertex.props, x: vertex.x, y: vertex.y });
-            }
+            push('vertex', { id }, { ...vertex.props, x: vertex.x, y: vertex.y });
         }
 
         for (const [u, area] of Object.entries(areas)) {
-            if (active) {
-                for (const neighbor of Object.values(area.neighbors)) {
-                    let source;
-                    let target;
-                    if (neighbor.reversed) {
-                        source = neighbor.v;
-                        target = u;
-                    } else {
-                        source = u;
-                        target = neighbor.v;
-                    }
-                    push('edge', { source, target }, neighbor.props);
+            for (const neighbor of Object.values(area.neighbors)) {
+                let source;
+                let target;
+                if (neighbor.reversed) {
+                    source = neighbor.v;
+                    target = u;
+                } else {
+                    source = u;
+                    target = neighbor.v;
                 }
+                push('edge', { source, target }, neighbor.props);
             }
         }
 
-        if (active) {
-            deflate.push(new Uint8Array(), true);
-            writer.close();
-        }
+        deflate.push(new Uint8Array(), true);
+        writer.close();
     } catch (error) {
-        finalize();
         warn(error);
+        finalize();
     }
 }
