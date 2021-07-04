@@ -1,5 +1,6 @@
 import save from './save';
 import { saveImage, saveVideo } from './media';
+import { loadLocal } from './load';
 
 
 export default function (filename, settings, vertices, areas, main, app, warn) {
@@ -49,10 +50,12 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
 
     const propertiesButton = createButton('Import Properties');
     propertiesButton.addEventListener('click', () => {
+        loadLocal();
     });
 
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
+        loadLocal();
     });
 
     const networkButton = createButton('Export Network');
@@ -87,7 +90,6 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     topPanel.appendChild(label);
 
     let playing = false;
-
     const playButton = document.createElement('a');
     playButton.style.margin = '.25rem .5rem .5rem .75rem';
     playButton.style.textDecoration = 'none';
@@ -113,5 +115,5 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     bottomPanel.appendChild(playButton);
     bottomPanel.appendChild(range);
 
-    return [topPanel, bottomPanel, updatePanel];
+    return [updatePanel, topPanel, bottomPanel];
 }

@@ -1,7 +1,11 @@
 import pako from 'pako';
 
 
-export default function (path, initialize, process, finalize, exit) {
+function loadLocal() {
+}
+
+
+function loadRemote(path, initialize, process, finalize, exit) {
     const start = Date.now();
 
     const uri = window.location.pathname;
@@ -53,3 +57,6 @@ export default function (path, initialize, process, finalize, exit) {
         })
         .catch(exit);
 }
+
+
+export { loadLocal, loadRemote };

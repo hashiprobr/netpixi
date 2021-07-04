@@ -3,8 +3,8 @@ import { gsap } from 'gsap';
 
 import { compare, isNumber, conditions } from './types';
 import defaults from './defaults';
+import { loadRemote } from './load';
 import Panel from './panel';
-import load from './load';
 
 
 export default function () {
@@ -627,7 +627,7 @@ export default function () {
 
         const main = document.createElement('div');
 
-        const [topPanel, bottomPanel, updatePanel] = Panel(filename, settings, vertices, areas, main, app, warn);
+        const [updatePanel, topPanel, bottomPanel] = Panel(filename, settings, vertices, areas, main, app, warn);
 
         main.grab = (event) => {
             if (draggedVertex === null) {
@@ -801,6 +801,6 @@ export default function () {
             resolution: 2,
         });
 
-        load(path, initialize, process, finalize, exit);
+        loadRemote(path, initialize, process, finalize, exit);
     };
 }
