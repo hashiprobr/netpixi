@@ -1,6 +1,6 @@
 import save from './save';
-import { saveImage, saveVideo } from './media';
-import { loadLocal } from './load';
+import { loadProperties, loadAnimation } from './importer';
+import { saveImage, saveVideo } from './exporter';
 
 
 export default function (filename, settings, vertices, areas, main, app, warn) {
@@ -50,20 +50,12 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
 
     const propertiesButton = createButton('Import Properties');
     propertiesButton.addEventListener('click', () => {
-        function process(value) {
-        }
-        function finalize() {
-        }
-        loadLocal(process, finalize, warn);
+        loadProperties(warn);
     });
 
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
-        function process(value) {
-        }
-        function finalize() {
-        }
-        loadLocal(process, finalize, warn);
+        loadAnimation(warn);
     });
 
     const networkButton = createButton('Export Network');
