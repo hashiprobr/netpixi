@@ -9,12 +9,16 @@ if (!streamSaver.WritableStream) {
 
 
 export default function (filename, settings, vertices, areas) {
-    return new Promise((response) => {
+    return new Promise((response, reject) => {
         const stream = streamSaver.createWriteStream(filename);
         const writer = stream.getWriter();
 
         window.addEventListener('unload', () => {
-            writer.abort();
+            try {
+                writer.abort();
+            } catch (error) {
+                reject(error);
+            }
         });
 
         function process(chunk) {
