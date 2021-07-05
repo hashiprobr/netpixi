@@ -1,3 +1,3 @@
-import NetPixi from './src/netpixi';
+import NetPixi from './src/NetPixi';
 
 window.netpixi = NetPixi();

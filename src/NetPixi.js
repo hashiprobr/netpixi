@@ -791,8 +791,6 @@ export default function () {
         updatePanel(zoom);
 
         main.appendChild(app.view);
-
-        console.log(`${n} vertices\n${m} edges`);
     }
 
     return function (path, horizontal, vertical, normalizePY, brokerPY, uid) {
@@ -821,6 +819,14 @@ export default function () {
             resolution: 2,
         });
 
-        loadRemote(path, initialize, process, finalize, exit);
+        const start = Date.now();
+        initialize();
+        loadRemote(path, process)
+            .then(() => {
+                console.log(`${n} vertices, ${m} edges`);
+                finalize();
+                console.log(`Loaded in ${(Date.now() - start) / 1000} seconds`);
+            })
+            .catch(exit);
     };
 }
