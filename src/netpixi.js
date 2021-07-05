@@ -22,7 +22,6 @@ export default function () {
             output.innerHTML = 'Internal script error';
             console.error(object);
         }
-        output.style.display = 'block';
     }
 
     function destroy() {
@@ -783,13 +782,11 @@ export default function () {
         filename = path.slice(path.lastIndexOf('/') + 1);
 
         output = document.createElement('p');
-        output.style.margin = '.5rem';
-        output.style.fontSize = '11px';
-        output.style.fontFamily = 'Helvetica Neue, Helvetica, Arial, sans-serif';
-        output.style.lineHeight = 1;
+        output.style.margin = '.5em';
         output.style.color = '#ff0000';
+        output.style.userSelect = 'none';
         output.addEventListener('click', () => {
-            output.style.display = 'none';
+            output.innerHTML = '';
         });
 
         element = document.getElementById(uid);

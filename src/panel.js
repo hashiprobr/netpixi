@@ -7,8 +7,8 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     let scale = 1;
 
     const label = document.createElement('p');
-    label.style.margin = '1rem';
-    label.style.fontSize = '13px';
+    label.style.margin = '1em';
+    label.style.userSelect = 'none';
 
     function updatePanel(zoom) {
         scale = zoom / 100;
@@ -18,10 +18,9 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     function createButton(text) {
         const button = document.createElement('button');
         button.style.width = 'min-content';
-        button.style.margin = '.5rem';
-        button.style.fontSize = '11px';
-        button.style.fontFamily = 'Helvetica Neue, Helvetica, Arial, sans-serif';
-        button.style.lineHeight = 1;
+        button.style.margin = '.5em';
+        button.style.fontSize = '.75em';
+        button.style.lineHeight = 'normal';
         button.innerHTML = text;
         return button;
     }
@@ -75,10 +74,10 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     });
 
     const videoButton = createButton('Export Video');
+    videoButton.style.display = 'none';
     videoButton.addEventListener('click', () => {
         saveVideo();
     });
-    videoButton.style.display = 'none';
 
     const topPanel = document.createElement('div');
     topPanel.style.display = 'flex';
@@ -91,7 +90,7 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
 
     let playing = false;
     const playButton = document.createElement('a');
-    playButton.style.margin = '.25rem .5rem .5rem .75rem';
+    playButton.style.margin = '.25em .5em .5em .75em';
     playButton.style.textDecoration = 'none';
     playButton.style.userSelect = 'none';
     playButton.style.cursor = 'pointer';
@@ -101,8 +100,8 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
             playButton.innerHTML = '▶';
             playing = false;
         } else {
-            playing = true;
             playButton.innerHTML = '⏸';
+            playing = true;
         }
     });
 
