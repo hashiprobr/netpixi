@@ -4,17 +4,6 @@ import { saveImage, saveVideo } from './exporter';
 
 
 export default function (filename, settings, vertices, areas, main, app, warn) {
-    let scale = 1;
-
-    const label = document.createElement('p');
-    label.style.margin = '1em';
-    label.style.userSelect = 'none';
-
-    function updatePanel(zoom) {
-        scale = zoom / 100;
-        label.innerHTML = `${zoom}%`;
-    }
-
     function createButton(text) {
         const button = document.createElement('button');
         button.style.width = 'min-content';
@@ -25,7 +14,7 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
         return button;
     }
 
-    function enableButtons() {
+    function enable() {
         main.style.pointerEvents = 'auto';
         propertiesButton.disabled = false;
         animationButton.disabled = false;
@@ -36,7 +25,7 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
         range.disabled = false;
     }
 
-    function disableButtons() {
+    function disable() {
         main.style.pointerEvents = 'none';
         propertiesButton.disabled = true;
         animationButton.disabled = true;
@@ -49,35 +38,54 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
 
     const propertiesButton = createButton('Import Properties');
     propertiesButton.addEventListener('click', () => {
+        disable();
         loadProperties(warn);
+        enable();
     });
 
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
+        disable();
         loadAnimation(warn);
+        enable();
     });
 
     const networkButton = createButton('Export Network');
     networkButton.addEventListener('click', () => {
         function initialize() {
-            disableButtons();
+            disable();
         }
         function finalize() {
-            enableButtons();
+            enable();
         }
         save(filename, settings, vertices, areas, initialize, finalize, warn);
     });
 
     const imageButton = createButton('Export Image');
     imageButton.addEventListener('click', () => {
+        disable();
         saveImage(filename, settings, app, scale);
+        enable();
     });
 
     const videoButton = createButton('Export Video');
     videoButton.style.display = 'none';
     videoButton.addEventListener('click', () => {
+        disable();
         saveVideo();
+        enable();
     });
+
+    function updatePanel(zoom) {
+        scale = zoom / 100;
+        label.innerHTML = `${zoom}%`;
+    }
+
+    let scale = 1;
+
+    const label = document.createElement('p');
+    label.style.margin = '1em';
+    label.style.userSelect = 'none';
 
     const topPanel = document.createElement('div');
     topPanel.style.display = 'flex';
@@ -89,6 +97,7 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     topPanel.appendChild(label);
 
     let playing = false;
+
     const playButton = document.createElement('a');
     playButton.style.margin = '.25em .5em .5em .75em';
     playButton.style.textDecoration = 'none';
@@ -99,9 +108,11 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
         if (playing) {
             playButton.innerHTML = '▶';
             playing = false;
+            enable();
         } else {
             playButton.innerHTML = '⏸';
             playing = true;
+            disable();
         }
     });
 
