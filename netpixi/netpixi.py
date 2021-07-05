@@ -46,11 +46,11 @@ def open(path, props=None):
     return ZipNet(path, props)
 
 
-def render(path, horizontal=16, vertical=9, broker=False):
+def render(path, horizontal=16, vertical=9, normalize=False, broker=False):
     uid = uuid()
     display(HTML(f'''
         <div id="{uid}"></div>
-        <script>netpixi(\'{path}\', {horizontal}, {vertical}, \'{broker}\', \'{uid}\');</script>
+        <script>netpixi(\'{path}\', {horizontal}, {vertical}, \'{normalize}\', \'{broker}\', \'{uid}\');</script>
     '''))
 
 

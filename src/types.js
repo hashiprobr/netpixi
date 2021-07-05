@@ -41,4 +41,4 @@ const conditions = {
     },
 };
 
-export { compare, isNumber, conditions };
+export { compare, isFinite, conditions };

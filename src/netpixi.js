@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { gsap } from 'gsap';
 
-import { compare, isNumber, conditions } from './types';
+import { compare, isFinite, conditions } from './types';
 import defaults from './defaults';
 import { loadRemote } from './load';
 import Panel from './panel';
@@ -11,6 +11,7 @@ export default function () {
     let filename;
     let output;
     let element;
+    let normalize;
     let broker;
     let ratio;
     let app;
@@ -175,7 +176,7 @@ export default function () {
                 }
                 let x = loosePop(props, 'x');
                 if (x !== null) {
-                    if (isNumber(x)) {
+                    if (isFinite(x)) {
                         if (minX > x) {
                             minX = x;
                         }
@@ -188,7 +189,7 @@ export default function () {
                 }
                 let y = loosePop(props, 'y');
                 if (y !== null) {
-                    if (isNumber(y)) {
+                    if (isFinite(y)) {
                         if (minY > y) {
                             minY = y;
                         }
@@ -558,8 +559,20 @@ export default function () {
         if (n > 0) {
             if (n === 1) {
                 const vertex = vertices[idsX[0]];
-                vertex.x = 0.5;
-                vertex.y = 0.5;
+                if (vertex.x === null) {
+                    vertex.x = Math.random();
+                } else {
+                    if (normalize) {
+                        vertex.x = 0.5;
+                    }
+                }
+                if (vertex.y === null) {
+                    vertex.y = Math.random();
+                } else {
+                    if (normalize) {
+                        vertex.y = 0.5;
+                    }
+                }
                 buildSprite(vertex);
                 vertex.indexX = 0;
                 vertex.indexY = 0;
@@ -581,19 +594,23 @@ export default function () {
                     if (vertex.x === null) {
                         vertex.x = Math.random();
                     } else {
-                        if (difX === 0) {
-                            vertex.x = 0.5;
-                        } else {
-                            vertex.x = (vertex.x - minX) / difX;
+                        if (normalize) {
+                            if (difX === 0) {
+                                vertex.x = 0.5;
+                            } else {
+                                vertex.x = (vertex.x - minX) / difX;
+                            }
                         }
                     }
                     if (vertex.y === null) {
                         vertex.y = Math.random();
                     } else {
-                        if (difY === 0) {
-                            vertex.y = 0.5;
-                        } else {
-                            vertex.y = (vertex.y - minY) / difY;
+                        if (normalize) {
+                            if (difY === 0) {
+                                vertex.y = 0.5;
+                            } else {
+                                vertex.y = (vertex.y - minY) / difY;
+                            }
                         }
                     }
                     buildSprite(vertex);
@@ -778,7 +795,7 @@ export default function () {
         console.log(`${n} vertices\n${m} edges`);
     }
 
-    return function (path, horizontal, vertical, brokerPY, uid) {
+    return function (path, horizontal, vertical, normalizePY, brokerPY, uid) {
         filename = path.slice(path.lastIndexOf('/') + 1);
 
         output = document.createElement('p');
@@ -791,6 +808,8 @@ export default function () {
 
         element = document.getElementById(uid);
         element.appendChild(output);
+
+        normalize = JSON.parse(normalizePY.toLowerCase());
 
         broker = JSON.parse(brokerPY.toLowerCase());
 
