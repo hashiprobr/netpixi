@@ -3,19 +3,17 @@ import { loadLocal } from './load';
 
 function importProperties() {
     function process(data) {
+        console.log(data);
     }
-    function finalize() {
-    }
-    return loadLocal(process, finalize);
+    return loadLocal(process);
 }
 
 
 function importAnimation() {
     function process(data) {
+        console.log(data);
     }
-    function finalize() {
-    }
-    return loadLocal(process, finalize);
+    return loadLocal(process);
 }
 
 
