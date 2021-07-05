@@ -36,7 +36,41 @@ function useInflate(process, response) {
 }
 
 
-function useDeflate() {
+function useDeflate(process, response) {
+    const deflate = new pako.Deflate({ gzip: true });
+
+    const encoder = new TextEncoder();
+
+    deflate.onData = (chunk) => {
+        process(chunk);
+    };
+
+    deflate.onEnd = (status) => {
+        if (status === 0) {
+            response();
+        } else {
+            if (deflate.msg.length === 0) {
+                throw 'Invalid ZipNet file';
+            } else {
+                throw deflate.msg;
+            }
+        }
+    };
+
+    function pushLine(type, data, props) {
+        data.type = type;
+        if (props !== null) {
+            data.props = props;
+        }
+        const line = `${JSON.stringify(data)}\n`;
+        deflate.push(encoder.encode(line), false);
+    }
+
+    function pushEnd() {
+        deflate.push(new Uint8Array(), true);
+    }
+
+    return [pushLine, pushEnd];
 }
 
 

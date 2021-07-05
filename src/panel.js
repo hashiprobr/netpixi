@@ -52,13 +52,11 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
 
     const networkButton = createButton('Export Network');
     networkButton.addEventListener('click', () => {
-        function initialize() {
-            disable();
-        }
-        function finalize() {
-            enable();
-        }
-        save(filename, settings, vertices, areas, initialize, finalize, warn);
+        save(filename, settings, vertices, areas)
+            .catch((error) => {
+                warn(error);
+            })
+            .finally(enable);
     });
 
     const imageButton = createButton('Export Image');

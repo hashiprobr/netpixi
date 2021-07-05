@@ -33,11 +33,6 @@ export default function () {
         });
     }
 
-    function exit(object) {
-        warn(object);
-        destroy();
-    }
-
     function pop(object, name) {
         if (name in object) {
             const value = object[name];
@@ -827,6 +822,9 @@ export default function () {
                 finalize();
                 console.log(`Loaded in ${(Date.now() - start) / 1000} seconds`);
             })
-            .catch(exit);
+            .catch((error) => {
+                warn(error);
+                destroy();
+            });
     };
 }
