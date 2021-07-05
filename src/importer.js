@@ -1,22 +1,22 @@
 import { loadLocal } from './load';
 
 
-function loadProperties(warn) {
-    function process(value) {
+function importProperties() {
+    function process(data) {
     }
     function finalize() {
     }
-    loadLocal(process, finalize, warn);
+    return loadLocal(process, finalize);
 }
 
 
-function loadAnimation(warn) {
-    function process(value) {
+function importAnimation() {
+    function process(data) {
     }
     function finalize() {
     }
-    loadLocal(process, finalize, warn);
+    return loadLocal(process, finalize);
 }
 
 
-export { loadProperties, loadAnimation };
+export { importProperties, importAnimation };

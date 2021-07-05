@@ -1,6 +1,6 @@
 import save from './save';
-import { loadProperties, loadAnimation } from './importer';
-import { saveImage, saveVideo } from './exporter';
+import { importProperties, importAnimation } from './importer';
+import { exportImage, exportVideo } from './exporter';
 
 
 export default function (filename, settings, vertices, areas, main, app, warn) {
@@ -39,19 +39,26 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     const propertiesButton = createButton('Import Properties');
     propertiesButton.addEventListener('click', () => {
         disable();
-        loadProperties(warn);
-        enable();
+        importProperties()
+            .catch((error) => {
+                warn(error);
+            })
+            .finally(enable);
     });
 
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
         disable();
-        loadAnimation(warn);
-        enable();
+        importAnimation()
+            .catch((error) => {
+                warn(error);
+            })
+            .finally(enable);
     });
 
     const networkButton = createButton('Export Network');
     networkButton.addEventListener('click', () => {
+        disable();
         save(filename, settings, vertices, areas)
             .catch((error) => {
                 warn(error);
@@ -62,16 +69,22 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     const imageButton = createButton('Export Image');
     imageButton.addEventListener('click', () => {
         disable();
-        saveImage(filename, settings, app, scale);
-        enable();
+        exportImage(filename, settings, app, scale)
+            .catch((error) => {
+                warn(error);
+            })
+            .finally(enable);
     });
 
     const videoButton = createButton('Export Video');
     videoButton.style.display = 'none';
     videoButton.addEventListener('click', () => {
         disable();
-        saveVideo();
-        enable();
+        exportVideo()
+            .catch((error) => {
+                warn(error);
+            })
+            .finally(enable);
     });
 
     function updatePanel(zoom) {
