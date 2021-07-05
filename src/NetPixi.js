@@ -62,8 +62,6 @@ export default function () {
         return props;
     }
 
-    let line;
-
     let minX;
     let maxX;
 
@@ -78,8 +76,6 @@ export default function () {
     let m;
 
     function initialize() {
-        line = 0;
-
         minX = Number.POSITIVE_INFINITY;
         maxX = Number.NEGATIVE_INFINITY;
 
@@ -100,13 +96,7 @@ export default function () {
         }
     }
 
-    function process(value) {
-        line++;
-
-        function fail(message) {
-            throw `Line ${line}: ${message}`;
-        }
-
+    function process(data) {
         function loosePop(props, name) {
             if (props !== null) {
                 return pop(props, name);
@@ -121,27 +111,14 @@ export default function () {
                     delete data[name];
                     return value;
                 }
-                fail(`invalid ${data.type} ${name}`);
+                throw `invalid ${data.type} ${name}`;
             }
-            fail(`missing ${data.type} ${name}`);
-        }
-
-        let data;
-        try {
-            data = JSON.parse(value);
-        } catch (error) {
-            fail(error.message);
-        }
-        if (typeof data !== 'object') {
-            fail('must be an object');
-        }
-        if (data === null) {
-            fail('cannot be null');
+            throw `missing ${data.type} ${name}`;
         }
 
         const props = pop(data, 'props');
         if (typeof props !== 'object') {
-            fail('props must be an object');
+            throw 'props must be an object';
         }
 
         switch (data.type) {
@@ -154,20 +131,20 @@ export default function () {
                         for (const name of ['graph', 'vertex', 'edge']) {
                             const value = pop(props, name);
                             if (typeof value !== 'object') {
-                                fail(`${name} settings must be an object`);
+                                throw `${name} settings must be an object`;
                             }
                             settings[name] = merge(defaults[name], conditions[name], value);
                         }
                     }
                 } else {
-                    fail('duplicate settings');
+                    throw 'duplicate settings';
                 }
                 break;
 
             case 'vertex':
                 const id = tightPop(data, 'id');
                 if (id in vertices) {
-                    fail(`duplicate vertex with id ${id}`);
+                    throw `duplicate vertex with id ${id}`;
                 }
                 let x = loosePop(props, 'x');
                 if (x !== null) {
@@ -204,26 +181,26 @@ export default function () {
             case 'edge':
                 const source = tightPop(data, 'source');
                 if (!(source in vertices)) {
-                    fail(`missing source with id ${source}`);
+                    throw `missing source with id ${source}`;
                 }
                 const target = tightPop(data, 'target');
                 if (!(target in vertices)) {
-                    fail(`missing target with id ${target}`);
+                    throw `missing target with id ${target}`;
                 }
                 if (source === target) {
-                    fail('source and target with same id');
+                    throw 'source and target with same id';
                 }
                 if (!(source in edges)) {
                     edges[source] = {};
                 }
                 if (target in edges[source]) {
-                    fail(`duplicate edge with source ${source} and target ${target}`);
+                    throw `duplicate edge with source ${source} and target ${target}`;
                 }
                 if (settings === null) {
-                    fail('missing settings');
+                    throw 'missing settings';
                 }
                 if (!settings.graph.directed && target in edges && source && edges[target]) {
-                    fail(`existing edge with source ${target} and target ${source} but graph is not directed`);
+                    throw `existing edge with source ${target} and target ${source} but graph is not directed`;
                 }
                 vertices[source].degree++;
                 vertices[target].degree++;
@@ -232,7 +209,7 @@ export default function () {
                 break;
 
             default:
-                fail('unknown type');
+                throw 'unknown type';
         }
     }
 

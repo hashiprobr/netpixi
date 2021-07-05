@@ -3,7 +3,7 @@ import { useInflate } from './zipnet';
 
 function seek(file, process) {
     return new Promise((response) => {
-        const inflate = useInflate(process, response);
+        const push = useInflate(process, response);
 
         const chunkSize = 16384;
 
@@ -11,7 +11,7 @@ function seek(file, process) {
             const reader = new FileReader();
 
             reader.addEventListener('load', () => {
-                inflate.push(new Uint8Array(reader.result));
+                push(new Uint8Array(reader.result));
                 const nextEnd = end + chunkSize;
                 if (nextEnd < file.size) {
                     read(end, nextEnd, false);
@@ -34,7 +34,7 @@ function seek(file, process) {
 
 function stream(body, process) {
     return new Promise((response) => {
-        const inflate = useInflate(process, response);
+        const push = useInflate(process, response);
 
         const reader = body.getReader();
 
@@ -44,10 +44,10 @@ function stream(body, process) {
 
         function pipe({ done, value }) {
             if (done) {
-                inflate.push(new Uint8Array(), true);
+                push(new Uint8Array(), true);
                 return;
             }
-            inflate.push(value, false);
+            push(value, false);
             read();
         }
 

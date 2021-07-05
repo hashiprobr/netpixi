@@ -4,6 +4,33 @@ import pako from 'pako';
 function useInflate(process, response) {
     const inflate = new pako.Inflate({ to: 'string' });
 
+    let line = 0;
+
+    function fail(message) {
+        throw `Line ${line}: ${message}`;
+    }
+
+    function parse(value) {
+        line++;
+        let data;
+        try {
+            data = JSON.parse(value);
+        } catch (error) {
+            fail(error.message);
+        }
+        if (typeof data !== 'object') {
+            fail('must be an object');
+        }
+        if (data === null) {
+            fail('cannot be null');
+        }
+        try {
+            process(data);
+        } catch (error) {
+            fail(error);
+        }
+    }
+
     let buffer = '';
 
     inflate.onData = (chunk) => {
@@ -11,7 +38,7 @@ function useInflate(process, response) {
         let begin = 0;
         let index;
         while ((index = buffer.indexOf('\n', begin)) !== -1) {
-            process(buffer.slice(begin, index));
+            parse(buffer.slice(begin, index));
             begin = index + 1;
         }
         buffer = buffer.slice(begin);
@@ -20,7 +47,7 @@ function useInflate(process, response) {
     inflate.onEnd = (status) => {
         if (status === 0) {
             if (buffer.length > 0) {
-                process(buffer);
+                parse(buffer);
             }
             response();
         } else {
@@ -32,7 +59,11 @@ function useInflate(process, response) {
         }
     };
 
-    return inflate;
+    function push(data) {
+        inflate.push(data, true);
+    }
+
+    return push;
 }
 
 
