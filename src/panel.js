@@ -88,16 +88,34 @@ export default function (filename, app, settings, vertices, areas, refresh, main
             .finally(enable);
     });
 
-    function updatePanel(zoom) {
-        scale = zoom / 100;
-        label.innerHTML = `${zoom}%`;
-    }
-
     let scale = 1;
 
-    const label = document.createElement('p');
-    label.style.margin = '1em';
-    label.style.userSelect = 'none';
+    const zoomLabel = document.createElement('p');
+    zoomLabel.style.margin = '1em .5em 1em 1em';
+    zoomLabel.style.userSelect = 'none';
+
+    const fadeLabel = document.createElement('p');
+    fadeLabel.style.display = 'none';
+    fadeLabel.style.margin = '1em 1em 1em .5em';
+    fadeLabel.style.userSelect = 'none';
+
+    const updatePanel = {
+        scale(zoom) {
+            scale = zoom / 100;
+            zoomLabel.innerHTML = `Zoom: ${zoom}%`;
+        },
+        fadeToggle(visible) {
+            if (visible) {
+                fadeLabel.style.display = 'block';
+            } else {
+                fadeLabel.style.display = 'none';
+            }
+        },
+        fadeChange(vertex) {
+            const fade = Math.round(100 * vertex.alpha);
+            fadeLabel.innerHTML = `Fade: ${fade}%`;
+        },
+    };
 
     const topPanel = document.createElement('div');
     topPanel.style.display = 'flex';
@@ -106,7 +124,8 @@ export default function (filename, app, settings, vertices, areas, refresh, main
     topPanel.appendChild(networkButton);
     topPanel.appendChild(imageButton);
     topPanel.appendChild(videoButton);
-    topPanel.appendChild(label);
+    topPanel.appendChild(zoomLabel);
+    topPanel.appendChild(fadeLabel);
 
     let playing = false;
 

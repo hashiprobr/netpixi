@@ -350,10 +350,13 @@ export default function () {
             vertex.sprite.on('mouseover', () => {
                 if (hoveredVertex === null) {
                     hoveredVertex = vertex;
+                    updatePanel.fadeToggle(true);
+                    updatePanel.fadeChange(vertex);
                 }
             });
             vertex.sprite.on('mouseout', () => {
                 if (hoveredVertex === vertex) {
+                    updatePanel.fadeToggle(false);
                     hoveredVertex = null;
                 }
             });
@@ -597,14 +600,15 @@ export default function () {
                             refresh.sprite(scale, vertex);
                         }
                         refresh.edges();
-                        updatePanel(zoom);
+                        updatePanel.scale(zoom);
                     }
                 } else {
-                    const alpha = Math.round(hoveredVertex.alpha * 100);
-                    if (result === -1 || (result === 1 && alpha > 0)) {
-                        const shift = -result * Math.round(alpha / 10);
-                        hoveredVertex.alpha = (alpha + shift) / 100;
+                    let fade = Math.round(100 * hoveredVertex.alpha);
+                    if (result === -1 || (result === 1 && fade > 10)) {
+                        fade -= result * Math.round(fade / 10);
+                        hoveredVertex.alpha = fade / 100;
                         updateNeighborAreas(hoveredVertex);
+                        updatePanel.fadeChange(hoveredVertex);
                     }
                 }
             }
@@ -632,7 +636,7 @@ export default function () {
                         updateSprite(vertex);
                     }
                     refresh.edges();
-                    updatePanel(zoom);
+                    updatePanel.scale(zoom);
                 } else {
                     if (moved) {
                         updateVisibleAreas();
@@ -642,6 +646,7 @@ export default function () {
                 if (compare(hoveredVertex.alpha, 1) !== 0) {
                     hoveredVertex.alpha = 1;
                     updateNeighborAreas(hoveredVertex);
+                    updatePanel.fadeChange(hoveredVertex);
                 }
             }
         });
@@ -652,7 +657,7 @@ export default function () {
 
         refresh.background();
         drawAreas();
-        updatePanel(zoom);
+        updatePanel.scale(zoom);
 
         main.appendChild(app.view);
     }
