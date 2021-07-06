@@ -36,7 +36,6 @@ const conditions = {
     vertex: {
         size: isPositive,
         color: isColor,
-        alpha: isAlpha,
     },
     edge: {
         width: isPositive,

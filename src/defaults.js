@@ -12,7 +12,6 @@ export default {
     vertex: {
         size: 3,
         color: 0xffffff,
-        alpha: 1,
     },
     edge: {
         width: 1,

@@ -133,7 +133,7 @@ export default function () {
 
         function drawVertex(props) {
             const graphics = new PIXI.Graphics()
-                .beginFill(props.color, props.alpha)
+                .beginFill(props.color, 1)
                 .drawCircle(0, 0, vertexScale * props.size)
                 .endFill();
             return app.renderer.generateTexture(graphics);
@@ -168,7 +168,7 @@ export default function () {
                         graphics.lineStyle({
                             width: edgeScale * props.width,
                             color: props.color,
-                            alpha: alpha,
+                            alpha: Math.min(alpha, 1),
                         });
                         graphics.moveTo(sx, sy);
                         const c1 = props.curve1;
@@ -600,16 +600,11 @@ export default function () {
                         updatePanel(zoom);
                     }
                 } else {
-                    if (result === -1) {
-                        if (compare(hoveredVertex.alpha, 1) < 0) {
-                            hoveredVertex.alpha += 0.1;
-                            updateNeighborAreas(hoveredVertex);
-                        }
-                    } else {
-                        if (compare(hoveredVertex.alpha, 0.1) > 0) {
-                            hoveredVertex.alpha -= 0.1;
-                            updateNeighborAreas(hoveredVertex);
-                        }
+                    const alpha = Math.round(hoveredVertex.alpha * 100);
+                    if (result === -1 || (result === 1 && alpha > 0)) {
+                        const shift = -result * Math.round(alpha / 10);
+                        hoveredVertex.alpha = (alpha + shift) / 100;
+                        updateNeighborAreas(hoveredVertex);
                     }
                 }
             }
