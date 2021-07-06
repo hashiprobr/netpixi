@@ -6,37 +6,30 @@ from IPython.core.display import display, HTML
 
 
 class ZipNet:
-    def _load(self, type, props):
-        if props is None or isinstance(props, dict):
-            data = {}
-            data['type'] = type
-            if props is not None:
-                data['props'] = props
-            return data
-        raise TypeError('props must be None or a dict')
-
-    def _dump(self, data):
+    def _push(self, type, data, props):
+        for key, value in data.items():
+            if not isinstance(value, str):
+                raise TypeError(f'{type} {key} must be a string')
+        data['type'] = type
+        if props is not None and not isinstance(props, dict):
+            raise TypeError('props must be None or a dictionary')
+        if props is not None:
+            data['props'] = props
         line = f'{json.dumps(data)}\n'
         self.file.write(line.encode())
 
     def __init__(self, path, props):
         self.file = gzip.open(path, 'wb')
-        data = self._load('settings', props)
-        self._dump(data)
+        self._push('settings', {}, props)
 
     def __enter__(self):
         return self
 
     def write_vertex(self, id, props=None):
-        data = self._load('vertex', props)
-        data['id'] = id
-        self._dump(data)
+        self._push('vertex', {'id': id}, props)
 
     def write_edge(self, source, target, props=None):
-        data = self._load('edge', props)
-        data['source'] = source
-        data['target'] = target
-        self._dump(data)
+        self._push('edge', {'source': source, 'target': target}, props)
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.file.close()

@@ -9,14 +9,20 @@ function compare(a, b) {
 }
 
 const isBoolean = (value) => typeof value === 'boolean';
-const isNumber = (value) => typeof value === 'number' && !Number.isNaN(value);
-const isFinite = (value) => isNumber(value) && Number.isFinite(value);
+const isFinite = (value) => typeof value === 'number' && !Number.isNaN(value) && Number.isFinite(value);
 const isNonNegative = (value) => isFinite(value) && compare(value, 0) >= 0;
 const isPositive = (value) => isFinite(value) && compare(value, 0) > 0;
 const isColor = (value) => Number.isInteger(value) && value >= 0x000000 && value <= 0xffffff;
 const isAlpha = (value) => isNonNegative(value) && compare(value, 1) <= 0;
+const isString = (value) => typeof value === 'string';
+const isObject = (value) => typeof value === 'object';
 
 const conditions = {
+    settings: {
+        graph: isObject,
+        vertex: isObject,
+        edge: isObject,
+    },
     graph: {
         directed: isBoolean,
         borderX: isNonNegative,
@@ -41,4 +47,4 @@ const conditions = {
     },
 };
 
-export { compare, isFinite, conditions };
+export { compare, isFinite, isString, isObject, conditions };

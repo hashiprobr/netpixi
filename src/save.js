@@ -34,15 +34,15 @@ export default function (filename, settings, vertices, areas) {
         }
 
         for (const [u, area] of Object.entries(areas)) {
-            for (const neighbor of Object.values(area.neighbors)) {
+            for (const [v, neighbor] of Object.entries(area.neighbors)) {
                 let source;
                 let target;
                 if (neighbor.reversed) {
-                    source = neighbor.v;
+                    source = v;
                     target = u;
                 } else {
                     source = u;
-                    target = neighbor.v;
+                    target = v;
                 }
                 pushLine('edge', { source, target }, neighbor.props);
             }

@@ -1,8 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { gsap } from 'gsap';
 
-import { compare, isFinite, conditions } from './types';
+import { compare } from './types';
 import defaults from './defaults';
+import { pop, merge, processGraph, nullSettings, validate } from './data';
 import { loadRemote } from './load';
 import Panel from './panel';
 
@@ -33,35 +34,6 @@ export default function () {
         });
     }
 
-    function pop(object, name) {
-        if (name in object) {
-            const value = object[name];
-            delete object[name];
-            return value;
-        }
-        return null;
-    }
-
-    function merge(base, cond, over) {
-        if (over === null) {
-            return base;
-        }
-        let equal = true;
-        const props = {};
-        for (const key in base) {
-            if (key in over && base[key] !== over[key] && cond[key](over[key])) {
-                equal = false;
-                props[key] = over[key];
-            } else {
-                props[key] = base[key];
-            }
-        }
-        if (equal) {
-            return base;
-        }
-        return props;
-    }
-
     let minX;
     let maxX;
 
@@ -90,127 +62,47 @@ export default function () {
         m = 0;
     }
 
-    function configure() {
-        for (const name of ['graph', 'vertex', 'edge']) {
-            settings[name] = defaults[name];
-        }
-    }
-
-    function process(data) {
-        function loosePop(props, name) {
-            if (props !== null) {
-                return pop(props, name);
-            }
-            return null;
-        }
-
-        function tightPop(data, name) {
-            if (name in data) {
-                const value = data[name];
-                if (typeof value === 'string' || Number.isInteger(value)) {
-                    delete data[name];
-                    return value;
-                }
-                throw `invalid ${data.type} ${name}`;
-            }
-            throw `missing ${data.type} ${name}`;
-        }
-
-        const props = pop(data, 'props');
-        if (typeof props !== 'object') {
-            throw 'props must be an object';
-        }
-
-        switch (data.type) {
-            case 'settings':
-                if (settings === null) {
-                    settings = { props };
-                    if (props === null) {
-                        configure();
-                    } else {
-                        for (const name of ['graph', 'vertex', 'edge']) {
-                            const value = pop(props, name);
-                            if (typeof value !== 'object') {
-                                throw `${name} settings must be an object`;
-                            }
-                            settings[name] = merge(defaults[name], conditions[name], value);
-                        }
-                    }
-                } else {
-                    throw 'duplicate settings';
-                }
-                break;
-
-            case 'vertex':
-                const id = tightPop(data, 'id');
-                if (id in vertices) {
-                    throw `duplicate vertex with id ${id}`;
-                }
-                let x = loosePop(props, 'x');
+    function process(d) {
+        processGraph(d,
+            (props) => {
+                settings = validate.configuration(settings, props);
+            },
+            (data, props) => {
+                const id = validate.receivedId(data);
+                validate.notDuplicateVertex(id, vertices);
+                const x = validate.receivedX(props);
                 if (x !== null) {
-                    if (isFinite(x)) {
-                        if (minX > x) {
-                            minX = x;
-                        }
-                        if (maxX < x) {
-                            maxX = x;
-                        }
-                    } else {
-                        x = null;
+                    if (minX > x) {
+                        minX = x;
+                    }
+                    if (maxX < x) {
+                        maxX = x;
                     }
                 }
-                let y = loosePop(props, 'y');
+                const y = validate.receivedY(props);
                 if (y !== null) {
-                    if (isFinite(y)) {
-                        if (minY > y) {
-                            minY = y;
-                        }
-                        if (maxY < y) {
-                            maxY = y;
-                        }
-                    } else {
-                        y = null;
+                    if (minY > y) {
+                        minY = y;
+                    }
+                    if (maxY < y) {
+                        maxY = y;
                     }
                 }
                 const degree = 0;
-                const leaders = [];
+                const leaders = new Set();
                 vertices[id] = { x, y, degree, leaders, props };
                 n++;
-                break;
-
-            case 'edge':
-                const source = tightPop(data, 'source');
-                if (!(source in vertices)) {
-                    throw `missing source with id ${source}`;
-                }
-                const target = tightPop(data, 'target');
-                if (!(target in vertices)) {
-                    throw `missing target with id ${target}`;
-                }
-                if (source === target) {
-                    throw 'source and target with same id';
-                }
-                if (!(source in edges)) {
-                    edges[source] = {};
-                }
-                if (target in edges[source]) {
-                    throw `duplicate edge with source ${source} and target ${target}`;
-                }
-                if (settings === null) {
-                    throw 'missing settings';
-                }
-                if (!settings.graph.directed && target in edges && source && edges[target]) {
-                    throw `existing edge with source ${target} and target ${source} but graph is not directed`;
-                }
+            },
+            (data, props) => {
+                const source = validate.receivedSource(data, vertices);
+                const target = validate.receivedTarget(data, vertices, source);
+                validate.notDuplicateEdge(source, target, edges);
+                validate.notReversedEdge(settings, source, target, edges);
                 vertices[source].degree++;
                 vertices[target].degree++;
                 edges[source][target] = props;
                 m++;
-                break;
-
-            default:
-                throw 'unknown type';
-        }
+            });
     }
 
     function finalize() {
@@ -239,11 +131,6 @@ export default function () {
             }
         }
 
-        function drawBackground() {
-            app.renderer.backgroundColor = settings.graph.color;
-            app.renderer.backgroundAlpha = settings.graph.alpha;
-        }
-
         function drawVertex(props) {
             const graphics = new PIXI.Graphics()
                 .beginFill(props.color, props.alpha)
@@ -255,15 +142,15 @@ export default function () {
         function drawEdges(u) {
             const graphics = areas[u].graphics;
             graphics.clear();
-            for (const neighbor of Object.values(areas[u].neighbors)) {
+            for (const [v, neighbor] of Object.entries(areas[u].neighbors)) {
                 let source;
                 let target;
                 if (neighbor.reversed) {
-                    source = neighbor.v;
+                    source = v;
                     target = u;
                 } else {
                     source = u;
-                    target = neighbor.v;
+                    target = v;
                 }
                 const sourceVisible = vertices[source].visibleX && vertices[source].visibleY;
                 const targetVisible = vertices[target].visibleX && vertices[target].visibleY;
@@ -273,7 +160,7 @@ export default function () {
                     const tx = vertices[target].sprite.position.x;
                     const ty = vertices[target].sprite.position.y;
                     if (compare(sx, tx) !== 0 || compare(sy, ty) !== 0) {
-                        const props = merge(settings.edge, conditions.edge, neighbor.props);
+                        const props = merge(settings.edge, neighbor.props);
                         let alpha = props.alpha * vertices[source].alpha * vertices[target].alpha;
                         if (!sourceVisible || !targetVisible) {
                             alpha *= settings.graph.edgeFade;
@@ -311,7 +198,7 @@ export default function () {
         }
 
         function updateSprite(vertex) {
-            const props = merge(settings.vertex, conditions.vertex, vertex.props);
+            const props = merge(settings.vertex, vertex.props);
             if (props === settings.vertex) {
                 vertex.sprite.texture = defaultTexture;
             } else {
@@ -376,6 +263,19 @@ export default function () {
             return leaders;
         }
 
+        function updateVisibleAreas() {
+            const leaders = updateVisibility();
+            for (const u of leaders) {
+                drawEdges(u);
+            }
+        }
+
+        function updateNeighborAreas(vertex) {
+            for (const u of vertex.leaders) {
+                drawEdges(u);
+            }
+        }
+
         function buildSprite(vertex) {
             vertex.x = settings.graph.borderX + vertex.x * (width - 2 * settings.graph.borderX);
             vertex.y = settings.graph.borderY + vertex.y * (height - 2 * settings.graph.borderY);
@@ -392,9 +292,7 @@ export default function () {
             vertex.move = (x, y) => {
                 vertex.sprite.position.x = x;
                 vertex.sprite.position.y = y;
-                for (const u of vertex.leaders) {
-                    drawEdges(u);
-                }
+                updateNeighborAreas(vertex);
             };
             vertex.stop = () => {
                 const scale = zoom / 100;
@@ -464,9 +362,11 @@ export default function () {
         }
 
         if (settings === null) {
-            settings = { props: null };
-            configure();
+            settings = nullSettings;
         }
+        settings.graph = merge(defaults.graph, settings.graph);
+        settings.vertex = merge(defaults.vertex, settings.vertex);
+        settings.edge = merge(defaults.edge, settings.edge);
 
         const areas = {};
 
@@ -502,14 +402,14 @@ export default function () {
                 }
                 const props = pop(edges[source], 'target');
                 if (!(u in areas)) {
-                    const neighbors = [];
+                    const neighbors = {};
                     const graphics = new PIXI.Graphics();
                     areas[u] = { neighbors, graphics };
-                    vertices[u].leaders.push(u);
+                    vertices[u].leaders.add(u);
                     app.stage.addChild(graphics);
                 }
-                areas[u].neighbors.push({ v, reversed, props });
-                vertices[v].leaders.push(u);
+                areas[u].neighbors[v] = { reversed, props };
+                vertices[v].leaders.add(u);
             }
             delete edges[source];
         }
@@ -598,10 +498,7 @@ export default function () {
 
         const resizeObserver = new ResizeObserver(() => {
             resize();
-            const leaders = updateVisibility();
-            for (const u of leaders) {
-                drawEdges(u);
-            }
+            updateVisibleAreas();
         });
         resizeObserver.observe(element);
 
@@ -616,7 +513,23 @@ export default function () {
 
         const main = document.createElement('div');
 
-        const [updatePanel, topPanel, bottomPanel] = Panel(filename, settings, vertices, areas, main, app, warn);
+        const refresh = {
+            background() {
+                app.renderer.backgroundColor = settings.graph.color;
+                app.renderer.backgroundAlpha = settings.graph.alpha;
+            },
+            sprite(scale, vertex) {
+                vertex.sprite.position.x = scale * vertex.x;
+                vertex.sprite.position.y = scale * vertex.y;
+                updateSprite(vertex);
+            },
+            edges() {
+                updateVisibility();
+                drawAreas();
+            },
+        };
+
+        const [updatePanel, topPanel, bottomPanel] = Panel(filename, app, settings, vertices, areas, refresh, main, warn);
 
         main.grab = (event) => {
             if (draggedVertex === null) {
@@ -655,10 +568,7 @@ export default function () {
                 if (dragging) {
                     app.stage.pivot.x = pivotX - (event.offsetX - mouseX);
                     app.stage.pivot.y = pivotY - (event.offsetY - mouseY);
-                    const leaders = updateVisibility();
-                    for (const u of leaders) {
-                        drawEdges(u);
-                    }
+                    updateVisibleAreas();
                 }
             } else {
                 const x = app.stage.pivot.x + event.offsetX;
@@ -684,28 +594,21 @@ export default function () {
                         defaultTexture = drawVertex(settings.vertex);
                         const scale = zoom / 100;
                         for (const vertex of Object.values(vertices)) {
-                            vertex.sprite.position.x = scale * vertex.x;
-                            vertex.sprite.position.y = scale * vertex.y;
-                            updateSprite(vertex);
+                            refresh.sprite(scale, vertex);
                         }
-                        updateVisibility();
-                        drawAreas();
+                        refresh.edges();
                         updatePanel(zoom);
                     }
                 } else {
                     if (result === -1) {
                         if (compare(hoveredVertex.alpha, 1) < 0) {
                             hoveredVertex.alpha += 0.1;
-                            for (const u of hoveredVertex.leaders) {
-                                drawEdges(u);
-                            }
+                            updateNeighborAreas(hoveredVertex);
                         }
                     } else {
                         if (compare(hoveredVertex.alpha, 0.1) > 0) {
                             hoveredVertex.alpha -= 0.1;
-                            for (const u of hoveredVertex.leaders) {
-                                drawEdges(u);
-                            }
+                            updateNeighborAreas(hoveredVertex);
                         }
                     }
                 }
@@ -733,23 +636,17 @@ export default function () {
                         vertex.sprite.position.y = vertex.y;
                         updateSprite(vertex);
                     }
-                    updateVisibility();
-                    drawAreas();
+                    refresh.edges();
                     updatePanel(zoom);
                 } else {
                     if (moved) {
-                        const leaders = updateVisibility();
-                        for (const u of leaders) {
-                            drawEdges(u);
-                        }
+                        updateVisibleAreas();
                     }
                 }
             } else {
                 if (compare(hoveredVertex.alpha, 1) !== 0) {
                     hoveredVertex.alpha = 1;
-                    for (const u of hoveredVertex.leaders) {
-                        drawEdges(u);
-                    }
+                    updateNeighborAreas(hoveredVertex);
                 }
             }
         });
@@ -758,7 +655,7 @@ export default function () {
         element.appendChild(main);
         element.appendChild(bottomPanel);
 
-        drawBackground();
+        refresh.background();
         drawAreas();
         updatePanel(zoom);
 

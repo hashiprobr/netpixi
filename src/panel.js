@@ -3,7 +3,7 @@ import { importProperties, importAnimation } from './importer';
 import { exportImage, exportVideo } from './exporter';
 
 
-export default function (filename, settings, vertices, areas, main, app, warn) {
+export default function (filename, app, settings, vertices, areas, refresh, main, warn) {
     function createButton(text) {
         const button = document.createElement('button');
         button.style.width = 'min-content';
@@ -12,17 +12,6 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
         button.style.lineHeight = 'normal';
         button.innerHTML = text;
         return button;
-    }
-
-    function enable() {
-        main.style.pointerEvents = 'auto';
-        propertiesButton.disabled = false;
-        animationButton.disabled = false;
-        networkButton.disabled = false;
-        imageButton.disabled = false;
-        videoButton.disabled = false;
-        playButton.disabled = false;
-        range.disabled = false;
     }
 
     function disable() {
@@ -36,10 +25,20 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
         range.disabled = true;
     }
 
+    function enable() {
+        main.style.pointerEvents = 'auto';
+        propertiesButton.disabled = false;
+        animationButton.disabled = false;
+        networkButton.disabled = false;
+        imageButton.disabled = false;
+        videoButton.disabled = false;
+        playButton.disabled = false;
+        range.disabled = false;
+    }
+
     const propertiesButton = createButton('Import Properties');
     propertiesButton.addEventListener('click', () => {
-        disable();
-        importProperties()
+        importProperties(settings, vertices, areas, refresh, scale, disable)
             .catch((error) => {
                 warn(error);
             })
@@ -49,7 +48,7 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
         disable();
-        importAnimation()
+        importAnimation(disable)
             .catch((error) => {
                 warn(error);
             })
@@ -59,9 +58,11 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     const networkButton = createButton('Export Network');
     networkButton.addEventListener('click', () => {
         disable();
+        const start = Date.now();
         save(filename, settings, vertices, areas)
             .catch((error) => {
                 warn(error);
+                console.log(`Saved in ${(Date.now() - start) / 1000} seconds`);
             })
             .finally(enable);
     });
@@ -117,13 +118,13 @@ export default function (filename, settings, vertices, areas, main, app, warn) {
     playButton.innerHTML = '▶';
     playButton.addEventListener('click', () => {
         if (playing) {
+            enable();
             playButton.innerHTML = '▶';
             playing = false;
-            enable();
         } else {
+            disable();
             playButton.innerHTML = '⏸';
             playing = true;
-            disable();
         }
     });
 

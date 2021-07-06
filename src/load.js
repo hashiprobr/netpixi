@@ -60,12 +60,13 @@ function stream(body, process) {
 }
 
 
-function loadLocal(process) {
+function loadLocal(initialize, process) {
     return new Promise((response, reject) => {
         const input = document.createElement('input');
         input.type = 'file';
 
         input.addEventListener('input', () => {
+            initialize();
             seek(input.files[0], process)
                 .then(response)
                 .catch(reject);
