@@ -46,7 +46,7 @@ function importProperties(settings, vertices, areas, refresh, scale, initialize)
                 vertex.y = overVertex.y;
             }
             vertex.props = union(vertex.props, overVertex.props);
-            refresh.sprite(scale, vertex);
+            refresh.sprite(vertex, scale);
         }
 
         for (const source in overEdges) {

@@ -62,9 +62,11 @@ export default function (filename, app, settings, vertices, areas, refresh, main
         save(filename, settings, vertices, areas)
             .catch((error) => {
                 warn(error);
-                console.log(`Saved in ${(Date.now() - start) / 1000} seconds`);
             })
-            .finally(enable);
+            .finally(() => {
+                console.log(`Saved in ${(Date.now() - start) / 1000} seconds`);
+                enable();
+            });
     });
 
     const imageButton = createButton('Export Image');

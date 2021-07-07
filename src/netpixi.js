@@ -5,17 +5,34 @@ import { compare } from './types';
 import defaults from './defaults';
 import { pop, merge, processGraph, nullSettings, validate } from './data';
 import { loadRemote } from './load';
-import Panel from './panel';
+import Panel from './Panel';
+import Proxy from './Proxy';
 
 
-export default function () {
-    let filename;
-    let output;
-    let element;
-    let normalize;
-    let broker;
-    let ratio;
-    let app;
+const proxies = {};
+
+
+function render(path, horizontal, vertical, normalize, broker, uid) {
+    const filename = path.slice(path.lastIndexOf('/') + 1);
+
+    const ratio = horizontal / vertical;
+
+    const output = document.createElement('p');
+    output.style.margin = '.5em';
+    output.style.color = '#ff0000';
+    output.style.userSelect = 'none';
+    output.addEventListener('click', () => {
+        output.innerHTML = '';
+    });
+
+    const element = document.getElementById(uid);
+    element.appendChild(output);
+
+    const app = new PIXI.Application({
+        autoDensity: true,
+        antialias: true,
+        resolution: 2,
+    });
 
     function warn(object) {
         if (typeof object === 'string') {
@@ -521,7 +538,10 @@ export default function () {
                 app.renderer.backgroundColor = settings.graph.color;
                 app.renderer.backgroundAlpha = settings.graph.alpha;
             },
-            sprite(scale, vertex) {
+            sprite(vertex, scale) {
+                if (scale === null) {
+                    scale = zoom / 100;
+                }
                 vertex.sprite.position.x = scale * vertex.x;
                 vertex.sprite.position.y = scale * vertex.y;
                 updateSprite(vertex);
@@ -597,7 +617,7 @@ export default function () {
                         defaultTexture = drawVertex(settings.vertex);
                         const scale = zoom / 100;
                         for (const vertex of Object.values(vertices)) {
-                            refresh.sprite(scale, vertex);
+                            refresh.sprite(vertex, scale);
                         }
                         refresh.edges();
                         updatePanel.scale(zoom);
@@ -659,46 +679,35 @@ export default function () {
         drawAreas();
         updatePanel.scale(zoom);
 
+        proxies[uid] = Proxy(settings, vertices, areas, refresh);
+
         main.appendChild(app.view);
     }
 
-    return function (path, horizontal, vertical, normalizePY, brokerPY, uid) {
-        filename = path.slice(path.lastIndexOf('/') + 1);
-
-        output = document.createElement('p');
-        output.style.margin = '.5em';
-        output.style.color = '#ff0000';
-        output.style.userSelect = 'none';
-        output.addEventListener('click', () => {
-            output.innerHTML = '';
+    const start = Date.now();
+    initialize();
+    loadRemote(path, process)
+        .then(() => {
+            console.log(`Network with ${n} vertices and ${m} edges`);
+            finalize();
+            console.log(`Loaded in ${(Date.now() - start) / 1000} seconds`);
+        })
+        .catch((error) => {
+            warn(error);
+            destroy();
         });
-
-        element = document.getElementById(uid);
-        element.appendChild(output);
-
-        normalize = JSON.parse(normalizePY.toLowerCase());
-
-        broker = JSON.parse(brokerPY.toLowerCase());
-
-        ratio = horizontal / vertical;
-
-        app = new PIXI.Application({
-            autoDensity: true,
-            antialias: true,
-            resolution: 2,
-        });
-
-        const start = Date.now();
-        initialize();
-        loadRemote(path, process)
-            .then(() => {
-                console.log(`${n} vertices, ${m} edges`);
-                finalize();
-                console.log(`Loaded in ${(Date.now() - start) / 1000} seconds`);
-            })
-            .catch((error) => {
-                warn(error);
-                destroy();
-            });
-    };
 }
+
+
+function send(localUID, globalUID, bytes) {
+    if (globalUID in proxies) {
+        const proxy = proxies[globalUID];
+        proxy.send(JSON.parse(atob(bytes)));
+    } else {
+        const element = document.getElementById(localUID);
+        element.innerHTML = 'Render not found. Run netpixi.render again.';
+    }
+}
+
+
+export default { proxies, render, send };

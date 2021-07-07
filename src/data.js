@@ -209,4 +209,4 @@ const validate = {
 };
 
 
-export { pop, merge, overwrite, union, processGraph, nullSettings, validate };
+export { pop, clean, merge, overwrite, union, processGraph, nullSettings, validate };
