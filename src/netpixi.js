@@ -1,5 +1,4 @@
 import * as PIXI from 'pixi.js';
-import { gsap } from 'gsap';
 
 import { compare, isString } from './types';
 import defaults from './defaults';

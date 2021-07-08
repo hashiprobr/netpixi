@@ -19,19 +19,30 @@ export default function (filename, app, settings, vertices, areas, animation, up
         return button;
     }
 
-    function disable() {
+    function disableExceptPlay() {
         propertiesButton.disabled = true;
         animationButton.disabled = true;
         networkButton.disabled = true;
         imageButton.disabled = true;
         videoButton.disabled = true;
-        playButton.disabled = true;
         range.disabled = true;
+        deleteButton.style.pointerEvents = 'none';
         disableMain();
     }
 
+    function disable() {
+        disableExceptPlay();
+        playButton.style.pointerEvents = 'none';
+    }
+
     function enable() {
+        playButton.style.pointerEvents = 'auto';
+        enableExceptPlay();
+    }
+
+    function enableExceptPlay() {
         enableMain();
+        deleteButton.style.pointerEvents = 'auto';
         range.disabled = false;
         playButton.disabled = false;
         videoButton.disabled = false;
@@ -56,7 +67,10 @@ export default function (filename, app, settings, vertices, areas, animation, up
             .catch((error) => {
                 warn(error);
             })
-            .finally(enable);
+            .finally(() => {
+                enable();
+                updatePanel.bottom();
+            });
     });
 
     const networkButton = createButton('Export Network');
@@ -123,6 +137,15 @@ export default function (filename, app, settings, vertices, areas, animation, up
                 fadeLabel.style.display = 'none';
             }
         },
+        bottom() {
+            if (animation.frames.length === 0) {
+                videoButton.style.display = 'none';
+                bottomPanel.style.display = 'none';
+            } else {
+                bottomPanel.style.display = 'flex';
+                videoButton.style.display = 'inline';
+            }
+        },
     };
 
     const topPanel = document.createElement('div');
@@ -138,18 +161,18 @@ export default function (filename, app, settings, vertices, areas, animation, up
     let playing = false;
 
     const playButton = document.createElement('a');
-    playButton.style.margin = '.25em .5em .5em .75em';
+    playButton.style.margin = '.25em .5em .5em';
     playButton.style.textDecoration = 'none';
     playButton.style.userSelect = 'none';
     playButton.style.cursor = 'pointer';
     playButton.innerHTML = '▶';
     playButton.addEventListener('click', () => {
         if (playing) {
-            enable();
-            playButton.innerHTML = '▶';
             playing = false;
+            playButton.innerHTML = '▶';
+            enableExceptPlay();
         } else {
-            disable();
+            disableExceptPlay();
             playButton.innerHTML = '⏸';
             playing = true;
         }
@@ -159,10 +182,18 @@ export default function (filename, app, settings, vertices, areas, animation, up
     range.type = 'range';
     range.style.flexGrow = 1;
 
+    const deleteButton = document.createElement('a');
+    deleteButton.style.margin = '.25em .5em .5em';
+    deleteButton.style.textDecoration = 'none';
+    deleteButton.style.userSelect = 'none';
+    deleteButton.style.cursor = 'pointer';
+    deleteButton.innerHTML = '🗙';
+
     const bottomPanel = document.createElement('div');
     bottomPanel.style.display = 'none';
     bottomPanel.appendChild(playButton);
     bottomPanel.appendChild(range);
+    bottomPanel.appendChild(deleteButton);
 
     return [updatePanel, topPanel, bottomPanel];
 }
