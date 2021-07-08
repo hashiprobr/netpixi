@@ -140,11 +140,14 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
         let rightY;
 
         function drawTexture(props) {
+            const size = vertexScale * props.size;
             const graphics = new PIXI.Graphics()
                 .beginFill(props.color, 1)
-                .drawCircle(0, 0, vertexScale * props.size)
+                .drawCircle(0, 0, size)
                 .endFill();
-            return app.renderer.generateTexture(graphics);
+            const texture = app.renderer.generateTexture(graphics);
+            texture.size = size;
+            return texture;
         }
 
         function drawEdges(u) {
@@ -160,40 +163,44 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
                     source = u;
                     target = v;
                 }
-                const sourceVisible = vertices[source].visibleX && vertices[source].visibleY;
-                const targetVisible = vertices[target].visibleX && vertices[target].visibleY;
-                if (sourceVisible || targetVisible) {
-                    const sx = vertices[source].sprite.position.x;
-                    const sy = vertices[source].sprite.position.y;
-                    const tx = vertices[target].sprite.position.x;
-                    const ty = vertices[target].sprite.position.y;
-                    if (compare(sx, tx) !== 0 || compare(sy, ty) !== 0) {
-                        const props = merge(settings.edge, neighbor.props);
-                        let alpha = props.alpha * vertices[source].alpha * vertices[target].alpha;
-                        if (!sourceVisible || !targetVisible) {
-                            alpha *= settings.graph.edgeFade;
-                        }
-                        graphics.lineStyle({
-                            width: edgeScale * props.width,
-                            color: props.color,
-                            alpha: Math.min(alpha, 1),
-                        });
-                        graphics.moveTo(sx, sy);
-                        const c1 = props.curve1;
-                        const c2 = props.curve2;
-                        if (compare(c1, 0) !== 0 || compare(c2, 0) !== 0) {
-                            const dx = 0.2 * (tx - sx);
-                            const dy = 0.2 * (ty - sy);
-                            const nx = -dy;
-                            const ny = dx;
-                            const x1 = sx + dx + c1 * nx;
-                            const y1 = sy + dy + c1 * ny;
-                            const x2 = tx - dx + c2 * nx;
-                            const y2 = ty - dy + c2 * ny;
-                            graphics.bezierCurveTo(x1, y1, x2, y2, tx, ty);
-                        } else {
-                            graphics.lineTo(tx, ty);
-                        }
+                const s = vertices[source];
+                const t = vertices[target];
+                const sx = s.sprite.position.x;
+                const sy = s.sprite.position.y;
+                const tx = t.sprite.position.x;
+                const ty = t.sprite.position.y;
+                let dx = tx - sx;
+                let dy = ty - sy;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minimum = (s.sprite.texture.size + t.sprite.texture.size) / 2;
+                if (compare(distance, minimum) > 0) {
+                    const props = merge(settings.edge, neighbor.props);
+                    const sourceVisible = s.visibleX && s.visibleY;
+                    const targetVisible = t.visibleX && t.visibleY;
+                    let alpha = props.alpha * s.alpha * t.alpha;
+                    if (!sourceVisible || !targetVisible) {
+                        alpha *= settings.graph.edgeFade;
+                    }
+                    graphics.lineStyle({
+                        width: Math.min(edgeScale * props.width, s.sprite.texture.size, t.sprite.texture.size),
+                        color: props.color,
+                        alpha: Math.min(alpha, 1),
+                    });
+                    graphics.moveTo(sx, sy);
+                    const c1 = props.curve1;
+                    const c2 = props.curve2;
+                    if (compare(c1, 0) !== 0 || compare(c2, 0) !== 0) {
+                        dx *= 0.2;
+                        dy *= 0.2;
+                        const nx = -dy;
+                        const ny = dx;
+                        const x1 = sx + dx + c1 * nx;
+                        const y1 = sy + dy + c1 * ny;
+                        const x2 = tx - dx + c2 * nx;
+                        const y2 = ty - dy + c2 * ny;
+                        graphics.bezierCurveTo(x1, y1, x2, y2, tx, ty);
+                    } else {
+                        graphics.lineTo(tx, ty);
                     }
                 }
             }
