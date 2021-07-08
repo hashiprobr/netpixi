@@ -3,7 +3,7 @@ import { importProperties, importAnimation } from './importer';
 import { exportImage, exportVideo } from './exporter';
 
 
-export default function (filename, app, settings, vertices, areas, refresh, main, warn) {
+export default function (filename, app, settings, vertices, areas, updates, main, warn) {
     function createButton(text) {
         const button = document.createElement('button');
         button.style.width = 'min-content';
@@ -38,7 +38,7 @@ export default function (filename, app, settings, vertices, areas, refresh, main
 
     const propertiesButton = createButton('Import Properties');
     propertiesButton.addEventListener('click', () => {
-        importProperties(settings, vertices, areas, refresh, scale, disable)
+        importProperties(settings, vertices, areas, updates, disable)
             .catch((error) => {
                 warn(error);
             })

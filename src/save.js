@@ -9,23 +9,24 @@ if (!streamSaver.WritableStream) {
 
 
 export default function (filename, settings, vertices, areas) {
-    return new Promise((response, reject) => {
+    return new Promise((resolve) => {
         const stream = streamSaver.createWriteStream(filename);
         const writer = stream.getWriter();
 
         window.addEventListener('unload', () => {
-            try {
-                writer.abort();
-            } catch (error) {
-                reject(error);
-            }
+            writer.abort();
         });
 
         function process(chunk) {
             writer.write(chunk);
         }
 
-        const [pushLine, pushEnd] = useDeflate(process, response);
+        function finalize() {
+            writer.close();
+            resolve();
+        }
+
+        const [pushLine, pushEnd] = useDeflate(process, finalize);
 
         pushLine('settings', {}, settings.props);
 
@@ -49,7 +50,5 @@ export default function (filename, settings, vertices, areas) {
         }
 
         pushEnd();
-
-        writer.close();
     });
 }

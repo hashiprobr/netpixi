@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 
 
 function exportImage(filename, settings, app, scale) {
-    return new Promise((response) => {
+    return new Promise((resolve) => {
         const bounds = app.stage.getBounds();
 
         const width = bounds.width + 2 * scale * settings.graph.borderX;
@@ -31,14 +31,14 @@ function exportImage(filename, settings, app, scale) {
 
         texture.destroy();
 
-        response();
+        resolve();
     });
 }
 
 
 function exportVideo() {
-    return new Promise((response) => {
-        response();
+    return new Promise((resolve) => {
+        resolve();
     });
 }
 

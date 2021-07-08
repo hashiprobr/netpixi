@@ -1,20 +1,20 @@
 import pako from 'pako';
 
 
-function useInflate(process, response) {
+function useInflate(process, finalize) {
     const inflate = new pako.Inflate({ to: 'string' });
 
-    let line = 0;
+    let i = 0;
 
     function fail(message) {
-        throw `Line ${line}: ${message}`;
+        throw `Line ${i}: ${message}`;
     }
 
-    function parse(value) {
-        line++;
+    function parse(line) {
+        i++;
         let data;
         try {
-            data = JSON.parse(value);
+            data = JSON.parse(line);
         } catch (error) {
             fail(error.message);
         }
@@ -49,7 +49,7 @@ function useInflate(process, response) {
             if (buffer.length > 0) {
                 parse(buffer);
             }
-            response();
+            finalize();
         } else {
             if (inflate.msg.length === 0) {
                 throw 'Invalid ZipNet file';
@@ -59,15 +59,15 @@ function useInflate(process, response) {
         }
     };
 
-    function push(data) {
-        inflate.push(data, true);
+    function push(chunk, flush) {
+        inflate.push(chunk, flush);
     }
 
     return push;
 }
 
 
-function useDeflate(process, response) {
+function useDeflate(process, finalize) {
     const deflate = new pako.Deflate({ gzip: true });
 
     const encoder = new TextEncoder();
@@ -78,7 +78,7 @@ function useDeflate(process, response) {
 
     deflate.onEnd = (status) => {
         if (status === 0) {
-            response();
+            finalize();
         } else {
             if (deflate.msg.length === 0) {
                 throw 'Invalid ZipNet file';

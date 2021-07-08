@@ -1,8 +1,17 @@
+import { compare } from './types';
 import { overwrite, union, processGraph, validate } from './data';
 import { loadLocal } from './load';
 
 
-function importProperties(settings, vertices, areas, refresh, scale, initialize) {
+function importProperties(settings, vertices, areas, updates, initialize) {
+    const {
+        updateBackground,
+        updateMultipleSprites,
+        updateMultiplePositionsAndSprites,
+        updateMultipleAreas,
+        buildVisibility,
+    } = updates;
+
     let overSettings;
     let overVertices;
     let overEdges;
@@ -30,23 +39,43 @@ function importProperties(settings, vertices, areas, refresh, scale, initialize)
     }
 
     function finalize() {
-        if (overSettings !== null) {
+        let ids;
+        let leaders;
+
+        if (overSettings === null) {
+            ids = new Set();
+            leaders = new Set();
+        } else {
             overwrite(settings.graph, overSettings.graph);
             overwrite(settings.vertex, overSettings.vertex);
             overwrite(settings.edge, overSettings.edge);
-            refresh.background();
+            settings.props = union(settings.props, overSettings.props);
+            updateBackground();
+            ids = new Set(Object.keys(vertices));
+            leaders = new Set(Object.keys(areas));
         }
+
+        let moved = false;
 
         for (const [id, overVertex] of Object.entries(overVertices)) {
             const vertex = vertices[id];
             if (overVertex.x !== null) {
-                vertex.x = overVertex.x;
+                if (compare(vertex.x, overVertex.x) !== 0) {
+                    vertex.x = overVertex.x;
+                    moved = true;
+                }
             }
             if (overVertex.y !== null) {
-                vertex.y = overVertex.y;
+                if (compare(vertex.y, overVertex.y) !== 0) {
+                    vertex.y = overVertex.y;
+                    moved = true;
+                }
             }
             vertex.props = union(vertex.props, overVertex.props);
-            refresh.sprite(vertex, scale);
+            ids.add(id);
+            for (const u of vertex.leaders) {
+                leaders.add(u);
+            }
         }
 
         for (const source in overEdges) {
@@ -54,13 +83,22 @@ function importProperties(settings, vertices, areas, refresh, scale, initialize)
                 let neighbor;
                 if (vertices[target].leaders.has(source)) {
                     neighbor = areas[source].neighbors[target];
+                    leaders.add(source);
                 } else {
                     neighbor = areas[target].neighbors[source];
+                    leaders.add(target);
                 }
                 neighbor.props = union(neighbor.props, overEdges[source][target]);
             }
         }
-        refresh.edges();
+
+        if (moved) {
+            updateMultiplePositionsAndSprites(ids);
+            buildVisibility();
+        } else {
+            updateMultipleSprites(ids);
+            updateMultipleAreas(leaders);
+        }
     }
 
     return loadLocal(() => {

@@ -2,8 +2,8 @@ import { useInflate } from './zipnet';
 
 
 function seek(file, process) {
-    return new Promise((response, reject) => {
-        const push = useInflate(process, response);
+    return new Promise((resolve, reject) => {
+        const push = useInflate(process, resolve);
 
         const chunkSize = 16384;
 
@@ -11,16 +11,14 @@ function seek(file, process) {
             const reader = new FileReader();
 
             reader.addEventListener('load', () => {
+                const flush = end >= file.size;
                 try {
-                    push(new Uint8Array(reader.result));
-                    const nextEnd = end + chunkSize;
-                    if (nextEnd < file.size) {
-                        read(end, nextEnd, false);
-                    } else {
-                        read(end, file.size, true);
-                    }
+                    push(new Uint8Array(reader.result), flush);
                 } catch (error) {
                     reject(error);
+                }
+                if (!flush) {
+                    read(end, end + chunkSize);
                 }
             });
 
@@ -37,13 +35,15 @@ function seek(file, process) {
 
 
 function stream(body, process) {
-    return new Promise((response) => {
-        const push = useInflate(process, response);
+    return new Promise((resolve, reject) => {
+        const push = useInflate(process, resolve);
 
         const reader = body.getReader();
 
         function read() {
-            reader.read().then(pipe);
+            return reader.read()
+                .then(pipe)
+                .catch(reject);
         }
 
         function pipe({ done, value }) {
@@ -61,14 +61,14 @@ function stream(body, process) {
 
 
 function loadLocal(initialize, process) {
-    return new Promise((response, reject) => {
+    return new Promise((resolve, reject) => {
         const input = document.createElement('input');
         input.type = 'file';
 
         input.addEventListener('input', () => {
             initialize();
             seek(input.files[0], process)
-                .then(response)
+                .then(resolve)
                 .catch(reject);
         });
 
