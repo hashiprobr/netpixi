@@ -12,10 +12,12 @@ const isBoolean = (value) => typeof value === 'boolean';
 const isFinite = (value) => typeof value === 'number' && !Number.isNaN(value) && Number.isFinite(value);
 const isNonNegative = (value) => isFinite(value) && compare(value, 0) >= 0;
 const isPositive = (value) => isFinite(value) && compare(value, 0) > 0;
+const isNonNegativeInteger = (value) => Number.isInteger(value) && value >= 0;
 const isColor = (value) => Number.isInteger(value) && value >= 0x000000 && value <= 0xffffff;
 const isAlpha = (value) => isNonNegative(value) && compare(value, 1) <= 0;
 const isString = (value) => typeof value === 'string';
 const isObject = (value) => typeof value === 'object';
+const isArray = (value) => Array.isArray(value);
 
 const conditions = {
     settings: {
@@ -44,6 +46,11 @@ const conditions = {
         curve1: isFinite,
         curve2: isFinite,
     },
+    frame: {
+        graph: isObject,
+        vertices: isArray,
+        edges: isArray,
+    },
 };
 
-export { compare, isFinite, isString, isObject, conditions };
+export { compare, isFinite, isNonNegativeInteger, isString, isObject, conditions };

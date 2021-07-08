@@ -3,7 +3,7 @@ import { importProperties, importAnimation } from './importer';
 import { exportImage, exportVideo } from './exporter';
 
 
-export default function (filename, app, settings, vertices, areas, main, updates, warn) {
+export default function (filename, app, settings, vertices, areas, frames, main, updates, warn) {
     function createButton(text) {
         const button = document.createElement('button');
         button.style.width = 'min-content';
@@ -47,7 +47,7 @@ export default function (filename, app, settings, vertices, areas, main, updates
 
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
-        importAnimation(disable)
+        importAnimation(frames, disable)
             .catch((error) => {
                 warn(error);
             })

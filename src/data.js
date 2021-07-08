@@ -1,4 +1,4 @@
-import { isFinite, isString, isObject, conditions } from './types';
+import { isFinite, isNonNegativeInteger, isString, isObject, conditions } from './types';
 
 
 function get(props, name) {
@@ -19,16 +19,12 @@ function pop(object, name) {
 }
 
 
-function tightPop(data, name) {
-    if (name in data) {
-        const value = data[name];
-        if (isString(value)) {
-            delete data[name];
-            return value;
-        }
-        throw `${name} must be a string`;
+function propsPop(data) {
+    const props = pop(data, 'props');
+    if (!isObject(props)) {
+        throw 'props must be an object';
     }
-    throw `missing ${name}`;
+    return props;
 }
 
 
@@ -43,6 +39,34 @@ function loosePop(props, name) {
         }
     }
     return null;
+}
+
+
+function tightPop(data, name) {
+    if (name in data) {
+        const value = data[name];
+        delete data[name];
+        return value;
+    }
+    throw `missing ${name}`;
+}
+
+
+function tightPopStr(data, name) {
+    const value = tightPop(data, name);
+    if (isString(value)) {
+        return value;
+    }
+    throw `${name} must be a string`;
+}
+
+
+function tightPopInt(data, name) {
+    const value = tightPop(data, name);
+    if (isNonNegativeInteger(value)) {
+        return value;
+    }
+    throw `${name} must be a non-negative integer`;
 }
 
 
@@ -101,10 +125,7 @@ function union(base, over) {
 
 
 function processGraph(data, processSettings, processVertex, processEdge) {
-    let props = pop(data, 'props');
-    if (!isObject(props)) {
-        throw 'props must be an object';
-    }
+    let props = propsPop(data);
     switch (data.type) {
         case 'settings':
             props = clean(props, conditions.settings);
@@ -154,7 +175,7 @@ const validate = {
         }
     },
     receivedId(data) {
-        return tightPop(data, 'id');
+        return tightPopStr(data, 'id');
     },
     notMissingVertex(id, vertices) {
         if (!(id in vertices)) {
@@ -173,14 +194,14 @@ const validate = {
         return loosePop(props, 'y');
     },
     receivedSource(data, vertices) {
-        const source = tightPop(data, 'source');
+        const source = tightPopStr(data, 'source');
         if (!(source in vertices)) {
             throw `missing source with id ${source}`;
         }
         return source;
     },
     receivedTarget(data, vertices, source) {
-        const target = tightPop(data, 'target');
+        const target = tightPopStr(data, 'target');
         if (!(target in vertices)) {
             throw `missing target with id ${target}`;
         }
@@ -213,7 +234,43 @@ const validate = {
             throw `existing edge with source ${target} and target ${source} but graph is not directed`;
         }
     },
+    receivedDuration(object) {
+        return tightPopInt(object, 'duration');
+    },
+    receivedGraph(graph, overGraph) {
+        for (const name in conditions.graph) {
+            if (name in overGraph) {
+                if (conditions.graph[name](overGraph[name])) {
+                    graph[name] = overGraph[name];
+                } else {
+                    throw `graph has invalid ${name}`;
+                }
+            }
+        }
+    },
+    receivedVertex(vertex, overVertex) {
+        for (const name in conditions.vertex) {
+            if (name in overVertex) {
+                if (conditions.vertex[name](overVertex[name])) {
+                    vertex[name] = overVertex[name];
+                } else {
+                    throw `vertex with id ${vertex.id} has invalid ${name}`;
+                }
+            }
+        }
+    },
+    receivedEdge(edge, overEdge) {
+        for (const name in conditions.edge) {
+            if (name in overEdge) {
+                if (conditions.edge[name](overEdge[name])) {
+                    edge[name] = overEdge[name];
+                } else {
+                    throw `edge with source ${edge.source} and target ${edge.target} has invalid ${name}`;
+                }
+            }
+        }
+    },
 };
 
 
-export { get, pop, clean, merge, overwrite, union, processGraph, nullSettings, validate };
+export { get, pop, propsPop, clean, merge, overwrite, union, processGraph, nullSettings, validate };

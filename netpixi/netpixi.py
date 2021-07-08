@@ -10,18 +10,21 @@ from IPython.core.display import display, HTML
 
 class Base(ABC):
     @abstractmethod
-    def _send(self, data):
+    def _send(self, array):
         pass
 
     def _push(self, type, data, props):
-        for key, value in data.items():
-            if not isinstance(value, str):
-                raise TypeError(f'{key} must be a string')
         data['type'] = type
         if props:
             data['props'] = props
         line = f'{json.dumps(data)}\n'
         self._send(line.encode())
+
+    def _push_str(self, type, data, props):
+        for key, value in data.items():
+            if not isinstance(value, str):
+                raise TypeError(f'{key} must be a string')
+        self._push(type, data, props)
 
     def _validate(self, props, key):
         if key in props and not isinstance(props[key], (int, float)):
@@ -34,19 +37,25 @@ class Base(ABC):
         if kwargs is not None:
             self._validate(kwargs, 'x')
             self._validate(kwargs, 'y')
-        self._push('vertex', {'id': id}, kwargs)
+        self._push_str('vertex', {'id': id}, kwargs)
 
     def send_edge(self, source, target, **kwargs):
-        self._push('edge', {'source': source, 'target': target}, kwargs)
+        self._push_str('edge', {'source': source, 'target': target}, kwargs)
+
+    def send_frame(self, duration, **kwargs):
+        if not isinstance(duration, int):
+            raise TypeError('duration must be an integer')
+        if duration < 0:
+            raise ValueError('duration must be non-negative')
+        self._push('frame', {'duration': duration}, kwargs)
 
 
 class File(Base):
-    def _send(self, bytes):
-        self.file.write(bytes)
+    def _send(self, array):
+        self.file.write(array)
 
-    def __init__(self, path, **kwargs):
+    def __init__(self, path):
         self.file = gzip.open(path, 'wb')
-        self.send_settings(**kwargs)
 
     def __enter__(self):
         return self
@@ -56,8 +65,8 @@ class File(Base):
 
 
 class Render(Base):
-    def _send(self, bytes):
-        run(f"netpixi.send({{}}, '{self.uid}', '{b64encode(bytes).decode()}');")
+    def _send(self, array):
+        run(f"netpixi.send({{}}, '{self.uid}', '{b64encode(array).decode()}');")
 
     def __init__(self, uid):
         self.uid = uid
@@ -73,7 +82,13 @@ def run(script):
 
 
 def open(path, **kwargs):
-    return File(path, **kwargs)
+    file = File(path)
+    file.send_settings(**kwargs)
+    return file
+
+
+def open_animation(path):
+    return File(path)
 
 
 def render(path, horizontal=16, vertical=9, normalize=True, broker=False):

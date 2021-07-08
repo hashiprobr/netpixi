@@ -736,11 +736,13 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
 
         initializeVisibility();
 
+        const frames = [];
+
         const main = document.createElement('div');
 
         connectMouseToMain();
 
-        const [updatePanel, topPanel, bottomPanel] = Panel(filename, app, settings, vertices, areas, main, updates, warn);
+        const [updatePanel, topPanel, bottomPanel] = Panel(filename, app, settings, vertices, areas, frames, main, updates, warn);
 
         updatePanel.scale(zoom);
 

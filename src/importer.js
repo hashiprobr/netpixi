@@ -1,5 +1,5 @@
-import { compare } from './types';
-import { overwrite, union, processGraph, validate } from './data';
+import { compare, conditions } from './types';
+import { pop, propsPop, clean, overwrite, union, processGraph, validate } from './data';
 import { loadLocal } from './load';
 
 
@@ -114,13 +114,82 @@ function importProperties(settings, vertices, areas, updates, disable) {
 }
 
 
-function importAnimation(disable) {
+function importAnimation(vertices, areas, frames, disable) {
+    let ids;
+    let edges;
+
     function initialize() {
         disable();
+        ids = new Set();
+        edges = {};
     }
 
     function process(data) {
-        console.log(data);
+        if (data.type !== 'frame') {
+            throw 'type must be frame';
+        }
+        let props = propsPop(data);
+        props = clean(props, conditions.frame);
+
+        const duration = validate.receivedDuration(data);
+
+        const frame = {
+            duration: duration,
+            graph: {},
+            vertices: [],
+            edges: [],
+        };
+
+        if (props === null) {
+            return;
+        }
+
+        const overGraph = pop(props, 'graph');
+        if (overGraph !== null) {
+            validate.receivedGraph(frame.graph, props);
+        }
+
+        const overVertices = pop(props, 'vertices');
+        if (overVertices !== null) {
+            for (const overVertex of overVertices) {
+                const vertex = {};
+                vertex.id = validate.receivedId(overVertex);
+                validate.notMissingVertex(vertex.id, vertices);
+                if (ids.has(vertex.id)) {
+                    throw `duplicate vertex with id ${vertex.id}`;
+                } else {
+                    ids.add(vertex.id);
+                }
+                const x = validate.receivedX(overVertex);
+                if (x !== null) {
+                    vertex.x = x;
+                }
+                const y = validate.receivedY(overVertex);
+                if (y !== null) {
+                    vertex.y = y;
+                }
+                validate.receivedVertex(vertex, overVertex);
+            }
+        }
+
+        const overEdges = pop(props, 'edges');
+        if (overEdges !== null) {
+            for (const overEdge in overEdges) {
+                const edge = {};
+                edge.source = validate.receivedSource(overEdge, vertices);
+                edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
+                validate.notMissingEdge(edge.source, edge.target, vertices, areas);
+                if (!(edge.source in edges)) {
+                    edges[edge.source] = new Set();
+                }
+                if (edges[edge.source].has(edge.target)) {
+                    throw `duplicate edge with source ${edge.source} and target ${edge.target}`;
+                } else {
+                    edges[edge.source].add(edge.target);
+                }
+                validate.receivedEdge(edge, overEdge);
+            }
+        }
     }
 
     function finalize() {
