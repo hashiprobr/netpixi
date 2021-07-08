@@ -35,10 +35,12 @@ function tightPop(data, name) {
 function loosePop(props, name) {
     if (props !== null) {
         const value = pop(props, name);
-        if (isFinite(value)) {
-            return value;
+        if (value !== null) {
+            if (isFinite(value)) {
+                return value;
+            }
+            throw `${name} must be null or a finite number`;
         }
-        throw `${name} must be a finite number`;
     }
     return null;
 }
