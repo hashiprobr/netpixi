@@ -114,10 +114,19 @@ function importProperties(settings, vertices, areas, updates, disable) {
 
 
 function importAnimation(disable) {
+    function initialize() {
+        disable();
+    }
+
     function process(data) {
         console.log(data);
     }
-    return loadLocal(disable, process);
+
+    function finalize() {
+    }
+
+    return loadLocal(initialize, process)
+        .then(finalize);
 }
 
 

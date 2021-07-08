@@ -47,7 +47,6 @@ export default function (filename, app, settings, vertices, areas, main, updates
 
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
-        disable();
         importAnimation(disable)
             .catch((error) => {
                 warn(error);
@@ -72,7 +71,7 @@ export default function (filename, app, settings, vertices, areas, main, updates
     const imageButton = createButton('Export Image');
     imageButton.addEventListener('click', () => {
         disable();
-        exportImage(filename, settings, app, scale)
+        exportImage(filename, app, settings, scale)
             .catch((error) => {
                 warn(error);
             })
