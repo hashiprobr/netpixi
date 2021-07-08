@@ -3,18 +3,25 @@ import { overwrite, union, processGraph, validate } from './data';
 import { loadLocal } from './load';
 
 
-function importProperties(settings, vertices, areas, updates, initialize) {
+function importProperties(settings, vertices, areas, updates, disable) {
     const {
         updateBackground,
         updateMultipleSprites,
         updateMultiplePositionsAndSprites,
         updateMultipleAreas,
-        buildVisibility,
+        initializeVisibility,
     } = updates;
 
     let overSettings;
     let overVertices;
     let overEdges;
+
+    function initialize() {
+        disable();
+        overSettings = null;
+        overVertices = {};
+        overEdges = {};
+    }
 
     function process(d) {
         processGraph(d,
@@ -94,28 +101,23 @@ function importProperties(settings, vertices, areas, updates, initialize) {
 
         if (moved) {
             updateMultiplePositionsAndSprites(ids);
-            buildVisibility();
+            initializeVisibility();
         } else {
             updateMultipleSprites(ids);
             updateMultipleAreas(leaders);
         }
     }
 
-    return loadLocal(() => {
-        initialize();
-        overSettings = null;
-        overVertices = {};
-        overEdges = {};
-    }, process)
+    return loadLocal(initialize, process)
         .then(finalize);
 }
 
 
-function importAnimation(initialize) {
+function importAnimation(disable) {
     function process(data) {
         console.log(data);
     }
-    return loadLocal(initialize, process);
+    return loadLocal(disable, process);
 }
 
 

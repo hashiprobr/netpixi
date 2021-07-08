@@ -3,7 +3,7 @@ import { importProperties, importAnimation } from './importer';
 import { exportImage, exportVideo } from './exporter';
 
 
-export default function (filename, app, settings, vertices, areas, updates, main, warn) {
+export default function (filename, app, settings, vertices, areas, main, updates, warn) {
     function createButton(text) {
         const button = document.createElement('button');
         button.style.width = 'min-content';
@@ -106,16 +106,16 @@ export default function (filename, app, settings, vertices, areas, updates, main
             scale = zoom / 100;
             zoomLabel.innerHTML = `Zoom: ${zoom}%`;
         },
+        fadeChange(vertex) {
+            const fade = Math.round(100 * vertex.alpha);
+            fadeLabel.innerHTML = `Fade: ${fade}%`;
+        },
         fadeToggle(visible) {
             if (visible) {
                 fadeLabel.style.display = 'block';
             } else {
                 fadeLabel.style.display = 'none';
             }
-        },
-        fadeChange(vertex) {
-            const fade = Math.round(100 * vertex.alpha);
-            fadeLabel.innerHTML = `Fade: ${fade}%`;
         },
     };
 

@@ -78,7 +78,7 @@ def open(path, props=None):
     return File(path, props)
 
 
-def render(path, horizontal=16, vertical=9, normalize=False, broker=False):
+def render(path, horizontal=16, vertical=9, normalize=True, broker=False):
     if not isinstance(horizontal, int) or not isinstance(vertical, int):
         raise TypeError('ratio dimensions must be integers')
     if horizontal <= 0 or vertical <= 0:

@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { gsap } from 'gsap';
 
-import { compare } from './types';
+import { compare, isString } from './types';
 import defaults from './defaults';
 import { pop, merge, processGraph, nullSettings, validate } from './data';
 import { loadRemote } from './load';
@@ -35,7 +35,7 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
     });
 
     function warn(object) {
-        if (typeof object === 'string') {
+        if (isString(object)) {
             output.innerHTML = object;
         } else {
             output.innerHTML = 'Internal script error';
@@ -88,6 +88,7 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
                 const id = validate.receivedId(data);
                 validate.notDuplicateVertex(id, vertices);
                 const x = validate.receivedX(props);
+                const y = validate.receivedY(props);
                 if (x !== null) {
                     if (minX > x) {
                         minX = x;
@@ -96,7 +97,6 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
                         maxX = x;
                     }
                 }
-                const y = validate.receivedY(props);
                 if (y !== null) {
                     if (minY > y) {
                         minY = y;
@@ -127,28 +127,19 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
         let width;
         let height;
 
-        let zoom = 100;
+        let zoom;
+        let edgeScale;
+        let vertexScale;
 
-        let hoveredVertex = null;
-        let draggedVertex = null;
-        let dragging = false;
+        let defaultTexture;
 
-        let mouseX;
-        let mouseY;
+        let leftX;
+        let rightX;
 
-        let pivotX;
-        let pivotY;
+        let leftY;
+        let rightY;
 
-        function resize() {
-            rect = element.getBoundingClientRect();
-            if (width !== rect.width) {
-                width = rect.width;
-                height = width / ratio;
-                app.renderer.resize(width, height);
-            }
-        }
-
-        function drawVertex(props) {
+        function drawTexture(props) {
             const graphics = new PIXI.Graphics()
                 .beginFill(props.color, 1)
                 .drawCircle(0, 0, vertexScale * props.size)
@@ -214,9 +205,22 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
             }
         }
 
+        function updateSize() {
+            rect = element.getBoundingClientRect();
+            if (width !== rect.width) {
+                width = rect.width;
+                height = width / ratio;
+                app.renderer.resize(width, height);
+            }
+        }
+
         function updateBackground() {
             app.renderer.backgroundColor = settings.graph.color;
             app.renderer.backgroundAlpha = settings.graph.alpha;
+        }
+
+        function updateDefaultTexture() {
+            defaultTexture = drawTexture(settings.vertex);
         }
 
         function updateSingleSprite(vertex) {
@@ -224,7 +228,7 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
             if (props === settings.vertex) {
                 vertex.sprite.texture = defaultTexture;
             } else {
-                vertex.sprite.texture = drawVertex(props);
+                vertex.sprite.texture = drawTexture(props);
             }
         }
 
@@ -318,7 +322,7 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
             updateMultipleAreas(vertex.leaders);
         }
 
-        function updateVisibilityAndNeighborAreas() {
+        function updateVisibilityAndAffectedAreas() {
             const leaders = updateVisibility();
             updateMultipleAreas(leaders);
         }
@@ -328,9 +332,218 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
             drawAreas();
         }
 
-        function buildSprite(vertex) {
-            vertex.x = settings.graph.borderX + vertex.x * (width - 2 * settings.graph.borderX);
-            vertex.y = settings.graph.borderY + vertex.y * (height - 2 * settings.graph.borderY);
+        function connectMouse() {
+            let hoveredVertex = null;
+            let draggedVertex = null;
+            let dragging = false;
+
+            let mouseX;
+            let mouseY;
+
+            let pivotX;
+            let pivotY;
+
+            function toSprite(vertex) {
+                vertex.move = (x, y) => {
+                    vertex.sprite.position.x = x;
+                    vertex.sprite.position.y = y;
+                    updateNeighborAreas(vertex);
+                };
+                vertex.stop = () => {
+                    const scale = zoom / 100;
+                    vertex.x = vertex.sprite.position.x / scale;
+                    vertex.y = vertex.sprite.position.y / scale;
+                    if (n > 0) {
+                        let i;
+                        let j;
+                        let id;
+                        i = vertex.indexX;
+                        id = idsX[i];
+                        for (j = i; j > 0; j--) {
+                            if (compare(vertex.x, vertices[idsX[j - 1]].x) >= 0) {
+                                break;
+                            }
+                            idsX[j] = idsX[j - 1];
+                        }
+                        i = j;
+                        for (j = i; j < n - 1; j++) {
+                            if (compare(vertex.x, vertices[idsX[j + 1]].x) <= 0) {
+                                break;
+                            }
+                            idsX[j] = idsX[j + 1];
+                        }
+                        i = j;
+                        idsX[i] = id;
+                        vertex.indexX = i;
+                        i = vertex.indexY;
+                        id = idsY[i];
+                        for (j = i; j > 0; j--) {
+                            if (compare(vertex.y, vertices[idsY[j - 1]].y) >= 0) {
+                                break;
+                            }
+                            idsY[j] = idsY[j - 1];
+                        }
+                        i = j;
+                        for (j = i; j < n - 1; j++) {
+                            if (compare(vertex.y, vertices[idsY[j + 1]].y) <= 0) {
+                                break;
+                            }
+                            idsY[j] = idsY[j + 1];
+                        }
+                        i = j;
+                        idsY[i] = id;
+                        vertex.indexY = i;
+                    }
+                    draggedVertex = null;
+                };
+                vertex.sprite.on('mousedown', () => {
+                    draggedVertex = vertex;
+                });
+                vertex.sprite.on('mouseover', () => {
+                    if (hoveredVertex === null) {
+                        hoveredVertex = vertex;
+                        updatePanel.fadeChange(vertex);
+                        updatePanel.fadeToggle(true);
+                    }
+                });
+                vertex.sprite.on('mouseout', () => {
+                    if (hoveredVertex === vertex) {
+                        updatePanel.fadeToggle(false);
+                        hoveredVertex = null;
+                    }
+                });
+            }
+
+            function toMain() {
+                main.grab = (event) => {
+                    if (draggedVertex === null) {
+                        dragging = true;
+                        mouseX = event.offsetX;
+                        mouseY = event.offsetY;
+                        pivotX = app.stage.pivot.x;
+                        pivotY = app.stage.pivot.y;
+                    }
+                };
+                main.release = () => {
+                    dragging = false;
+                    if (draggedVertex !== null) {
+                        draggedVertex.stop();
+                    }
+                };
+                main.addEventListener('mousedown', (event) => {
+                    event.preventDefault();
+                    main.grab(event);
+                });
+                main.addEventListener('mouseup', (event) => {
+                    event.preventDefault();
+                    main.release();
+                });
+                main.addEventListener('mouseenter', (event) => {
+                    event.preventDefault();
+                    if (event.buttons === 1) {
+                        main.grab(event);
+                    } else {
+                        main.release();
+                    }
+                });
+                main.addEventListener('mousemove', (event) => {
+                    event.preventDefault();
+                    if (draggedVertex === null) {
+                        if (dragging) {
+                            app.stage.pivot.x = pivotX - (event.offsetX - mouseX);
+                            app.stage.pivot.y = pivotY - (event.offsetY - mouseY);
+                            updateVisibilityAndAffectedAreas();
+                        }
+                    } else {
+                        const x = app.stage.pivot.x + event.offsetX;
+                        const y = app.stage.pivot.y + event.offsetY;
+                        draggedVertex.move(x, y);
+                    }
+                });
+                main.addEventListener('wheel', (event) => {
+                    event.preventDefault();
+                    const result = compare(event.deltaY, 0);
+                    if (result !== 0) {
+                        if (hoveredVertex === null) {
+                            if (result === -1 || (result === 1 && zoom > 10)) {
+                                const shift = -result * Math.round(zoom / 10);
+                                const error = (zoom + shift) / zoom - 1;
+                                app.stage.pivot.x += error * (app.stage.pivot.x + event.offsetX);
+                                app.stage.pivot.y += error * (app.stage.pivot.y + event.offsetY);
+                                zoom += shift;
+                                const delta = zoom - 100;
+                                edgeScale = 1 + (delta * settings.graph.edgeScale) / 100;
+                                vertexScale = 1 + (delta * settings.graph.vertexScale) / 100;
+                                updateDefaultTexture();
+                                const scale = zoom / 100;
+                                for (const vertex of Object.values(vertices)) {
+                                    updatePositionAndSprite(vertex, scale);
+                                }
+                                updateVisibilityAndAllAreas();
+                                updatePanel.scale(zoom);
+                            }
+                        } else {
+                            let fade = Math.round(100 * hoveredVertex.alpha);
+                            if (result === -1 || (result === 1 && fade > 10)) {
+                                fade -= result * Math.round(fade / 10);
+                                hoveredVertex.alpha = fade / 100;
+                                updateNeighborAreas(hoveredVertex);
+                                updatePanel.fadeChange(hoveredVertex);
+                            }
+                        }
+                    }
+                });
+                main.addEventListener('dblclick', (event) => {
+                    event.preventDefault();
+                    if (hoveredVertex === null) {
+                        let moved = false;
+                        if (compare(app.stage.pivot.x, 0) !== 0) {
+                            app.stage.pivot.x = 0;
+                            moved = true;
+                        }
+                        if (compare(app.stage.pivot.y, 0) !== 0) {
+                            app.stage.pivot.y = 0;
+                            moved = true;
+                        }
+                        if (zoom !== 100) {
+                            initializeZoom();
+                            updateDefaultTexture();
+                            for (const vertex of Object.values(vertices)) {
+                                vertex.sprite.position.x = vertex.x;
+                                vertex.sprite.position.y = vertex.y;
+                                updateSingleSprite(vertex);
+                            }
+                            updateVisibilityAndAllAreas();
+                            updatePanel.scale(zoom);
+                        } else {
+                            if (moved) {
+                                updateVisibilityAndAffectedAreas();
+                            }
+                        }
+                    } else {
+                        if (compare(hoveredVertex.alpha, 1) !== 0) {
+                            hoveredVertex.alpha = 1;
+                            updateNeighborAreas(hoveredVertex);
+                            updatePanel.fadeChange(hoveredVertex);
+                        }
+                    }
+                });
+            }
+
+            return [toSprite, toMain];
+        }
+
+        function initializeZoom() {
+            zoom = 100;
+            edgeScale = 1;
+            vertexScale = 1;
+        }
+
+        function intializeSprite(vertex) {
+            if (normalize) {
+                vertex.x = settings.graph.borderX + vertex.x * (width - 2 * settings.graph.borderX);
+                vertex.y = settings.graph.borderY + vertex.y * (height - 2 * settings.graph.borderY);
+            }
             delete vertex.degree;
             vertex.visibleX = true;
             vertex.visibleY = true;
@@ -341,82 +554,12 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
             vertex.sprite.position.x = vertex.x;
             vertex.sprite.position.y = vertex.y;
             vertex.sprite.interactive = true;
-            vertex.move = (x, y) => {
-                vertex.sprite.position.x = x;
-                vertex.sprite.position.y = y;
-                updateNeighborAreas(vertex);
-            };
-            vertex.stop = () => {
-                const scale = zoom / 100;
-                vertex.x = vertex.sprite.position.x / scale;
-                vertex.y = vertex.sprite.position.y / scale;
-                if (n > 0) {
-                    let i;
-                    let j;
-                    let id;
-                    i = vertex.indexX;
-                    id = idsX[i];
-                    for (j = i; j > 0; j--) {
-                        if (compare(vertex.x, vertices[idsX[j - 1]].x) >= 0) {
-                            break;
-                        }
-                        idsX[j] = idsX[j - 1];
-                    }
-                    i = j;
-                    for (j = i; j < n - 1; j++) {
-                        if (compare(vertex.x, vertices[idsX[j + 1]].x) <= 0) {
-                            break;
-                        }
-                        idsX[j] = idsX[j + 1];
-                    }
-                    i = j;
-                    idsX[i] = id;
-                    vertex.indexX = i;
-                    i = vertex.indexY;
-                    id = idsY[i];
-                    for (j = i; j > 0; j--) {
-                        if (compare(vertex.y, vertices[idsY[j - 1]].y) >= 0) {
-                            break;
-                        }
-                        idsY[j] = idsY[j - 1];
-                    }
-                    i = j;
-                    for (j = i; j < n - 1; j++) {
-                        if (compare(vertex.y, vertices[idsY[j + 1]].y) <= 0) {
-                            break;
-                        }
-                        idsY[j] = idsY[j + 1];
-                    }
-                    i = j;
-                    idsY[i] = id;
-                    vertex.indexY = i;
-                }
-                draggedVertex = null;
-            };
-            vertex.sprite.on('mousedown', () => {
-                draggedVertex = vertex;
-            });
-            vertex.sprite.on('mouseup', () => {
-                vertex.stop();
-            });
-            vertex.sprite.on('mouseover', () => {
-                if (hoveredVertex === null) {
-                    hoveredVertex = vertex;
-                    updatePanel.fadeToggle(true);
-                    updatePanel.fadeChange(vertex);
-                }
-            });
-            vertex.sprite.on('mouseout', () => {
-                if (hoveredVertex === vertex) {
-                    updatePanel.fadeToggle(false);
-                    hoveredVertex = null;
-                }
-            });
-            app.stage.addChild(vertex.sprite);
+            connectMouseToSprite(vertex);
             updateSingleSprite(vertex);
+            app.stage.addChild(vertex.sprite);
         }
 
-        function buildVisibility() {
+        function initializeVisibility() {
             if (n > 0) {
                 idsX.sort((a, b) => compare(vertices[a].x, vertices[b].x));
                 idsY.sort((a, b) => compare(vertices[a].y, vertices[b].y));
@@ -425,8 +568,42 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
                     vertices[idsY[i]].indexY = i;
                 }
             }
-            drawAreas();
+            leftX = 0;
+            rightX = n;
+            leftY = leftX;
+            rightY = rightX;
+            updateVisibilityAndAllAreas();
         }
+
+        const updates = {
+            drawEdges,
+            drawAreas,
+            updateBackground,
+            updateSingleSprite,
+            updateMultipleSprites,
+            updateSinglePositionAndSprite,
+            updateMultiplePositionsAndSprites,
+            updateMultipleAreas,
+            updateNeighborAreas,
+            initializeVisibility,
+        };
+
+        const [connectMouseToSprite, connectMouseToMain] = connectMouse();
+
+        const resizeObserver = new ResizeObserver(() => {
+            updateSize();
+            updateVisibilityAndAffectedAreas();
+        });
+        resizeObserver.observe(element);
+
+        const mutationObserver = new MutationObserver(() => {
+            if (!document.body.contains(element)) {
+                mutationObserver.disconnect();
+                resizeObserver.disconnect();
+                destroy();
+            }
+        });
+        mutationObserver.observe(document.body, { childList: true, subtree: true });
 
         if (settings === null) {
             settings = nullSettings;
@@ -434,6 +611,10 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
         settings.graph = merge(defaults.graph, settings.graph);
         settings.vertex = merge(defaults.vertex, settings.vertex);
         settings.edge = merge(defaults.edge, settings.edge);
+
+        const idsX = Object.keys(vertices);
+
+        const idsY = idsX.slice();
 
         const areas = {};
 
@@ -481,19 +662,10 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
             delete edges[source];
         }
 
-        let edgeScale = 1;
-        let vertexScale = 1;
-        let defaultTexture = drawVertex(settings.vertex);
-
-        resize();
-
-        const idsX = Object.keys(vertices);
-        let leftX = 0;
-        let rightX = n;
-
-        const idsY = idsX.slice();
-        let leftY = leftX;
-        let rightY = rightX;
+        updateSize();
+        initializeZoom();
+        updateBackground();
+        updateDefaultTexture();
 
         if (n > 0) {
             if (n === 1) {
@@ -512,7 +684,7 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
                         vertex.y = 0.5;
                     }
                 }
-                buildSprite(vertex);
+                intializeSprite(vertex);
             } else {
                 let difX;
                 if (Number.isFinite(minX) && Number.isFinite(maxX) && compare(minX, maxX) !== 0) {
@@ -550,172 +722,28 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
                             }
                         }
                     }
-                    buildSprite(vertex);
+                    intializeSprite(vertex);
                 }
             }
-            buildVisibility();
         }
 
-        const resizeObserver = new ResizeObserver(() => {
-            resize();
-            updateVisibilityAndNeighborAreas();
-        });
-        resizeObserver.observe(element);
-
-        const mutationObserver = new MutationObserver(() => {
-            if (!document.body.contains(element)) {
-                mutationObserver.disconnect();
-                resizeObserver.disconnect();
-                destroy();
-            }
-        });
-        mutationObserver.observe(document.body, { childList: true, subtree: true });
+        initializeVisibility();
 
         const main = document.createElement('div');
 
-        const updates = {
-            drawEdges,
-            drawAreas,
-            updateBackground,
-            updateSingleSprite,
-            updateMultipleSprites,
-            updateSinglePositionAndSprite,
-            updateMultiplePositionsAndSprites,
-            updateMultipleAreas,
-            updateNeighborAreas,
-            buildVisibility,
-        };
+        connectMouseToMain();
 
-        const [updatePanel, topPanel, bottomPanel] = Panel(filename, app, settings, vertices, areas, updates, main, warn);
+        const [updatePanel, topPanel, bottomPanel] = Panel(filename, app, settings, vertices, areas, main, updates, warn);
 
-        main.grab = (event) => {
-            if (draggedVertex === null) {
-                dragging = true;
-                mouseX = event.offsetX;
-                mouseY = event.offsetY;
-                pivotX = app.stage.pivot.x;
-                pivotY = app.stage.pivot.y;
-            }
-        };
-        main.release = () => {
-            dragging = false;
-            if (draggedVertex !== null) {
-                draggedVertex.stop();
-            }
-        };
-        main.addEventListener('mousedown', (event) => {
-            event.preventDefault();
-            main.grab(event);
-        });
-        main.addEventListener('mouseup', (event) => {
-            event.preventDefault();
-            main.release();
-        });
-        main.addEventListener('mouseenter', (event) => {
-            event.preventDefault();
-            if (event.buttons === 1) {
-                main.grab(event);
-            } else {
-                main.release();
-            }
-        });
-        main.addEventListener('mousemove', (event) => {
-            event.preventDefault();
-            if (draggedVertex === null) {
-                if (dragging) {
-                    app.stage.pivot.x = pivotX - (event.offsetX - mouseX);
-                    app.stage.pivot.y = pivotY - (event.offsetY - mouseY);
-                    updateVisibilityAndNeighborAreas();
-                }
-            } else {
-                const x = app.stage.pivot.x + event.offsetX;
-                const y = app.stage.pivot.y + event.offsetY;
-                draggedVertex.move(x, y);
-            }
-        });
-
-        main.addEventListener('wheel', (event) => {
-            event.preventDefault();
-            const result = compare(event.deltaY, 0);
-            if (result !== 0) {
-                if (hoveredVertex === null) {
-                    if (result === -1 || (result === 1 && zoom > 10)) {
-                        const shift = -result * Math.round(zoom / 10);
-                        const error = (zoom + shift) / zoom - 1;
-                        app.stage.pivot.x += error * (app.stage.pivot.x + event.offsetX);
-                        app.stage.pivot.y += error * (app.stage.pivot.y + event.offsetY);
-                        zoom += shift;
-                        const delta = zoom - 100;
-                        edgeScale = 1 + (delta * settings.graph.edgeScale) / 100;
-                        vertexScale = 1 + (delta * settings.graph.vertexScale) / 100;
-                        defaultTexture = drawVertex(settings.vertex);
-                        const scale = zoom / 100;
-                        for (const vertex of Object.values(vertices)) {
-                            updatePositionAndSprite(vertex, scale);
-                        }
-                        updateVisibilityAndAllAreas();
-                        updatePanel.scale(zoom);
-                    }
-                } else {
-                    let fade = Math.round(100 * hoveredVertex.alpha);
-                    if (result === -1 || (result === 1 && fade > 10)) {
-                        fade -= result * Math.round(fade / 10);
-                        hoveredVertex.alpha = fade / 100;
-                        updateNeighborAreas(hoveredVertex);
-                        updatePanel.fadeChange(hoveredVertex);
-                    }
-                }
-            }
-        });
-        main.addEventListener('dblclick', (event) => {
-            event.preventDefault();
-            if (hoveredVertex === null) {
-                let moved = false;
-                if (compare(app.stage.pivot.x, 0) !== 0) {
-                    app.stage.pivot.x = 0;
-                    moved = true;
-                }
-                if (compare(app.stage.pivot.y, 0) !== 0) {
-                    app.stage.pivot.y = 0;
-                    moved = true;
-                }
-                if (zoom !== 100) {
-                    zoom = 100;
-                    edgeScale = 1;
-                    vertexScale = 1;
-                    defaultTexture = drawVertex(settings.vertex);
-                    for (const vertex of Object.values(vertices)) {
-                        vertex.sprite.position.x = vertex.x;
-                        vertex.sprite.position.y = vertex.y;
-                        updateSingleSprite(vertex);
-                    }
-                    updateVisibilityAndAllAreas();
-                    updatePanel.scale(zoom);
-                } else {
-                    if (moved) {
-                        updateVisibilityAndNeighborAreas();
-                    }
-                }
-            } else {
-                if (compare(hoveredVertex.alpha, 1) !== 0) {
-                    hoveredVertex.alpha = 1;
-                    updateNeighborAreas(hoveredVertex);
-                    updatePanel.fadeChange(hoveredVertex);
-                }
-            }
-        });
-
-        element.appendChild(topPanel);
-        element.appendChild(main);
-        element.appendChild(bottomPanel);
-
-        updateBackground();
-        buildVisibility();
         updatePanel.scale(zoom);
 
         proxies[uid] = Proxy(settings, vertices, areas, updates, warn);
 
         main.appendChild(app.view);
+
+        element.appendChild(topPanel);
+        element.appendChild(main);
+        element.appendChild(bottomPanel);
     }
 
     const start = Date.now();

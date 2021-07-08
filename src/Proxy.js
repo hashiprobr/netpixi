@@ -10,7 +10,7 @@ export default function (settings, vertices, areas, updates, warn) {
         updateSingleSprite,
         updateSinglePositionAndSprite,
         updateNeighborAreas,
-        buildVisibility,
+        initializeVisibility,
     } = updates;
 
     function send(d) {
@@ -51,7 +51,7 @@ export default function (settings, vertices, areas, updates, warn) {
                     vertex.props = union(vertex.props, props);
                     if (moved) {
                         updateSinglePositionAndSprite(vertex);
-                        buildVisibility();
+                        initializeVisibility();
                     } else {
                         updateSingleSprite(vertex);
                         updateNeighborAreas(vertex);

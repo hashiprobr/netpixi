@@ -1,5 +1,7 @@
 import pako from 'pako';
 
+import { isObject } from './types';
+
 
 function useInflate(process, finalize) {
     const inflate = new pako.Inflate({ to: 'string' });
@@ -18,7 +20,7 @@ function useInflate(process, finalize) {
         } catch (error) {
             fail(error.message);
         }
-        if (typeof data !== 'object') {
+        if (!isObject(data)) {
             fail('must be an object');
         }
         if (data === null) {
