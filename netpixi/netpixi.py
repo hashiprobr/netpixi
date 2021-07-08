@@ -17,10 +17,8 @@ class Base(ABC):
         for key, value in data.items():
             if not isinstance(value, str):
                 raise TypeError(f'{key} must be a string')
-        if props is not None and not isinstance(props, dict):
-            raise TypeError('props must be None or a dictionary')
         data['type'] = type
-        if props is not None:
+        if props:
             data['props'] = props
         line = f'{json.dumps(data)}\n'
         self._send(line.encode())
@@ -29,26 +27,26 @@ class Base(ABC):
         if key in props and not isinstance(props[key], (int, float)):
             raise TypeError(f'{key} must be an integer or a float')
 
-    def write_settings(self, props=None):
-        self._push('settings', {}, props)
+    def send_settings(self, **kwargs):
+        self._push('settings', {}, kwargs)
 
-    def write_vertex(self, id, props=None):
-        if props is not None:
-            self._validate(props, 'x')
-            self._validate(props, 'y')
-        self._push('vertex', {'id': id}, props)
+    def send_vertex(self, id, **kwargs):
+        if kwargs is not None:
+            self._validate(kwargs, 'x')
+            self._validate(kwargs, 'y')
+        self._push('vertex', {'id': id}, kwargs)
 
-    def write_edge(self, source, target, props=None):
-        self._push('edge', {'source': source, 'target': target}, props)
+    def send_edge(self, source, target, **kwargs):
+        self._push('edge', {'source': source, 'target': target}, kwargs)
 
 
 class File(Base):
     def _send(self, bytes):
         self.file.write(bytes)
 
-    def __init__(self, path, props=None):
+    def __init__(self, path, **kwargs):
         self.file = gzip.open(path, 'wb')
-        self.write_settings(props)
+        self.send_settings(**kwargs)
 
     def __enter__(self):
         return self
@@ -74,8 +72,8 @@ def run(script):
     return uid
 
 
-def open(path, props=None):
-    return File(path, props)
+def open(path, **kwargs):
+    return File(path, **kwargs)
 
 
 def render(path, horizontal=16, vertical=9, normalize=True, broker=False):
