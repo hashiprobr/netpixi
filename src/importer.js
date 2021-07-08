@@ -27,6 +27,7 @@ function importProperties(settings, vertices, areas, updates, disable) {
         processGraph(d,
             (props) => {
                 overSettings = validate.configuration(overSettings, props);
+                validate.missingDirected(settings, overSettings.graph);
             },
             (data, props) => {
                 const id = validate.receivedId(data);

@@ -18,7 +18,9 @@ export default function (settings, vertices, areas, updates, warn) {
             processGraph(d,
                 (props) => {
                     if (props !== null) {
-                        overwrite(settings.graph, clean(get(props, 'graph'), conditions.graph));
+                        const overGraph = get(props, 'graph');
+                        validate.missingDirected(settings, overGraph);
+                        overwrite(settings.graph, clean(overGraph, conditions.graph));
                         overwrite(settings.vertex, clean(get(props, 'vertex'), conditions.vertex));
                         overwrite(settings.edge, clean(get(props, 'edge'), conditions.edge));
                         settings.props = union(settings.props, props);

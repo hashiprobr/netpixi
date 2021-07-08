@@ -148,6 +148,11 @@ const validate = {
             };
         }
     },
+    missingDirected(settings, object) {
+        if (object !== null && 'directed' in object && object.directed !== settings.graph.directed) {
+            throw 'cannot change graph direction';
+        }
+    },
     receivedId(data) {
         return tightPop(data, 'id');
     },
