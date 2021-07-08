@@ -75,9 +75,9 @@ export default function (settings, vertices, areas, updates, warn) {
                 });
         } catch (error) {
             if (isString(error)) {
-                warn(error);
+                warn(`Proxy error: ${error}`);
             } else {
-                warn(error.message);
+                warn(error);
             }
         }
     }
