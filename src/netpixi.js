@@ -741,9 +741,9 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
 
         main.appendChild(app.view);
 
-        element.appendChild(topPanel);
-        element.appendChild(main);
-        element.appendChild(bottomPanel);
+        element.insertBefore(topPanel, output);
+        element.insertBefore(main, output);
+        element.insertBefore(bottomPanel, output);
     }
 
     const start = Date.now();

@@ -1,6 +1,6 @@
 import pako from 'pako';
 
-import { isObject } from './types';
+import { isString, isObject } from './types';
 
 
 function useInflate(process, finalize) {
@@ -29,7 +29,10 @@ function useInflate(process, finalize) {
         try {
             process(data);
         } catch (error) {
-            fail(error);
+            if (isString(error)) {
+                fail(error);
+            }
+            throw error;
         }
     }
 

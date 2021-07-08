@@ -1,4 +1,4 @@
-import { compare, conditions } from './types';
+import { compare, isString, conditions } from './types';
 import { get, clean, overwrite, union, processGraph, validate } from './data';
 
 
@@ -74,7 +74,11 @@ export default function (settings, vertices, areas, updates, warn) {
                     drawEdges(u);
                 });
         } catch (error) {
-            warn(error);
+            if (isString(error)) {
+                warn(error);
+            } else {
+                warn(error.message);
+            }
         }
     }
     return { send };
