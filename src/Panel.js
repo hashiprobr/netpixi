@@ -3,7 +3,12 @@ import { importProperties, importAnimation } from './importer';
 import { exportImage, exportVideo } from './exporter';
 
 
-export default function (filename, app, settings, vertices, areas, frames, main, updates, warn) {
+export default function (filename, app, settings, vertices, areas, animation, updates, warn) {
+    const {
+        disableMain,
+        enableMain,
+    } = updates;
+
     function createButton(text) {
         const button = document.createElement('button');
         button.style.width = 'min-content';
@@ -15,7 +20,6 @@ export default function (filename, app, settings, vertices, areas, frames, main,
     }
 
     function disable() {
-        main.style.pointerEvents = 'none';
         propertiesButton.disabled = true;
         animationButton.disabled = true;
         networkButton.disabled = true;
@@ -23,17 +27,18 @@ export default function (filename, app, settings, vertices, areas, frames, main,
         videoButton.disabled = true;
         playButton.disabled = true;
         range.disabled = true;
+        disableMain();
     }
 
     function enable() {
-        main.style.pointerEvents = 'auto';
-        propertiesButton.disabled = false;
-        animationButton.disabled = false;
-        networkButton.disabled = false;
-        imageButton.disabled = false;
-        videoButton.disabled = false;
-        playButton.disabled = false;
+        enableMain();
         range.disabled = false;
+        playButton.disabled = false;
+        videoButton.disabled = false;
+        imageButton.disabled = false;
+        networkButton.disabled = false;
+        animationButton.disabled = false;
+        propertiesButton.disabled = false;
     }
 
     const propertiesButton = createButton('Import Properties');
@@ -47,7 +52,7 @@ export default function (filename, app, settings, vertices, areas, frames, main,
 
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
-        importAnimation(frames, disable)
+        importAnimation(vertices, areas, animation, disable)
             .catch((error) => {
                 warn(error);
             })
@@ -93,11 +98,13 @@ export default function (filename, app, settings, vertices, areas, frames, main,
 
     const zoomLabel = document.createElement('p');
     zoomLabel.style.margin = '1em .5em 1em 1em';
+    zoomLabel.style.fontSize = '.75em';
     zoomLabel.style.userSelect = 'none';
 
     const fadeLabel = document.createElement('p');
     fadeLabel.style.display = 'none';
-    fadeLabel.style.margin = '1em 1em 1em .5em';
+    fadeLabel.style.margin = '1em 1em 1em 1em';
+    fadeLabel.style.fontSize = '.75em';
     fadeLabel.style.userSelect = 'none';
 
     const updatePanel = {

@@ -2,7 +2,7 @@ import { compare, isString, conditions } from './types';
 import { get, pop, propsPop, clean, overwrite, union, processGraph, validate } from './data';
 
 
-export default function (settings, vertices, areas, updates, warn) {
+export default function (settings, vertices, areas, animation, updates, warn) {
     const {
         drawEdges,
         drawAreas,
@@ -28,43 +28,43 @@ export default function (settings, vertices, areas, updates, warn) {
                     edges: [],
                 };
 
-                if (props === null) {
-                    return;
-                }
+                if (props !== null) {
+                    const overGraph = pop(props, 'graph');
+                    if (overGraph !== null) {
+                        validate.receivedGraph(frame.graph, props);
+                    }
 
-                const overGraph = pop(props, 'graph');
-                if (overGraph !== null) {
-                    validate.receivedGraph(frame.graph, props);
-                }
+                    const overVertices = pop(props, 'vertices');
+                    if (overVertices !== null) {
+                        for (const overVertex of overVertices) {
+                            const vertex = {};
+                            vertex.id = validate.receivedId(overVertex);
+                            validate.notMissingVertex(vertex.id, vertices);
+                            const x = validate.receivedX(overVertex);
+                            if (x !== null) {
+                                vertex.x = x;
+                            }
+                            const y = validate.receivedY(overVertex);
+                            if (y !== null) {
+                                vertex.y = y;
+                            }
+                            validate.receivedVertex(vertex, overVertex);
+                        }
+                    }
 
-                const overVertices = pop(props, 'vertices');
-                if (overVertices !== null) {
-                    for (const overVertex of overVertices) {
-                        const vertex = {};
-                        vertex.id = validate.receivedId(overVertex);
-                        validate.notMissingVertex(vertex.id, vertices);
-                        const x = validate.receivedX(overVertex);
-                        if (x !== null) {
-                            vertex.x = x;
+                    const overEdges = pop(props, 'edges');
+                    if (overEdges !== null) {
+                        for (const overEdge in overEdges) {
+                            const edge = {};
+                            edge.source = validate.receivedSource(overEdge, vertices);
+                            edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
+                            validate.notMissingEdge(edge.source, edge.target, vertices, areas);
+                            validate.receivedEdge(edge, overEdge);
                         }
-                        const y = validate.receivedY(overVertex);
-                        if (y !== null) {
-                            vertex.y = y;
-                        }
-                        validate.receivedVertex(vertex, overVertex);
                     }
                 }
 
-                const overEdges = pop(props, 'edges');
-                if (overEdges !== null) {
-                    for (const overEdge in overEdges) {
-                        const edge = {};
-                        edge.source = validate.receivedSource(overEdge, vertices);
-                        edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
-                        validate.notMissingEdge(edge.source, edge.target, vertices, areas);
-                        validate.receivedEdge(edge, overEdge);
-                    }
-                }
+                animation.frames.splice(animation.index, 0, frame);
             } else {
                 processGraph(d,
                     (props) => {

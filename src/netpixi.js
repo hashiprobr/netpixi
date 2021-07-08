@@ -582,6 +582,15 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
             updateVisibilityAndAllAreas();
         }
 
+        function disableMain() {
+            main.style.pointerEvents = 'none';
+            output.innerHTML = '';
+        }
+
+        function enableMain() {
+            main.style.pointerEvents = 'auto';
+        }
+
         const updates = {
             drawEdges,
             drawAreas,
@@ -593,6 +602,8 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
             updateMultipleAreas,
             updateNeighborAreas,
             initializeVisibility,
+            disableMain,
+            enableMain,
         };
 
         const [connectMouseToSprite, connectMouseToMain] = connectMouse();
@@ -736,17 +747,20 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
 
         initializeVisibility();
 
-        const frames = [];
+        const animation = {
+            index: 0,
+            frames: [],
+        };
 
         const main = document.createElement('div');
 
         connectMouseToMain();
 
-        const [updatePanel, topPanel, bottomPanel] = Panel(filename, app, settings, vertices, areas, frames, main, updates, warn);
+        const [updatePanel, topPanel, bottomPanel] = Panel(filename, app, settings, vertices, areas, animation, updates, warn);
 
         updatePanel.scale(zoom);
 
-        proxies[uid] = Proxy(settings, vertices, areas, updates, warn);
+        proxies[uid] = Proxy(settings, vertices, areas, animation, updates, warn);
 
         main.appendChild(app.view);
 
