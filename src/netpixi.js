@@ -4,6 +4,7 @@ import { compare, isString } from './types';
 import defaults from './defaults';
 import { pop, merge, processGraph, nullSettings, validate } from './data';
 import { loadRemote } from './load';
+import Animation from './Animation';
 import Panel from './Panel';
 import Proxy from './Proxy';
 
@@ -746,22 +747,19 @@ function render(path, horizontal, vertical, normalize, broker, uid) {
 
         initializeVisibility();
 
-        const animation = {
-            index: 0,
-            frames: [],
-        };
+        const animation = Animation();
 
         const main = document.createElement('div');
 
         connectMouseToMain();
 
-        const [updatePanel, topPanel, bottomPanel] = Panel(filename, app, settings, vertices, areas, animation, updates, warn);
+        main.appendChild(app.view);
+
+        const [topPanel, bottomPanel, updatePanel] = Panel(filename, app, settings, vertices, areas, animation, updates, warn);
 
         updatePanel.scale(zoom);
 
-        proxies[uid] = Proxy(settings, vertices, areas, animation, updates, warn);
-
-        main.appendChild(app.view);
+        proxies[uid] = Proxy(settings, vertices, areas, animation, updates, updatePanel, warn);
 
         element.insertBefore(topPanel, output);
         element.insertBefore(main, output);

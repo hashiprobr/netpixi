@@ -135,7 +135,7 @@ function importAnimation(vertices, areas, animation, disable) {
 
         const duration = validate.receivedDuration(data);
 
-        const frame = {
+        const overFrame = {
             duration: duration,
             graph: {},
             vertices: [],
@@ -145,7 +145,7 @@ function importAnimation(vertices, areas, animation, disable) {
         if (props !== null) {
             const overGraph = pop(props, 'graph');
             if (overGraph !== null) {
-                validate.receivedGraph(frame.graph, props);
+                validate.receivedGraph(overFrame.graph, props);
             }
 
             const overVertices = pop(props, 'vertices');
@@ -191,11 +191,11 @@ function importAnimation(vertices, areas, animation, disable) {
             }
         }
 
-        overFrames.push(frame);
+        overFrames.push(overFrame);
     }
 
     function finalize() {
-        animation.frames.splice(0, animation.frames.length, ...overFrames);
+        animation.initialize(overFrames);
     }
 
     return loadLocal(initialize, process)

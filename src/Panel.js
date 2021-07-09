@@ -195,5 +195,5 @@ export default function (filename, app, settings, vertices, areas, animation, up
     bottomPanel.appendChild(range);
     bottomPanel.appendChild(deleteButton);
 
-    return [updatePanel, topPanel, bottomPanel];
+    return [topPanel, bottomPanel, updatePanel];
 }

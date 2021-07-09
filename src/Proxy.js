@@ -2,7 +2,7 @@ import { compare, isString, conditions } from './types';
 import { get, pop, propsPop, clean, overwrite, union, processGraph, validate } from './data';
 
 
-export default function (settings, vertices, areas, animation, updates, warn) {
+export default function (settings, vertices, areas, animation, updates, updatePanel, warn) {
     const {
         drawEdges,
         drawAreas,
@@ -21,7 +21,7 @@ export default function (settings, vertices, areas, animation, updates, warn) {
 
                 const duration = validate.receivedDuration(d);
 
-                const frame = {
+                const overFrame = {
                     duration: duration,
                     graph: {},
                     vertices: [],
@@ -31,7 +31,7 @@ export default function (settings, vertices, areas, animation, updates, warn) {
                 if (props !== null) {
                     const overGraph = pop(props, 'graph');
                     if (overGraph !== null) {
-                        validate.receivedGraph(frame.graph, props);
+                        validate.receivedGraph(overFrame.graph, props);
                     }
 
                     const overVertices = pop(props, 'vertices');
@@ -64,7 +64,9 @@ export default function (settings, vertices, areas, animation, updates, warn) {
                     }
                 }
 
-                animation.frames.splice(animation.index, 0, frame);
+                animation.insert(overFrame);
+
+                updatePanel.bottom();
             } else {
                 processGraph(d,
                     (props) => {
