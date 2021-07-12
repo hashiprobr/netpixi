@@ -29,7 +29,8 @@ const differences = {
         borderY: areNotClose,
         color: areNotEqual,
         alpha: areNotClose,
-        fade: areNotClose,
+        alpha1: areNotClose,
+        alpha2: areNotClose,
     },
     vertex: {
         size: areNotClose,
@@ -56,7 +57,8 @@ const conditions = {
         borderY: isNonNegative,
         color: isColor,
         alpha: isAlpha,
-        fade: isAlpha,
+        alpha1: isAlpha,
+        alpha2: isAlpha,
     },
     vertex: {
         size: isPositive,

@@ -5,7 +5,8 @@ export default {
         borderY: 9,
         color: 0x000000,
         alpha: 1,
-        fade: 1,
+        alpha1: 1,
+        alpha2: 1,
     },
     vertex: {
         size: 3,

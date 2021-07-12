@@ -161,12 +161,18 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     } else {
                         size = scale * props.width;
                     }
+                    const sourceVisible = sx < left || sx >= right || sy < top || sy >= bottom;
+                    const targetVisible = tx < left || tx >= right || ty < top || ty >= bottom;
                     let alpha = props.alpha * s.alpha * t.alpha;
-                    if (sx < left || sx >= right || sy < top || sy >= bottom) {
-                        alpha *= settings.graph.fade;
-                    }
-                    if (tx < left || tx >= right || ty < top || ty >= bottom) {
-                        alpha *= settings.graph.fade;
+                    if (sourceVisible) {
+                        alpha *= settings.graph.alpha1;
+                        if (targetVisible) {
+                            alpha *= settings.graph.alpha2;
+                        }
+                    } else {
+                        if (targetVisible) {
+                            alpha *= settings.graph.alpha1;
+                        }
                     }
                     graphics.lineStyle({
                         width: Math.min(size, s.sprite.texture.size, t.sprite.texture.size),
@@ -291,13 +297,13 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.sprite.on('mouseover', () => {
                         if (hoveredVertex === null) {
                             hoveredVertex = vertex;
-                            panel.updateFade(vertex);
-                            panel.showFade();
+                            panel.updateOpacity(vertex);
+                            panel.showOpacity();
                         }
                     });
                     vertex.sprite.on('mouseout', () => {
                         if (hoveredVertex === vertex) {
-                            panel.hideFade();
+                            panel.hideOpacity();
                             hoveredVertex = null;
                         }
                     });
@@ -381,12 +387,12 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 }, 100);
                             }
                         } else {
-                            let fade = Math.round(100 * hoveredVertex.alpha);
-                            if (result === -1 || (result === 1 && fade > 10)) {
-                                fade -= result * Math.round(fade / 10);
-                                hoveredVertex.alpha = fade / 100;
+                            let opacity = Math.round(100 * hoveredVertex.alpha);
+                            if (result === -1 || (result === 1 && opacity > 10)) {
+                                opacity -= result * Math.round(opacity / 10);
+                                hoveredVertex.alpha = opacity / 100;
                                 drawNeighborAreas(hoveredVertex);
-                                panel.updateFade(hoveredVertex);
+                                panel.updateOpacity(hoveredVertex);
                             }
                         }
                     }
@@ -420,7 +426,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         if (compare(hoveredVertex.alpha, 1) !== 0) {
                             initializeAlpha(hoveredVertex);
                             drawNeighborAreas(hoveredVertex);
-                            panel.updateFade(hoveredVertex);
+                            panel.updateOpacity(hoveredVertex);
                         }
                     }
                 });

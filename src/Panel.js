@@ -57,17 +57,17 @@ export default function (app, cell, graph, animation, filename) {
         zoomLabel.innerHTML = `Zoom: ${zoom}%`;
     }
 
-    function updateFade(vertex) {
-        const fade = Math.round(100 * vertex.alpha);
-        fadeLabel.innerHTML = `Fade: ${fade}%`;
+    function updateOpacity(vertex) {
+        const opacity = Math.round(100 * vertex.alpha);
+        opacityLabel.innerHTML = `Opacity: ${opacity}%`;
     }
 
-    function showFade() {
-        fadeLabel.style.display = 'block';
+    function showOpacity() {
+        opacityLabel.style.display = 'block';
     }
 
-    function hideFade() {
-        fadeLabel.style.display = 'none';
+    function hideOpacity() {
+        opacityLabel.style.display = 'none';
     }
 
     function toggleAnimation() {
@@ -131,12 +131,12 @@ export default function (app, cell, graph, animation, filename) {
     zoomLabel.style.whiteSpace = 'nowrap';
     zoomLabel.style.userSelect = 'none';
 
-    const fadeLabel = document.createElement('p');
-    fadeLabel.style.display = 'none';
-    fadeLabel.style.margin = '1em';
-    fadeLabel.style.fontSize = '.75em';
-    fadeLabel.style.whiteSpace = 'nowrap';
-    fadeLabel.style.userSelect = 'none';
+    const opacityLabel = document.createElement('p');
+    opacityLabel.style.display = 'none';
+    opacityLabel.style.margin = '1em';
+    opacityLabel.style.fontSize = '.75em';
+    opacityLabel.style.whiteSpace = 'nowrap';
+    opacityLabel.style.userSelect = 'none';
 
     const top = document.createElement('div');
     top.style.display = 'flex';
@@ -145,7 +145,7 @@ export default function (app, cell, graph, animation, filename) {
     top.appendChild(networkButton);
     top.appendChild(imageButton);
     top.appendChild(zoomLabel);
-    top.appendChild(fadeLabel);
+    top.appendChild(opacityLabel);
 
     const videoButton = createButton('Export Video');
     videoButton.addEventListener('click', () => {
@@ -194,9 +194,9 @@ export default function (app, cell, graph, animation, filename) {
         middle,
         bottom,
         updateZoom,
-        updateFade,
-        showFade,
-        hideFade,
+        updateOpacity,
+        showOpacity,
+        hideOpacity,
         toggleAnimation,
     };
 }
