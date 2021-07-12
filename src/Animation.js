@@ -9,7 +9,7 @@ export default function () {
     }
 
     function insert(frame) {
-        tweens.add(frame);
+        tweens.push(frame);
     }
 
     return { tweens, initialize, insert };

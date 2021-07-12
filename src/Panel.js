@@ -197,5 +197,6 @@ export default function (app, cell, graph, animation, filename) {
         updateFade,
         showFade,
         hideFade,
+        toggleAnimation,
     };
 }
