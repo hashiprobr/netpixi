@@ -34,7 +34,7 @@ class Base(ABC):
                 raise TypeError(f'{key} must be non-negative')
         self._push(type, data, props)
 
-    def _validate(self, props, key):
+    def _get(self, props, key):
         if key in props and not isinstance(props[key], (int, float)):
             raise TypeError(f'{key} must be an integer or a float')
 
@@ -43,8 +43,8 @@ class Base(ABC):
 
     def send_vertex(self, id, **kwargs):
         if kwargs is not None:
-            self._validate(kwargs, 'x')
-            self._validate(kwargs, 'y')
+            self._get(kwargs, 'x')
+            self._get(kwargs, 'y')
         self._push_str('vertex', {'id': id}, kwargs)
 
     def send_edge(self, source, target, **kwargs):
