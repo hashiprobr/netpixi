@@ -8,7 +8,13 @@ if (!streamSaver.WritableStream) {
 }
 
 
-export default function (filename, settings, vertices, areas) {
+export default function (graph, filename) {
+    const {
+        settings,
+        vertices,
+        areas,
+    } = graph;
+
     return new Promise((resolve) => {
         const stream = streamSaver.createWriteStream(filename);
         const writer = stream.getWriter();

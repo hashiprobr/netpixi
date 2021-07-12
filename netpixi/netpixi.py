@@ -26,6 +26,14 @@ class Base(ABC):
                 raise TypeError(f'{key} must be a string')
         self._push(type, data, props)
 
+    def _push_int(self, type, data, props):
+        for key, value in data.items():
+            if not isinstance(value, int):
+                raise TypeError(f'{key} must be an integer')
+            if value < 0:
+                raise TypeError(f'{key} must be non-negative')
+        self._push(type, data, props)
+
     def _validate(self, props, key):
         if key in props and not isinstance(props[key], (int, float)):
             raise TypeError(f'{key} must be an integer or a float')
@@ -43,11 +51,7 @@ class Base(ABC):
         self._push_str('edge', {'source': source, 'target': target}, kwargs)
 
     def send_frame(self, duration, **kwargs):
-        if not isinstance(duration, int):
-            raise TypeError('duration must be an integer')
-        if duration < 0:
-            raise ValueError('duration must be non-negative')
-        self._push('frame', {'duration': duration}, kwargs)
+        self._push_int('frame', {'duration': duration}, kwargs)
 
 
 class File(Base):
@@ -91,18 +95,21 @@ def open_animation(path):
     return File(path)
 
 
-def render(path, horizontal=16, vertical=9, normalize=True, broker=False):
+def render(path, horizontal=16, vertical=9, normalize=True, infinite=False, broker=False):
     if not isinstance(horizontal, int) or not isinstance(vertical, int):
-        raise TypeError('ratio dimensions must be integers')
+        raise TypeError('aspect dimensions must be integers')
     if horizontal <= 0 or vertical <= 0:
-        raise ValueError('ratio dimensions must be positive')
+        raise ValueError('aspect dimensions must be positive')
     if not isinstance(normalize, bool):
         raise TypeError('normalize must be a boolean')
+    if not isinstance(infinite, bool):
+        raise TypeError('infinite must be a boolean')
     if not isinstance(broker, bool):
         raise TypeError('broker must be a boolean')
     normalizeJS = str(normalize).lower()
+    infiniteJS = str(infinite).lower()
     brokerJS = str(broker).lower()
-    uid = run(f"netpixi.render('{path}', {horizontal}, {vertical}, {normalizeJS}, {brokerJS}, {{}});")
+    uid = run(f"netpixi.render({{}}, '{path}', {horizontal}, {vertical}, {normalizeJS}, {infiniteJS}, {brokerJS});")
     return Render(uid)
 
 

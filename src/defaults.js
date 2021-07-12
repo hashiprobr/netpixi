@@ -5,9 +5,7 @@ export default {
         borderY: 9,
         color: 0x000000,
         alpha: 1,
-        edgeFade: 0.2,
-        edgeScale: 0.1,
-        vertexScale: 0.1,
+        fade: 1,
     },
     vertex: {
         size: 3,

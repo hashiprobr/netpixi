@@ -19,12 +19,12 @@ function pop(object, name) {
 }
 
 
-function propsPop(data) {
+function popProps(data) {
     const props = pop(data, 'props');
-    if (!isObject(props)) {
-        throw 'props must be an object';
+    if (isObject(props)) {
+        return props;
     }
-    return props;
+    throw 'props must be an object';
 }
 
 
@@ -71,31 +71,14 @@ function tightPopInt(data, name) {
 
 
 function clean(over, cond) {
-    if (over === null) {
-        return null;
-    }
-    for (const name in cond) {
-        if (name in over && !cond[name](over[name])) {
-            throw `invalid ${name}`;
+    if (over !== null) {
+        for (const name in cond) {
+            if (name in over && !cond[name](over[name])) {
+                throw `invalid ${name}`;
+            }
         }
     }
     return over;
-}
-
-
-function merge(base, over) {
-    if (over === null) {
-        return { ...base };
-    }
-    const props = {};
-    for (const name in base) {
-        if (name in over) {
-            props[name] = over[name];
-        } else {
-            props[name] = base[name];
-        }
-    }
-    return props;
 }
 
 
@@ -103,11 +86,32 @@ function overwrite(base, over) {
     if (over === null) {
         return;
     }
-    for (const name in over) {
-        if (name in base) {
+    for (const name in base) {
+        if (name in over) {
             base[name] = over[name];
         }
     }
+}
+
+
+function merge(base, over, diff) {
+    if (over === null) {
+        return base;
+    }
+    const temp = {};
+    let same = true;
+    for (const name in base) {
+        if (name in over && diff[name](base[name], over[name])) {
+            temp[name] = over[name];
+            same = false;
+        } else {
+            temp[name] = base[name];
+        }
+    }
+    if (same) {
+        return base;
+    }
+    return temp;
 }
 
 
@@ -125,19 +129,16 @@ function union(base, over) {
 
 
 function processGraph(data, processSettings, processVertex, processEdge) {
-    let props = propsPop(data);
+    const props = popProps(data);
     switch (data.type) {
         case 'settings':
-            props = clean(props, conditions.settings);
-            processSettings(props);
+            processSettings(clean(props, conditions.settings));
             break;
         case 'vertex':
-            props = clean(props, conditions.vertex);
-            processVertex(data, props);
+            processVertex(data, clean(props, conditions.vertex));
             break;
         case 'edge':
-            props = clean(props, conditions.edge);
-            processEdge(data, props);
+            processEdge(data, clean(props, conditions.edge));
             break;
         default:
             throw 'unknown type';
@@ -145,19 +146,13 @@ function processGraph(data, processSettings, processVertex, processEdge) {
 }
 
 
-const nullSettings = {
-    graph: null,
-    vertex: null,
-    edge: null,
-    props: null,
-};
-
-
 const validate = {
-    configuration(object, props) {
+    notDuplicateSettings(object) {
         if (object !== null) {
             throw 'duplicate settings';
         }
+    },
+    receivedSettings(props) {
         if (props === null) {
             return nullSettings;
         } else {
@@ -169,8 +164,8 @@ const validate = {
             };
         }
     },
-    missingDirected(settings, object) {
-        if (object !== null && 'directed' in object && object.directed !== settings.graph.directed) {
+    missingDirected(graph, overGraph) {
+        if (overGraph !== null && 'directed' in overGraph && overGraph.directed !== graph.directed) {
             throw 'cannot change graph direction';
         }
     },
@@ -212,8 +207,8 @@ const validate = {
     },
     notMissingEdge(source, target, vertices, areas) {
         const hasStraight = vertices[target].leaders.has(source) && !areas[source].neighbors[target].reversed;
-        const hasInverted = vertices[source].leaders.has(target) && areas[target].neighbors[source].reversed;
-        if (!hasStraight && !hasInverted) {
+        const hasReversed = vertices[source].leaders.has(target) && areas[target].neighbors[source].reversed;
+        if (!hasStraight && !hasReversed) {
             throw `missing edge with source ${source} and target ${target}`;
         }
     },
@@ -234,8 +229,18 @@ const validate = {
             throw `existing edge with source ${target} and target ${source} but graph is not directed`;
         }
     },
-    receivedDuration(object) {
-        return tightPopInt(object, 'duration');
+    isFrame(data) {
+        return data.type === 'frame';
+    },
+    receivedFrame(data) {
+        const props = clean(popProps(data), conditions.frame);
+        const frame = {
+            duration: tightPopInt(data, 'duration'),
+            graph: {},
+            vertices: [],
+            edges: [],
+        };
+        return [props, frame];
     },
     receivedGraph(graph, overGraph) {
         for (const name in conditions.graph) {
@@ -273,4 +278,12 @@ const validate = {
 };
 
 
-export { get, pop, propsPop, clean, merge, overwrite, union, processGraph, nullSettings, validate };
+const nullSettings = {
+    graph: null,
+    vertex: null,
+    edge: null,
+    props: null,
+};
+
+
+export { pop, overwrite, merge, union, processGraph, validate, nullSettings };

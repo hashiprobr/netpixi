@@ -1,9 +1,15 @@
 import * as PIXI from 'pixi.js';
 
 
-function exportImage(filename, app, settings, scale) {
+function exportImage(app, graph, filename) {
+    const {
+        settings,
+        getScale,
+    } = graph;
+
     return new Promise((resolve) => {
         const bounds = app.stage.getBounds();
+        const scale = getScale();
 
         const width = bounds.width + 2 * scale * settings.graph.borderX;
         const height = bounds.height + 2 * scale * settings.graph.borderY;
@@ -12,7 +18,7 @@ function exportImage(filename, app, settings, scale) {
 
         const graphics = new PIXI.Graphics()
             .beginFill(settings.graph.color, settings.graph.alpha)
-            .drawRect(0, 0, width + 1, height + 1)
+            .drawRect(-1, -1, width + 2, height + 2)
             .endFill();
         app.renderer.render(graphics, texture, false);
 

@@ -3,19 +3,22 @@ import { importProperties, importAnimation } from './importer';
 import { exportImage, exportVideo } from './exporter';
 
 
-export default function (filename, app, settings, vertices, areas, animation, updates, warn) {
-    const {
-        disableMain,
-        enableMain,
-    } = updates;
+export default function (app, cell, graph, animation, filename) {
+    let playing;
 
-    function createButton(text) {
+    function initializePlaying() {
+        playing = false;
+        playButton.innerHTML = '▶';
+        enableExceptPlay();
+    }
+
+    function createButton(title) {
         const button = document.createElement('button');
         button.style.width = 'min-content';
         button.style.margin = '.5em';
         button.style.fontSize = '.75em';
         button.style.lineHeight = 'normal';
-        button.innerHTML = text;
+        button.innerHTML = title;
         return button;
     }
 
@@ -26,8 +29,7 @@ export default function (filename, app, settings, vertices, areas, animation, up
         imageButton.disabled = true;
         videoButton.disabled = true;
         range.disabled = true;
-        deleteButton.style.pointerEvents = 'none';
-        disableMain();
+        cell.disable();
     }
 
     function disable() {
@@ -41,10 +43,8 @@ export default function (filename, app, settings, vertices, areas, animation, up
     }
 
     function enableExceptPlay() {
-        enableMain();
-        deleteButton.style.pointerEvents = 'auto';
+        cell.enable();
         range.disabled = false;
-        playButton.disabled = false;
         videoButton.disabled = false;
         imageButton.disabled = false;
         networkButton.disabled = false;
@@ -52,24 +52,52 @@ export default function (filename, app, settings, vertices, areas, animation, up
         propertiesButton.disabled = false;
     }
 
+    function updateZoom() {
+        const zoom = Math.round(100 * graph.getScale());
+        zoomLabel.innerHTML = `Zoom: ${zoom}%`;
+    }
+
+    function updateFade(vertex) {
+        const fade = Math.round(100 * vertex.alpha);
+        fadeLabel.innerHTML = `Fade: ${fade}%`;
+    }
+
+    function showFade() {
+        fadeLabel.style.display = 'block';
+    }
+
+    function hideFade() {
+        fadeLabel.style.display = 'none';
+    }
+
+    function toggleAnimation() {
+        if (animation.tweens.length === 0) {
+            middle.style.display = 'none';
+            bottom.style.display = 'none';
+        } else {
+            bottom.style.display = 'flex';
+            middle.style.display = 'flex';
+        }
+    }
+
     const propertiesButton = createButton('Import Properties');
     propertiesButton.addEventListener('click', () => {
-        importProperties(settings, vertices, areas, updates, disable)
+        importProperties(graph, disable)
             .catch((error) => {
-                warn(error);
+                cell.warn(error);
             })
             .finally(enable);
     });
 
     const animationButton = createButton('Import Animation');
     animationButton.addEventListener('click', () => {
-        importAnimation(vertices, areas, animation, disable)
+        importAnimation(graph, animation, disable)
             .catch((error) => {
-                warn(error);
+                cell.warn(error);
             })
             .finally(() => {
+                toggleAnimation();
                 enable();
-                updatePanel.bottom();
             });
     });
 
@@ -77,9 +105,9 @@ export default function (filename, app, settings, vertices, areas, animation, up
     networkButton.addEventListener('click', () => {
         disable();
         const start = Date.now();
-        save(filename, settings, vertices, areas)
+        save(graph, filename)
             .catch((error) => {
-                warn(error);
+                cell.warn(error);
             })
             .finally(() => {
                 console.log(`Saved in ${(Date.now() - start) / 1000} seconds`);
@@ -90,87 +118,58 @@ export default function (filename, app, settings, vertices, areas, animation, up
     const imageButton = createButton('Export Image');
     imageButton.addEventListener('click', () => {
         disable();
-        exportImage(filename, app, settings, scale)
+        exportImage(app, graph, filename)
             .catch((error) => {
-                warn(error);
+                cell.warn(error);
             })
             .finally(enable);
     });
-
-    const videoButton = createButton('Export Video');
-    videoButton.style.display = 'none';
-    videoButton.addEventListener('click', () => {
-        disable();
-        exportVideo()
-            .catch((error) => {
-                warn(error);
-            })
-            .finally(enable);
-    });
-
-    let scale = 1;
 
     const zoomLabel = document.createElement('p');
     zoomLabel.style.margin = '1em .5em 1em 1em';
     zoomLabel.style.fontSize = '.75em';
+    zoomLabel.style.whiteSpace = 'nowrap';
     zoomLabel.style.userSelect = 'none';
 
     const fadeLabel = document.createElement('p');
     fadeLabel.style.display = 'none';
-    fadeLabel.style.margin = '1em 1em 1em 1em';
+    fadeLabel.style.margin = '1em';
     fadeLabel.style.fontSize = '.75em';
+    fadeLabel.style.whiteSpace = 'nowrap';
     fadeLabel.style.userSelect = 'none';
 
-    const updatePanel = {
-        scale(zoom) {
-            scale = zoom / 100;
-            zoomLabel.innerHTML = `Zoom: ${zoom}%`;
-        },
-        fadeChange(vertex) {
-            const fade = Math.round(100 * vertex.alpha);
-            fadeLabel.innerHTML = `Fade: ${fade}%`;
-        },
-        fadeToggle(visible) {
-            if (visible) {
-                fadeLabel.style.display = 'block';
-            } else {
-                fadeLabel.style.display = 'none';
-            }
-        },
-        bottom() {
-            if (animation.frames.length === 0) {
-                videoButton.style.display = 'none';
-                bottomPanel.style.display = 'none';
-            } else {
-                bottomPanel.style.display = 'flex';
-                videoButton.style.display = 'inline';
-            }
-        },
-    };
+    const top = document.createElement('div');
+    top.style.display = 'flex';
+    top.appendChild(propertiesButton);
+    top.appendChild(animationButton);
+    top.appendChild(networkButton);
+    top.appendChild(imageButton);
+    top.appendChild(zoomLabel);
+    top.appendChild(fadeLabel);
 
-    const topPanel = document.createElement('div');
-    topPanel.style.display = 'flex';
-    topPanel.appendChild(propertiesButton);
-    topPanel.appendChild(animationButton);
-    topPanel.appendChild(networkButton);
-    topPanel.appendChild(imageButton);
-    topPanel.appendChild(videoButton);
-    topPanel.appendChild(zoomLabel);
-    topPanel.appendChild(fadeLabel);
+    const videoButton = createButton('Export Video');
+    videoButton.addEventListener('click', () => {
+        disable();
+        exportVideo()
+            .catch((error) => {
+                cell.warn(error);
+            })
+            .finally(enable);
+    });
 
-    let playing = false;
+    const middle = document.createElement('div');
+    middle.style.display = 'none';
+    middle.appendChild(videoButton);
 
     const playButton = document.createElement('a');
     playButton.style.margin = '.25em .5em .5em';
     playButton.style.textDecoration = 'none';
     playButton.style.userSelect = 'none';
     playButton.style.cursor = 'pointer';
-    playButton.innerHTML = '▶';
+    playButton.style.pointerEvents = 'auto';
     playButton.addEventListener('click', () => {
         if (playing) {
-            playing = false;
-            playButton.innerHTML = '▶';
-            enableExceptPlay();
+            initializePlaying();
         } else {
             disableExceptPlay();
             playButton.innerHTML = '⏸';
@@ -182,18 +181,21 @@ export default function (filename, app, settings, vertices, areas, animation, up
     range.type = 'range';
     range.style.flexGrow = 1;
 
-    const deleteButton = document.createElement('a');
-    deleteButton.style.margin = '.25em .5em .5em';
-    deleteButton.style.textDecoration = 'none';
-    deleteButton.style.userSelect = 'none';
-    deleteButton.style.cursor = 'pointer';
-    deleteButton.innerHTML = '🗙';
+    const bottom = document.createElement('div');
+    bottom.style.display = 'none';
+    bottom.appendChild(playButton);
+    bottom.appendChild(range);
 
-    const bottomPanel = document.createElement('div');
-    bottomPanel.style.display = 'none';
-    bottomPanel.appendChild(playButton);
-    bottomPanel.appendChild(range);
-    bottomPanel.appendChild(deleteButton);
+    initializePlaying();
+    updateZoom();
 
-    return [topPanel, bottomPanel, updatePanel];
+    return {
+        top,
+        middle,
+        bottom,
+        updateZoom,
+        updateFade,
+        showFade,
+        hideFade,
+    };
 }

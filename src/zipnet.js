@@ -57,7 +57,7 @@ function useInflate(process, finalize) {
             finalize();
         } else {
             if (inflate.msg.length === 0) {
-                throw 'Invalid ZipNet file';
+                throw 'Unknown gzip error';
             } else {
                 throw inflate.msg;
             }
@@ -86,7 +86,7 @@ function useDeflate(process, finalize) {
             finalize();
         } else {
             if (deflate.msg.length === 0) {
-                throw 'Invalid ZipNet file';
+                throw 'Unknown gzip error';
             } else {
                 throw deflate.msg;
             }

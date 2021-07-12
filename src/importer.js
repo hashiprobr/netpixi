@@ -1,16 +1,18 @@
-import { compare, conditions } from './types';
-import { pop, propsPop, clean, overwrite, union, processGraph, validate } from './data';
+import { compare } from './types';
+import { pop, overwrite, union, processGraph, validate } from './data';
 import { loadLocal } from './load';
 
 
-function importProperties(settings, vertices, areas, updates, disable) {
+function importProperties(graph, disable) {
     const {
-        updateBackground,
-        updateMultipleSprites,
-        updateMultiplePositionsAndSprites,
-        updateMultipleAreas,
-        initializeVisibility,
-    } = updates;
+        settings,
+        vertices,
+        areas,
+        drawEdges,
+        updateBackgroundAndTexture,
+        updateSprite,
+        updatePositionAndSprite,
+    } = graph;
 
     let overSettings;
     let overVertices;
@@ -26,8 +28,9 @@ function importProperties(settings, vertices, areas, updates, disable) {
     function process(d) {
         processGraph(d,
             (props) => {
-                overSettings = validate.configuration(overSettings, props);
-                validate.missingDirected(settings, overSettings.graph);
+                validate.notDuplicateSettings(overSettings);
+                overSettings = validate.receivedSettings(props);
+                validate.missingDirected(settings.graph, overSettings.graph);
             },
             (data, props) => {
                 const id = validate.receivedId(data);
@@ -58,7 +61,7 @@ function importProperties(settings, vertices, areas, updates, disable) {
             overwrite(settings.vertex, overSettings.vertex);
             overwrite(settings.edge, overSettings.edge);
             settings.props = union(settings.props, overSettings.props);
-            updateBackground();
+            updateBackgroundAndTexture();
             ids = new Set(Object.keys(vertices));
             leaders = new Set(Object.keys(areas));
         }
@@ -101,11 +104,16 @@ function importProperties(settings, vertices, areas, updates, disable) {
         }
 
         if (moved) {
-            updateMultiplePositionsAndSprites(ids);
-            initializeVisibility();
+            for (const id of ids) {
+                updatePositionAndSprite(vertices[id]);
+            }
         } else {
-            updateMultipleSprites(ids);
-            updateMultipleAreas(leaders);
+            for (const id of ids) {
+                updateSprite(vertices[id]);
+            }
+        }
+        for (const u of leaders) {
+            drawEdges(u);
         }
     }
 
@@ -114,38 +122,34 @@ function importProperties(settings, vertices, areas, updates, disable) {
 }
 
 
-function importAnimation(vertices, areas, animation, disable) {
+function importAnimation(graph, animation, disable) {
+    const {
+        vertices,
+        areas,
+    } = graph;
+
     let ids;
     let edges;
-    let overFrames;
+    let frames;
 
     function initialize() {
         disable();
         ids = new Set();
         edges = {};
-        overFrames = [];
+        frames = [];
     }
 
     function process(data) {
-        if (data.type !== 'frame') {
+        if (!validate.isFrame(data)) {
             throw 'type must be frame';
         }
-        let props = propsPop(data);
-        props = clean(props, conditions.frame);
 
-        const duration = validate.receivedDuration(data);
-
-        const overFrame = {
-            duration: duration,
-            graph: {},
-            vertices: [],
-            edges: [],
-        };
+        const [props, frame] = validate.receivedFrame(data);
 
         if (props !== null) {
             const overGraph = pop(props, 'graph');
             if (overGraph !== null) {
-                validate.receivedGraph(overFrame.graph, props);
+                validate.receivedGraph(frame.graph, overGraph);
             }
 
             const overVertices = pop(props, 'vertices');
@@ -160,14 +164,15 @@ function importAnimation(vertices, areas, animation, disable) {
                         ids.add(vertex.id);
                     }
                     const x = validate.receivedX(overVertex);
+                    const y = validate.receivedY(overVertex);
                     if (x !== null) {
                         vertex.x = x;
                     }
-                    const y = validate.receivedY(overVertex);
                     if (y !== null) {
                         vertex.y = y;
                     }
                     validate.receivedVertex(vertex, overVertex);
+                    frame.vertices.push(vertex);
                 }
             }
 
@@ -178,24 +183,26 @@ function importAnimation(vertices, areas, animation, disable) {
                     edge.source = validate.receivedSource(overEdge, vertices);
                     edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
                     validate.notMissingEdge(edge.source, edge.target, vertices, areas);
-                    if (!(edge.source in edges)) {
+                    if (edge.source in edges) {
+                        if (edges[edge.source].has(edge.target)) {
+                            throw `duplicate edge with source ${edge.source} and target ${edge.target}`;
+                        } else {
+                            edges[edge.source].add(edge.target);
+                        }
+                    } else {
                         edges[edge.source] = new Set();
                     }
-                    if (edges[edge.source].has(edge.target)) {
-                        throw `duplicate edge with source ${edge.source} and target ${edge.target}`;
-                    } else {
-                        edges[edge.source].add(edge.target);
-                    }
                     validate.receivedEdge(edge, overEdge);
+                    frame.edges.push(edge);
                 }
             }
         }
 
-        overFrames.push(overFrame);
+        frames.push(frame);
     }
 
     function finalize() {
-        animation.initialize(overFrames);
+        animation.initialize(frames);
     }
 
     return loadLocal(initialize, process)

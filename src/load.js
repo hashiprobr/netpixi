@@ -11,14 +11,14 @@ function seek(file, process) {
             const reader = new FileReader();
 
             reader.addEventListener('load', () => {
-                const flush = end >= file.size;
                 try {
+                    const flush = end >= file.size;
                     push(new Uint8Array(reader.result), flush);
+                    if (!flush) {
+                        read(end, end + chunkSize);
+                    }
                 } catch (error) {
                     reject(error);
-                }
-                if (!flush) {
-                    read(end, end + chunkSize);
                 }
             });
 
@@ -41,7 +41,7 @@ function stream(body, process) {
         const reader = body.getReader();
 
         function read() {
-            return reader.read()
+            reader.read()
                 .then(pipe)
                 .catch(reject);
         }

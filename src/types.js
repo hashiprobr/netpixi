@@ -8,6 +8,9 @@ function compare(a, b) {
     return 1;
 }
 
+const areNotEqual = (a, b) => a !== b;
+const areNotClose = (a, b) => compare(a, b) !== 0;
+
 const isBoolean = (value) => typeof value === 'boolean';
 const isFinite = (value) => typeof value === 'number' && !Number.isNaN(value) && Number.isFinite(value);
 const isNonNegative = (value) => isFinite(value) && compare(value, 0) >= 0;
@@ -18,6 +21,28 @@ const isAlpha = (value) => isNonNegative(value) && compare(value, 1) <= 0;
 const isString = (value) => typeof value === 'string';
 const isObject = (value) => typeof value === 'object';
 const isArray = (value) => Array.isArray(value);
+
+const differences = {
+    graph: {
+        directed: areNotEqual,
+        borderX: areNotClose,
+        borderY: areNotClose,
+        color: areNotEqual,
+        alpha: areNotClose,
+        fade: areNotClose,
+    },
+    vertex: {
+        size: areNotClose,
+        color: areNotEqual,
+    },
+    edge: {
+        width: areNotClose,
+        color: areNotEqual,
+        alpha: areNotClose,
+        curve1: areNotClose,
+        curve2: areNotClose,
+    },
+};
 
 const conditions = {
     settings: {
@@ -31,9 +56,7 @@ const conditions = {
         borderY: isNonNegative,
         color: isColor,
         alpha: isAlpha,
-        edgeFade: isAlpha,
-        edgeScale: isPositive,
-        vertexScale: isPositive,
+        fade: isAlpha,
     },
     vertex: {
         size: isPositive,
@@ -53,4 +76,4 @@ const conditions = {
     },
 };
 
-export { compare, isFinite, isNonNegativeInteger, isString, isObject, conditions };
+export { compare, isFinite, isNonNegativeInteger, isString, isObject, differences, conditions };

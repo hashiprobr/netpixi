@@ -1,85 +1,35 @@
-import { compare, isString, conditions } from './types';
-import { get, pop, propsPop, clean, overwrite, union, processGraph, validate } from './data';
+import { compare, isString } from './types';
+import { pop, overwrite, union, processGraph, validate } from './data';
 
 
-export default function (settings, vertices, areas, animation, updates, updatePanel, warn) {
+export default function (cell, graph, animation, panel) {
     const {
+        settings,
+        vertices,
+        areas,
         drawEdges,
         drawAreas,
-        updateBackground,
-        updateSingleSprite,
-        updateSinglePositionAndSprite,
-        updateNeighborAreas,
-        initializeVisibility,
-    } = updates;
+        drawNeighborAreas,
+        updateBackgroundAndTexture,
+        updateSprite,
+        updatePositionAndSprite,
+    } = graph;
 
     function send(d) {
         try {
-            if (d.type === 'frame') {
-                let props = propsPop(d);
-                props = clean(props, conditions.frame);
-
-                const duration = validate.receivedDuration(d);
-
-                const overFrame = {
-                    duration: duration,
-                    graph: {},
-                    vertices: [],
-                    edges: [],
-                };
-
-                if (props !== null) {
-                    const overGraph = pop(props, 'graph');
-                    if (overGraph !== null) {
-                        validate.receivedGraph(overFrame.graph, props);
-                    }
-
-                    const overVertices = pop(props, 'vertices');
-                    if (overVertices !== null) {
-                        for (const overVertex of overVertices) {
-                            const vertex = {};
-                            vertex.id = validate.receivedId(overVertex);
-                            validate.notMissingVertex(vertex.id, vertices);
-                            const x = validate.receivedX(overVertex);
-                            if (x !== null) {
-                                vertex.x = x;
-                            }
-                            const y = validate.receivedY(overVertex);
-                            if (y !== null) {
-                                vertex.y = y;
-                            }
-                            validate.receivedVertex(vertex, overVertex);
-                        }
-                    }
-
-                    const overEdges = pop(props, 'edges');
-                    if (overEdges !== null) {
-                        for (const overEdge in overEdges) {
-                            const edge = {};
-                            edge.source = validate.receivedSource(overEdge, vertices);
-                            edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
-                            validate.notMissingEdge(edge.source, edge.target, vertices, areas);
-                            validate.receivedEdge(edge, overEdge);
-                        }
-                    }
-                }
-
-                animation.insert(overFrame);
-
-                updatePanel.bottom();
-            } else {
+            if (!validate.isFrame(d)) {
                 processGraph(d,
                     (props) => {
                         if (props !== null) {
-                            const overGraph = get(props, 'graph');
-                            validate.missingDirected(settings, overGraph);
-                            overwrite(settings.graph, clean(overGraph, conditions.graph));
-                            overwrite(settings.vertex, clean(get(props, 'vertex'), conditions.vertex));
-                            overwrite(settings.edge, clean(get(props, 'edge'), conditions.edge));
-                            settings.props = union(settings.props, props);
-                            updateBackground();
+                            const overSettings = validate.receivedSettings(props);
+                            validate.missingDirected(settings.graph, overSettings.graph);
+                            overwrite(settings.graph, overSettings.graph);
+                            overwrite(settings.vertex, overSettings.vertex);
+                            overwrite(settings.edge, overSettings.edge);
+                            settings.props = union(settings.props, overSettings.props);
+                            updateBackgroundAndTexture();
                             for (const vertex of Object.values(vertices)) {
-                                updateSingleSprite(vertex);
+                                updateSprite(vertex);
                             }
                             drawAreas();
                         }
@@ -105,12 +55,11 @@ export default function (settings, vertices, areas, animation, updates, updatePa
                         }
                         vertex.props = union(vertex.props, props);
                         if (moved) {
-                            updateSinglePositionAndSprite(vertex);
-                            initializeVisibility();
+                            updatePositionAndSprite(vertex);
                         } else {
-                            updateSingleSprite(vertex);
-                            updateNeighborAreas(vertex);
+                            updateSprite(vertex);
                         }
+                        drawNeighborAreas(vertex);
                     },
                     (data, props) => {
                         const source = validate.receivedSource(data, vertices);
@@ -128,12 +77,56 @@ export default function (settings, vertices, areas, animation, updates, updatePa
                         neighbor.props = union(neighbor.props, props);
                         drawEdges(u);
                     });
+            } else {
+                const [props, frame] = validate.receivedFrame(d);
+
+                if (props !== null) {
+                    const overGraph = pop(props, 'graph');
+                    if (overGraph !== null) {
+                        validate.receivedGraph(frame.graph, overGraph);
+                    }
+
+                    const overVertices = pop(props, 'vertices');
+                    if (overVertices !== null) {
+                        for (const overVertex of overVertices) {
+                            const vertex = {};
+                            vertex.id = validate.receivedId(overVertex);
+                            validate.notMissingVertex(vertex.id, vertices);
+                            const x = validate.receivedX(overVertex);
+                            const y = validate.receivedY(overVertex);
+                            if (x !== null) {
+                                vertex.x = x;
+                            }
+                            if (y !== null) {
+                                vertex.y = y;
+                            }
+                            validate.receivedVertex(vertex, overVertex);
+                            frame.vertices.push(vertex);
+                        }
+                    }
+
+                    const overEdges = pop(props, 'edges');
+                    if (overEdges !== null) {
+                        for (const overEdge in overEdges) {
+                            const edge = {};
+                            edge.source = validate.receivedSource(overEdge, vertices);
+                            edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
+                            validate.notMissingEdge(edge.source, edge.target, vertices, areas);
+                            validate.receivedEdge(edge, overEdge);
+                            frame.edges.push(edge);
+                        }
+                    }
+                }
+
+                animation.insert(frame);
+
+                panel.toggleAnimation();
             }
         } catch (error) {
             if (isString(error)) {
-                warn(`Proxy error: ${error}`);
+                cell.warn(`Proxy error: ${error}`);
             } else {
-                warn(error);
+                cell.warn(error);
             }
         }
     }

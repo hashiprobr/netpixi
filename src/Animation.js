@@ -2,15 +2,15 @@ import { gsap } from 'gsap';
 
 
 export default function () {
-    const frames = [];
+    const tweens = [];
 
-    function initialize(overFrames) {
-        frames.splice(0, frames.length, ...overFrames);
+    function initialize(frames) {
+        tweens.splice(0, tweens.length, ...frames);
     }
 
-    function insert(overFrame) {
-        frames.add(overFrame);
+    function insert(frame) {
+        tweens.add(frame);
     }
 
-    return { frames, initialize, insert };
+    return { tweens, initialize, insert };
 }
