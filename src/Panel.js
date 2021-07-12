@@ -126,14 +126,14 @@ export default function (app, cell, graph, animation, filename) {
     });
 
     const zoomLabel = document.createElement('p');
-    zoomLabel.style.margin = '1em .5em 1em 1em';
+    zoomLabel.style.margin = '1em 0 1em 1em';
     zoomLabel.style.fontSize = '.75em';
     zoomLabel.style.whiteSpace = 'nowrap';
     zoomLabel.style.userSelect = 'none';
 
     const opacityLabel = document.createElement('p');
     opacityLabel.style.display = 'none';
-    opacityLabel.style.margin = '1em';
+    opacityLabel.style.margin = '1em 0 1em 1em';
     opacityLabel.style.fontSize = '.75em';
     opacityLabel.style.whiteSpace = 'nowrap';
     opacityLabel.style.userSelect = 'none';
