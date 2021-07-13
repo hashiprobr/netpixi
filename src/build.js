@@ -1,3 +1,4 @@
+import { ShapeInfo, Intersection } from 'kld-intersections';
 import * as PIXI from 'pixi.js';
 
 import { compare, differences } from './types';
@@ -92,6 +93,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         let top;
         let bottom;
 
+        let boundsShape;
+
         function getScale() {
             return scale;
         }
@@ -142,6 +145,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     let x2;
                     let y2;
                     let bezier;
+                    let edgeShape;
                     if (compare(c1, 0) !== 0 || compare(c2, 0) !== 0) {
                         dx *= 0.2;
                         dy *= 0.2;
@@ -152,38 +156,43 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         x2 = tx - dx + c2 * nx;
                         y2 = ty - dy + c2 * ny;
                         bezier = true;
+                        edgeShape = ShapeInfo.cubicBezier(sx, sy, x1, y1, x2, y2, tx, ty);
                     } else {
                         bezier = false;
+                        edgeShape = ShapeInfo.line(sx, sy, tx, ty);
                     }
-                    let size;
-                    if (infinite) {
-                        size = props.width;
-                    } else {
-                        size = scale * props.width;
-                    }
-                    const sourceVisible = sx < left || sx >= right || sy < top || sy >= bottom;
-                    const targetVisible = tx < left || tx >= right || ty < top || ty >= bottom;
-                    let alpha = props.alpha * s.alpha * t.alpha;
-                    if (sourceVisible) {
-                        alpha *= settings.graph.alpha1;
-                        if (targetVisible) {
-                            alpha *= settings.graph.alpha2;
+                    const sourceVisible = sx >= left && sx < right && sy >= top && sy < bottom;
+                    const targetVisible = tx >= left && tx < right && ty >= top && ty < bottom;
+                    const intersect = Intersection.intersect(edgeShape, boundsShape);
+                    if (sourceVisible || targetVisible || intersect.points.length > 0) {
+                        let size;
+                        if (infinite) {
+                            size = props.width;
+                        } else {
+                            size = scale * props.width;
                         }
-                    } else {
-                        if (targetVisible) {
+                        let alpha = props.alpha * s.alpha * t.alpha;
+                        if (sourceVisible) {
+                            if (!targetVisible) {
+                                alpha *= settings.graph.alpha1;
+                            }
+                        } else {
                             alpha *= settings.graph.alpha1;
+                            if (!targetVisible) {
+                                alpha *= settings.graph.alpha2;
+                            }
                         }
-                    }
-                    graphics.lineStyle({
-                        width: Math.min(size, s.sprite.texture.size, t.sprite.texture.size),
-                        color: props.color,
-                        alpha: Math.min(alpha, 1),
-                    });
-                    graphics.moveTo(sx, sy);
-                    if (bezier) {
-                        graphics.bezierCurveTo(x1, y1, x2, y2, tx, ty);
-                    } else {
-                        graphics.lineTo(tx, ty);
+                        graphics.lineStyle({
+                            width: Math.min(size, s.sprite.texture.size, t.sprite.texture.size),
+                            color: props.color,
+                            alpha: Math.min(alpha, 1),
+                        });
+                        graphics.moveTo(sx, sy);
+                        if (bezier) {
+                            graphics.bezierCurveTo(x1, y1, x2, y2, tx, ty);
+                        } else {
+                            graphics.lineTo(tx, ty);
+                        }
                     }
                 }
             }
@@ -240,6 +249,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             right = left + width;
             top = -app.stage.position.y;
             bottom = top + height;
+            boundsShape = ShapeInfo.rectangle(left, top, width, height);
             drawAreas();
         }
 
@@ -322,8 +332,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 };
                 app.view.release = () => {
                     if (draggedVertex === null) {
-                        updateBoundsAndDrawAreas();
-                        dragging = false;
+                        if (dragging) {
+                            updateBoundsAndDrawAreas();
+                            dragging = false;
+                        }
                     } else {
                         draggedVertex.sprite.stop();
                     }

@@ -17,9 +17,7 @@ const opts = assign({}, watchify.args, customOpts);
 const b = watchify(browserify(opts));
 
 b.transform(babelify, {
-    presets: ['es2015'],
-    plugins: ['transform-object-rest-spread'],
-    global: true,
+    presets: ['@babel/preset-env'],
 });
 
 gulp.task('default', bundle);
@@ -37,6 +35,6 @@ function bundle() {
         .pipe(sourcemaps.write('./', {
             sourceMappingURLPrefix: '/files',
             mapFile: (path) => path.replace('.js.map', '.map'),
-         }))
+        }))
         .pipe(gulp.dest('./netpixi'));
 }
