@@ -205,12 +205,24 @@ const validate = {
         }
         return target;
     },
-    notMissingEdge(source, target, vertices, areas) {
-        const hasStraight = vertices[target].leaders.has(source) && !areas[source].neighbors[target].reversed;
-        const hasReversed = vertices[source].leaders.has(target) && areas[target].neighbors[source].reversed;
+    notMissingEdge(settings, source, target, vertices, areas) {
+        let hasStraight;
+        let hasReversed;
+        hasStraight = vertices[target].leaders.has(source) && !areas[source].neighbors[target].reversed;
+        hasReversed = vertices[source].leaders.has(target) && areas[target].neighbors[source].reversed;
         if (!hasStraight && !hasReversed) {
-            throw `missing edge with source ${source} and target ${target}`;
+            if (settings.graph.directed) {
+                throw `missing edge with source ${source} and target ${target}`;
+            } else {
+                hasStraight = vertices[source].leaders.has(target) && !areas[target].neighbors[source].reversed;
+                hasReversed = vertices[target].leaders.has(source) && areas[source].neighbors[target].reversed;
+                if (!hasStraight && !hasReversed) {
+                    throw `missing edge with ids ${source} and ${target}`;
+                }
+                return [target, source];
+            }
         }
+        return [source, target];
     },
     notDuplicateEdge(source, target, object) {
         if (source in object) {

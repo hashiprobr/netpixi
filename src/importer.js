@@ -41,9 +41,9 @@ function importProperties(graph, disable) {
                 overVertices[id] = { x, y, props };
             },
             (data, props) => {
-                const source = validate.receivedSource(data, vertices);
-                const target = validate.receivedTarget(data, vertices, source);
-                validate.notMissingEdge(source, target, vertices, areas);
+                let source = validate.receivedSource(data, vertices);
+                let target = validate.receivedTarget(data, vertices, source);
+                [source, target] = validate.notMissingEdge(settings, source, target, vertices, areas);
                 validate.notDuplicateEdge(source, target, overEdges);
                 overEdges[source][target] = props;
             });
@@ -124,6 +124,7 @@ function importProperties(graph, disable) {
 
 function importAnimation(graph, animation, disable) {
     const {
+        settings,
         vertices,
         areas,
     } = graph;
@@ -182,7 +183,7 @@ function importAnimation(graph, animation, disable) {
                     const edge = {};
                     edge.source = validate.receivedSource(overEdge, vertices);
                     edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
-                    validate.notMissingEdge(edge.source, edge.target, vertices, areas);
+                    [edge.source, edge.target] = validate.notMissingEdge(settings, edge.source, edge.target, vertices, areas);
                     if (edge.source in edges) {
                         if (edges[edge.source].has(edge.target)) {
                             throw `duplicate edge with source ${edge.source} and target ${edge.target}`;

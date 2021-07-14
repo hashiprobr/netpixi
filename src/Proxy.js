@@ -62,9 +62,9 @@ export default function (cell, graph, animation, panel) {
                         drawNeighborAreas(vertex);
                     },
                     (data, props) => {
-                        const source = validate.receivedSource(data, vertices);
-                        const target = validate.receivedTarget(data, vertices, source);
-                        validate.notMissingEdge(source, target, vertices, areas);
+                        let source = validate.receivedSource(data, vertices);
+                        let target = validate.receivedTarget(data, vertices, source);
+                        [source, target] = validate.notMissingEdge(settings, source, target, vertices, areas);
                         let neighbor;
                         let u;
                         if (vertices[target].leaders.has(source)) {
@@ -111,7 +111,7 @@ export default function (cell, graph, animation, panel) {
                             const edge = {};
                             edge.source = validate.receivedSource(overEdge, vertices);
                             edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
-                            validate.notMissingEdge(edge.source, edge.target, vertices, areas);
+                            [edge.source, edge.target] = validate.notMissingEdge(settings, edge.source, edge.target, vertices, areas);
                             validate.receivedEdge(edge, overEdge);
                             frame.edges.push(edge);
                         }
