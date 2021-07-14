@@ -1,15 +1,15 @@
 export default {
     graph: {
         directed: false,
-        borderX: 9,
-        borderY: 9,
+        borderX: 10,
+        borderY: 10,
         color: 0x000000,
         alpha: 1,
         alpha1: 1,
         alpha2: 1,
     },
     vertex: {
-        size: 3,
+        size: 5,
         color: 0xffffff,
     },
     edge: {

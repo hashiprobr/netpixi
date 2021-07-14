@@ -10,8 +10,8 @@ function importProperties(graph, disable) {
         areas,
         drawEdges,
         updateBackgroundAndTexture,
-        updateSprite,
-        updatePositionAndSprite,
+        updateSpriteAndShape,
+        updatePositionAndSpriteAndShape,
     } = graph;
 
     let overSettings;
@@ -105,11 +105,11 @@ function importProperties(graph, disable) {
 
         if (moved) {
             for (const id of ids) {
-                updatePositionAndSprite(vertices[id]);
+                updatePositionAndSpriteAndShape(vertices[id]);
             }
         } else {
             for (const id of ids) {
-                updateSprite(vertices[id]);
+                updateSpriteAndShape(vertices[id]);
             }
         }
         for (const u of leaders) {

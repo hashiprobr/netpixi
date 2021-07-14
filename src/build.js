@@ -93,25 +93,79 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         let top;
         let bottom;
 
-        let boundsShape;
-
         function getScale() {
             return scale;
         }
 
+        function getRed(color) {
+            return (color & 0xff0000) >> 16;
+        }
+
+        function getGreen(color) {
+            return (color & 0x00ff00) >> 8;
+        }
+
+        function getBlue(color) {
+            return color & 0x0000ff;
+        }
+
+        function calculateBlend(a, b, alpha) {
+            return Math.round(alpha * a + (1 - alpha) * b);
+        }
+
+        function calculateIntersection(edgeShape, shape) {
+            const intersect = Intersection.intersect(edgeShape, shape);
+            const x = intersect.points[0].x;
+            const y = intersect.points[0].y;
+            return [x, y];
+        }
+
+        function formatCircle(tx, ty, radius) {
+            circleShape.args[0].x = tx;
+            circleShape.args[0].y = ty;
+            circleShape.args[1] = radius;
+            return circleShape;
+        }
+
+        function formatLine(sx, sy, tx, ty) {
+            lineShape.args[0].x = sx;
+            lineShape.args[0].y = sy;
+            lineShape.args[1].x = tx;
+            lineShape.args[1].y = ty;
+            return lineShape;
+        }
+
+        function formatCurve(sx, sy, x1, y1, x2, y2, tx, ty) {
+            curveShape.args[0].x = sx;
+            curveShape.args[0].y = sy;
+            curveShape.args[1].x = x1;
+            curveShape.args[1].y = y1;
+            curveShape.args[2].x = x2;
+            curveShape.args[2].y = y2;
+            curveShape.args[3].x = tx;
+            curveShape.args[3].y = ty;
+            return curveShape;
+        }
+
+        function normalizeHorizontal(x) {
+            return settings.graph.borderX + x * (width - 2 * settings.graph.borderX);
+        }
+
+        function normalizeVertical(y) {
+            return settings.graph.borderY + y * (height - 2 * settings.graph.borderY);
+        }
+
         function drawTexture(props) {
-            let size;
-            if (infinite) {
-                size = props.size;
-            } else {
-                size = scale * props.size;
+            let radius = props.size / 2;
+            if (!infinite) {
+                radius *= scale;
             }
             const graphics = new PIXI.Graphics()
                 .beginFill(props.color, 1)
-                .drawCircle(0, 0, size)
+                .drawCircle(0, 0, radius)
                 .endFill();
             const texture = app.renderer.generateTexture(graphics);
-            texture.size = size;
+            texture.radius = radius;
             return texture;
         }
 
@@ -134,64 +188,100 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 const ty = t.sprite.position.y;
                 let dx = tx - sx;
                 let dy = ty - sy;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const minimum = (s.sprite.texture.size + t.sprite.texture.size) / 2;
-                if (compare(distance, minimum) > 0) {
+                const distance = Math.sqrt(dx * dx + dy * dy) - (s.sprite.texture.radius + t.sprite.texture.radius);
+                if (compare(distance, 0) > 0) {
                     const props = merge(settings.edge, neighbor.props, differences.edge);
-                    const c1 = props.curve1;
-                    const c2 = props.curve2;
-                    let x1;
-                    let y1;
-                    let x2;
-                    let y2;
-                    let bezier;
-                    let edgeShape;
-                    if (compare(c1, 0) !== 0 || compare(c2, 0) !== 0) {
-                        dx *= 0.2;
-                        dy *= 0.2;
-                        const nx = -dy;
-                        const ny = dx;
-                        x1 = sx + dx + c1 * nx;
-                        y1 = sy + dy + c1 * ny;
-                        x2 = tx - dx + c2 * nx;
-                        y2 = ty - dy + c2 * ny;
-                        bezier = true;
-                        edgeShape = ShapeInfo.cubicBezier(sx, sy, x1, y1, x2, y2, tx, ty);
-                    } else {
-                        bezier = false;
-                        edgeShape = ShapeInfo.line(sx, sy, tx, ty);
-                    }
                     const sourceVisible = sx >= left && sx < right && sy >= top && sy < bottom;
                     const targetVisible = tx >= left && tx < right && ty >= top && ty < bottom;
-                    const intersect = Intersection.intersect(edgeShape, boundsShape);
-                    if (sourceVisible || targetVisible || intersect.points.length > 0) {
-                        let size;
-                        if (infinite) {
-                            size = props.width;
-                        } else {
-                            size = scale * props.width;
-                        }
-                        let alpha = props.alpha * s.alpha * t.alpha;
-                        if (sourceVisible) {
-                            if (!targetVisible) {
-                                alpha *= settings.graph.alpha1;
-                            }
-                        } else {
+                    let alpha = props.alpha * s.alpha * t.alpha;
+                    if (sourceVisible) {
+                        if (!targetVisible) {
                             alpha *= settings.graph.alpha1;
-                            if (!targetVisible) {
-                                alpha *= settings.graph.alpha2;
-                            }
                         }
-                        graphics.lineStyle({
-                            width: Math.min(size, s.sprite.texture.size, t.sprite.texture.size),
-                            color: props.color,
-                            alpha: Math.min(alpha, 1),
-                        });
-                        graphics.moveTo(sx, sy);
-                        if (bezier) {
-                            graphics.bezierCurveTo(x1, y1, x2, y2, tx, ty);
+                    } else {
+                        alpha *= settings.graph.alpha1;
+                        if (!targetVisible) {
+                            alpha *= settings.graph.alpha2;
+                        }
+                    }
+                    if (compare(alpha, 0) > 0) {
+                        alpha = Math.min(alpha, 1);
+                        let size = props.width;
+                        if (!infinite) {
+                            size *= scale;
+                        }
+                        size = Math.min(size, s.sprite.texture.radius, t.sprite.texture.radius);
+                        const minimum = 9 * size;
+                        const c1 = props.curve1;
+                        const c2 = props.curve2;
+                        let nx;
+                        let ny;
+                        let x1;
+                        let y1;
+                        let x2;
+                        let y2;
+                        let straight;
+                        let edgeShape;
+                        if (compare(distance, minimum) < 0 || (compare(c1, 0) === 0 && compare(c2, 0) === 0)) {
+                            straight = true;
+                            edgeShape = formatLine(sx, sy, tx, ty);
                         } else {
-                            graphics.lineTo(tx, ty);
+                            dx *= 0.2;
+                            dy *= 0.2;
+                            nx = -dy;
+                            ny = dx;
+                            x1 = sx + dx + c1 * nx;
+                            y1 = sy + dy + c1 * ny;
+                            x2 = tx - dx + c2 * nx;
+                            y2 = ty - dy + c2 * ny;
+                            straight = false;
+                            edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
+                        }
+                        const intersect = Intersection.intersect(edgeShape, boundsShape);
+                        if (sourceVisible || targetVisible || intersect.points.length > 0) {
+                            if (compare(distance, minimum) < 0) {
+                                size *= distance / minimum;
+                            }
+                            graphics.lineStyle({
+                                width: size,
+                                color: props.color,
+                                alpha: alpha,
+                            });
+                            graphics.moveTo(sx, sy);
+                            if (settings.graph.directed) {
+                                const shape = formatCircle(tx, ty, t.sprite.texture.radius + size / 2);
+                                const [gx, gy] = calculateIntersection(edgeShape, shape);
+                                if (straight) {
+                                    graphics.lineTo(gx, gy);
+                                } else {
+                                    graphics.bezierCurveTo(x1, y1, x2, y2, gx, gy);
+                                }
+                                const r = calculateBlend(getRed(props.color), getRed(settings.graph.color), alpha);
+                                const g = calculateBlend(getGreen(props.color), getGreen(settings.graph.color), alpha);
+                                const b = calculateBlend(getBlue(props.color), getBlue(settings.graph.color), alpha);
+                                graphics.lineStyle({
+                                    ...graphics.line,
+                                    color: (r << 16) + (g << 8) + b,
+                                    alpha: 1,
+                                    cap: PIXI.LINE_CAP.ROUND,
+                                    join: PIXI.LINE_JOIN.ROUND,
+                                });
+                                const [hx, hy] = calculateIntersection(edgeShape, t.shape);
+                                dx = 2 * (hx - gx);
+                                dy = 2 * (hy - gy);
+                                nx = -dy;
+                                ny = dx;
+                                graphics.lineTo(gx - 2 * dx + nx, gy - 2 * dy + ny);
+                                graphics.lineTo(gx - dx, gy - dy);
+                                graphics.lineTo(gx - 2 * dx - nx, gy - 2 * dy - ny);
+                                graphics.lineTo(gx, gy);
+                            } else {
+                                if (straight) {
+                                    graphics.lineTo(tx, ty);
+                                } else {
+                                    graphics.bezierCurveTo(x1, y1, x2, y2, tx, ty);
+                                }
+                            }
                         }
                     }
                 }
@@ -229,50 +319,48 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             updateTexture();
         }
 
-        function updateSprite(vertex) {
+        function updateShape(vertex) {
+            vertex.shape.args[0].x = vertex.sprite.position.x;
+            vertex.shape.args[0].y = vertex.sprite.position.y;
+            vertex.shape.args[1] = vertex.sprite.texture.radius;
+        }
+
+        function updateSpriteAndShape(vertex) {
             const props = merge(settings.vertex, vertex.props, differences.vertex);
             if (props === settings.vertex) {
                 vertex.sprite.texture = defaultTexture;
             } else {
                 vertex.sprite.texture = drawTexture(props);
             }
+            updateShape(vertex);
         }
 
-        function updatePositionAndSprite(vertex) {
+        function updatePositionAndSpriteAndShape(vertex) {
             vertex.sprite.position.x = scale * vertex.x;
             vertex.sprite.position.y = scale * vertex.y;
-            updateSprite(vertex);
+            updateSpriteAndShape(vertex);
         }
 
         function updateBoundsAndDrawAreas() {
-            left = -app.stage.position.x;
-            right = left + width;
-            top = -app.stage.position.y;
-            bottom = top + height;
-            boundsShape = ShapeInfo.rectangle(left, top, width, height);
+            boundsShape.args[0].x = left = -app.stage.position.x;
+            boundsShape.args[0].y = top = -app.stage.position.y;
+            boundsShape.args[1].x = right = left + width;
+            boundsShape.args[1].y = bottom = top + height;
             drawAreas();
-        }
-
-        function normalizeHorizontal(x) {
-            return settings.graph.borderX + x * (width - 2 * settings.graph.borderX);
-        }
-
-        function normalizeVertical(y) {
-            return settings.graph.borderY + y * (height - 2 * settings.graph.borderY);
         }
 
         function initializeScale() {
             scale = 1;
         }
 
-        function initializePositionAndUpdateSprite(vertex) {
-            vertex.sprite.position.x = vertex.x;
-            vertex.sprite.position.y = vertex.y;
-            updateSprite(vertex);
-        }
-
         function initializeAlpha(vertex) {
             vertex.alpha = 1;
+        }
+
+        function initializePositionAndUpdateSpriteAndShape(vertex) {
+            vertex.sprite.position.x = vertex.x;
+            vertex.sprite.position.y = vertex.y;
+            updateSpriteAndShape(vertex);
         }
 
         function connectMouse() {
@@ -294,6 +382,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.sprite.move = (event) => {
                         vertex.sprite.position.x = event.offsetX - app.stage.position.x;
                         vertex.sprite.position.y = event.offsetY - app.stage.position.y;
+                        updateShape(vertex);
                         drawNeighborAreas(vertex);
                     };
                     vertex.sprite.stop = () => {
@@ -393,7 +482,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     app.stage.scale.y = 1;
                                     updateTexture();
                                     for (const vertex of Object.values(vertices)) {
-                                        updatePositionAndSprite(vertex);
+                                        updatePositionAndSpriteAndShape(vertex);
                                     }
                                     updateBoundsAndDrawAreas();
                                 }, 100);
@@ -425,7 +514,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             initializeScale();
                             updateTexture();
                             for (const vertex of Object.values(vertices)) {
-                                initializePositionAndUpdateSprite(vertex);
+                                initializePositionAndUpdateSpriteAndShape(vertex);
                             }
                             updateBoundsAndDrawAreas();
                             panel.updateZoom();
@@ -450,9 +539,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         if (settings === null) {
             settings = nullSettings;
         }
-        settings.graph = merge(defaults.graph, settings.graph, differences.graph);
-        settings.vertex = merge(defaults.vertex, settings.vertex, differences.vertex);
-        settings.edge = merge(defaults.edge, settings.edge, differences.edge);
+        settings.graph = merge({ ...defaults.graph }, settings.graph, differences.graph);
+        settings.vertex = merge({ ...defaults.vertex }, settings.vertex, differences.vertex);
+        settings.edge = merge({ ...defaults.edge }, settings.edge, differences.edge);
 
         const areas = {};
 
@@ -548,9 +637,15 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.sprite = new PIXI.Sprite();
             vertex.sprite.anchor.x = 0.5;
             vertex.sprite.anchor.y = 0.5;
-            initializePositionAndUpdateSprite(vertex);
+            vertex.shape = ShapeInfo.circle(0, 0, 0);
+            initializePositionAndUpdateSpriteAndShape(vertex);
             app.stage.addChild(vertex.sprite);
         }
+
+        const boundsShape = ShapeInfo.rectangle(0, 0, 0, 0);
+        const circleShape = ShapeInfo.circle(0, 0, 0);
+        const lineShape = ShapeInfo.line(0, 0, 0, 0);
+        const curveShape = ShapeInfo.cubicBezier(0, 0, 0, 0, 0, 0, 0, 0);
 
         updateBoundsAndDrawAreas();
 
@@ -566,8 +661,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             drawNeighborAreas,
             updateSize,
             updateBackgroundAndTexture,
-            updateSprite,
-            updatePositionAndSprite,
+            updateSpriteAndShape,
+            updatePositionAndSpriteAndShape,
             updateBoundsAndDrawAreas,
             connectMouseToSprites,
             connectMouseToView,
