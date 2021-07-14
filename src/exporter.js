@@ -10,29 +10,31 @@ function exportImage(app, graph, filename) {
     } = graph;
 
     return new Promise((resolve) => {
+        const clear = false;
+
         const bounds = app.stage.getBounds();
         const scale = getScale();
 
         const width = bounds.width + 2 * scale * settings.graph.borderX;
         const height = bounds.height + 2 * scale * settings.graph.borderY;
 
-        const texture = PIXI.RenderTexture.create(width, height);
+        const renderTexture = PIXI.RenderTexture.create({ width, height });
 
         const graphics = new PIXI.Graphics()
             .beginFill(settings.graph.color, settings.graph.alpha)
             .drawRect(-1, -1, width + 2, height + 2)
             .endFill();
-        app.renderer.render(graphics, texture, false);
+        app.renderer.render(graphics, { renderTexture, clear });
         graphics.destroy();
 
         const tx = scale * settings.graph.borderX - bounds.x;
         const ty = scale * settings.graph.borderY - bounds.y;
-        const matrix = new PIXI.Matrix(1, 0, 0, 1, tx, ty);
-        app.renderer.render(app.stage, texture, false, matrix);
+        const transform = new PIXI.Matrix(1, 0, 0, 1, tx, ty);
+        app.renderer.render(app.stage, { renderTexture, clear, transform });
 
-        const image = app.renderer.plugins.extract.image(texture, 'image/png', 1);
+        const image = app.renderer.plugins.extract.image(renderTexture, 'image/png', 1);
 
-        texture.destroy();
+        renderTexture.destroy();
 
         const a = document.createElement('a');
         a.setAttribute('href', pop(image, 'src'));
