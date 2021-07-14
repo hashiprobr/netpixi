@@ -309,13 +309,18 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             }
         }
 
+        function updateBackground() {
+            app.renderer.backgroundColor = settings.graph.color;
+            app.renderer.backgroundAlpha = settings.graph.alpha;
+        }
+
         function updateTexture() {
-            defaultTexture = drawTexture(settings.vertex);
+            defaultTexture.destroy();
+            initializeTexture();
         }
 
         function updateBackgroundAndTexture() {
-            app.renderer.backgroundColor = settings.graph.color;
-            app.renderer.backgroundAlpha = settings.graph.alpha;
+            updateBackground();
             updateTexture();
         }
 
@@ -327,10 +332,18 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function updateSpriteAndShape(vertex) {
             const props = merge(settings.vertex, vertex.props, differences.vertex);
-            if (props === settings.vertex) {
-                vertex.sprite.texture = defaultTexture;
-            } else {
-                vertex.sprite.texture = drawTexture(props);
+            if (vertex.sprite.texture === defaultTexture) {
+                if (props !== settings.vertex) {
+                    vertex.sprite.texture = drawTexture(props);
+                }
+            }
+            else {
+                vertex.sprite.texture.destroy();
+                if (props === settings.vertex) {
+                    vertex.sprite.texture = defaultTexture;
+                } else {
+                    vertex.sprite.texture = drawTexture(props);
+                }
             }
             updateShape(vertex);
         }
@@ -351,6 +364,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function initializeScale() {
             scale = 1;
+        }
+
+        function initializeTexture() {
+            defaultTexture = drawTexture(settings.vertex);
         }
 
         function initializeAlpha(vertex) {
@@ -591,7 +608,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         updateSize();
         initializeScale();
-        updateBackgroundAndTexture();
+        updateBackground();
+        initializeTexture();
 
         let difX;
         if (Number.isFinite(minX) && Number.isFinite(maxX) && compare(minX, maxX) !== 0) {
@@ -637,6 +655,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.sprite = new PIXI.Sprite();
             vertex.sprite.anchor.x = 0.5;
             vertex.sprite.anchor.y = 0.5;
+            vertex.sprite.texture = defaultTexture;
             vertex.shape = ShapeInfo.circle(0, 0, 0);
             initializePositionAndUpdateSpriteAndShape(vertex);
             app.stage.addChild(vertex.sprite);

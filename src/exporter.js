@@ -1,5 +1,7 @@
 import * as PIXI from 'pixi.js';
 
+import { pop } from './data';
+
 
 function exportImage(app, graph, filename) {
     const {
@@ -21,6 +23,7 @@ function exportImage(app, graph, filename) {
             .drawRect(-1, -1, width + 2, height + 2)
             .endFill();
         app.renderer.render(graphics, texture, false);
+        graphics.destroy();
 
         const tx = scale * settings.graph.borderX - bounds.x;
         const ty = scale * settings.graph.borderY - bounds.y;
@@ -29,13 +32,13 @@ function exportImage(app, graph, filename) {
 
         const image = app.renderer.plugins.extract.image(texture, 'image/png', 1);
 
+        texture.destroy();
+
         const a = document.createElement('a');
-        a.setAttribute('href', image.src);
+        a.setAttribute('href', pop(image, 'src'));
         a.setAttribute('download', `${filename}.png`);
         a.click();
         a.remove();
-
-        texture.destroy();
 
         resolve();
     });
