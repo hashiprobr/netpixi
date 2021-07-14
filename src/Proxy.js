@@ -16,6 +16,10 @@ export default function (cell, graph, animation, panel) {
     } = graph;
 
     function send(d) {
+        if (panel.isDisabled()) {
+            return;
+        }
+        panel.disable();
         try {
             if (!validate.isFrame(d)) {
                 processGraph(d,
@@ -128,6 +132,8 @@ export default function (cell, graph, animation, panel) {
             } else {
                 cell.warn(error);
             }
+        } finally {
+            panel.enable();
         }
     }
     return { send };

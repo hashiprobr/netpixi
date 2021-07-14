@@ -4,7 +4,17 @@ import { exportImage, exportVideo } from './exporter';
 
 
 export default function (app, cell, graph, animation, filename) {
+    let disabled;
+
     let playing;
+
+    function isDisabled() {
+        return disabled;
+    }
+
+    function initializeDisabled() {
+        disabled = false;
+    }
 
     function initializePlaying() {
         playing = false;
@@ -23,6 +33,7 @@ export default function (app, cell, graph, animation, filename) {
     }
 
     function disableExceptPlay() {
+        disabled = true;
         propertiesButton.disabled = true;
         animationButton.disabled = true;
         networkButton.disabled = true;
@@ -30,6 +41,7 @@ export default function (app, cell, graph, animation, filename) {
         videoButton.disabled = true;
         range.disabled = true;
         cell.disable();
+        cell.clear();
     }
 
     function disable() {
@@ -50,6 +62,7 @@ export default function (app, cell, graph, animation, filename) {
         networkButton.disabled = false;
         animationButton.disabled = false;
         propertiesButton.disabled = false;
+        initializeDisabled();
     }
 
     function updateZoom() {
@@ -186,6 +199,7 @@ export default function (app, cell, graph, animation, filename) {
     bottom.appendChild(playButton);
     bottom.appendChild(range);
 
+    initializeDisabled();
     initializePlaying();
     updateZoom();
 
@@ -193,6 +207,9 @@ export default function (app, cell, graph, animation, filename) {
         top,
         middle,
         bottom,
+        isDisabled,
+        disable,
+        enable,
         updateZoom,
         updateOpacity,
         showOpacity,
