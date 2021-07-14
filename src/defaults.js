@@ -12,6 +12,8 @@ export default {
         size: 5,
         color: 0xffffff,
         shape: 'circle',
+        bwidth: 0,
+        bcolor: 0x808080,
     },
     edge: {
         width: 1,

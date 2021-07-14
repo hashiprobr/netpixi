@@ -66,6 +66,8 @@ const conditions = {
         size: isPositive,
         color: isColor,
         shape: isShape,
+        bwidth: isNonNegative,
+        bcolor: isColor,
     },
     edge: {
         width: isPositive,

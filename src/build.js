@@ -162,14 +162,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             return settings.graph.vborder + y * (height - 2 * settings.graph.vborder);
         }
 
-        function drawTexture(props) {
-            let radius = props.size / 2;
-            if (!infinite) {
-                radius *= scale;
-            }
-            const graphics = new PIXI.Graphics();
-            graphics.beginFill(props.color, 1);
-            switch (props.shape) {
+        function fillTexture(color, shape, graphics, radius) {
+            graphics.beginFill(color, 1);
+            switch (shape) {
                 case 'downtriangle':
                     graphics.drawRegularPolygon(0, 0, radius, 3, Math.PI);
                     break;
@@ -189,6 +184,25 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     graphics.drawCircle(0, 0, radius);
             }
             graphics.endFill();
+        }
+
+        function drawTexture(props) {
+            let radius = props.size / 2;
+            if (!infinite) {
+                radius *= scale;
+            }
+            const graphics = new PIXI.Graphics();
+            if (compare(props.bwidth, 0) > 0) {
+                let bwidth = props.bwidth;
+                if (!infinite) {
+                    bwidth *=scale;
+                }
+                bwidth = Math.min(bwidth, radius / 2);
+                fillTexture(props.bcolor, props.shape, graphics, radius);
+                fillTexture(props.color, props.shape, graphics, radius - bwidth);
+            } else {
+                fillTexture(props.color, props.shape, graphics, radius);
+            }
             const texture = app.renderer.generateTexture(graphics);
             texture.radius = radius;
             return texture;
