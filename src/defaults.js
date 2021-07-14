@@ -11,6 +11,7 @@ export default {
     vertex: {
         size: 5,
         color: 0xffffff,
+        shape: 'circle',
     },
     edge: {
         width: 1,

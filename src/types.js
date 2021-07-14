@@ -21,6 +21,7 @@ const isAlpha = (value) => isNonNegative(value) && compare(value, 1) <= 0;
 const isString = (value) => typeof value === 'string';
 const isObject = (value) => typeof value === 'object';
 const isArray = (value) => Array.isArray(value);
+const isShape = (value) => ['circle', 'star', 'square', 'diamond', 'uptriangle', 'downtriangle'].includes(value);
 
 const differences = {
     graph: {
@@ -35,6 +36,7 @@ const differences = {
     vertex: {
         size: areNotClose,
         color: areNotEqual,
+        shape: areNotEqual,
     },
     edge: {
         width: areNotClose,
@@ -63,6 +65,7 @@ const conditions = {
     vertex: {
         size: isPositive,
         color: isColor,
+        shape: isShape,
     },
     edge: {
         width: isPositive,

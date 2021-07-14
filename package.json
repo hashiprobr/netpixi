@@ -27,6 +27,7 @@
   "devDependencies": {
     "@babel/core": "^7.14.6",
     "@babel/preset-env": "^7.14.7",
+    "@pixi/graphics-extras": "^6.0.4",
     "babelify": "^10.0.0",
     "browserify": "^17.0.0",
     "gulp": "^4.0.2",

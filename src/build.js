@@ -1,5 +1,6 @@
 import { ShapeInfo, Intersection } from 'kld-intersections';
 import * as PIXI from 'pixi.js';
+import '@pixi/graphics-extras';
 
 import { compare, differences } from './types';
 import defaults from './defaults';
@@ -160,10 +161,28 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             if (!infinite) {
                 radius *= scale;
             }
-            const graphics = new PIXI.Graphics()
-                .beginFill(props.color, 1)
-                .drawCircle(0, 0, radius)
-                .endFill();
+            const graphics = new PIXI.Graphics();
+            graphics.beginFill(props.color, 1);
+            switch (props.shape) {
+                case 'downtriangle':
+                    graphics.drawRegularPolygon(0, 0, radius, 3, Math.PI);
+                    break;
+                case 'uptriangle':
+                    graphics.drawRegularPolygon(0, 0, radius, 3);
+                    break;
+                case 'diamond':
+                    graphics.drawRegularPolygon(0, 0, radius, 4);
+                    break;
+                case 'square':
+                    graphics.drawRegularPolygon(0, 0, radius, 4, Math.PI / 4);
+                    break;
+                case 'star':
+                    graphics.drawStar(0, 0, 5, radius);
+                    break;
+                default:
+                    graphics.drawCircle(0, 0, radius);
+            }
+            graphics.endFill();
             const texture = app.renderer.generateTexture(graphics);
             texture.radius = radius;
             return texture;
@@ -242,45 +261,41 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             if (compare(distance, minimum) < 0) {
                                 size *= distance / minimum;
                             }
+                            const sourceShape = formatCircle(sx, sy, s.sprite.texture.radius + size / 2);
+                            const [fx, fy] = calculateIntersection(edgeShape, sourceShape);
+                            const targetShape = formatCircle(tx, ty, t.sprite.texture.radius + size / 2);
+                            const [gx, gy] = calculateIntersection(edgeShape, targetShape);
                             graphics.lineStyle({
                                 width: size,
                                 color: props.color,
                                 alpha: alpha,
+                                cap: PIXI.LINE_CAP.ROUND,
                             });
-                            graphics.moveTo(sx, sy);
+                            graphics.moveTo(fx, fy);
+                            if (straight) {
+                                graphics.lineTo(gx, gy);
+                            } else {
+                                graphics.bezierCurveTo(x1, y1, x2, y2, gx, gy);
+                            }
                             if (settings.graph.directed) {
-                                const shape = formatCircle(tx, ty, t.sprite.texture.radius + size / 2);
-                                const [gx, gy] = calculateIntersection(edgeShape, shape);
-                                if (straight) {
-                                    graphics.lineTo(gx, gy);
-                                } else {
-                                    graphics.bezierCurveTo(x1, y1, x2, y2, gx, gy);
-                                }
                                 const r = calculateBlend(getRed(props.color), getRed(settings.graph.color), alpha);
                                 const g = calculateBlend(getGreen(props.color), getGreen(settings.graph.color), alpha);
                                 const b = calculateBlend(getBlue(props.color), getBlue(settings.graph.color), alpha);
-                                graphics.lineStyle({
-                                    ...graphics.line,
-                                    color: (r << 16) + (g << 8) + b,
-                                    alpha: 1,
-                                    cap: PIXI.LINE_CAP.ROUND,
-                                    join: PIXI.LINE_JOIN.ROUND,
-                                });
                                 const [hx, hy] = calculateIntersection(edgeShape, t.shape);
                                 dx = 2 * (hx - gx);
                                 dy = 2 * (hy - gy);
                                 nx = -dy;
                                 ny = dx;
+                                graphics.lineStyle({
+                                    ...graphics.line,
+                                    color: (r << 16) + (g << 8) + b,
+                                    alpha: 1,
+                                    join: PIXI.LINE_JOIN.ROUND,
+                                });
                                 graphics.lineTo(gx - 2 * dx + nx, gy - 2 * dy + ny);
                                 graphics.lineTo(gx - dx, gy - dy);
                                 graphics.lineTo(gx - 2 * dx - nx, gy - 2 * dy - ny);
                                 graphics.lineTo(gx, gy);
-                            } else {
-                                if (straight) {
-                                    graphics.lineTo(tx, ty);
-                                } else {
-                                    graphics.bezierCurveTo(x1, y1, x2, y2, tx, ty);
-                                }
                             }
                         }
                     }
