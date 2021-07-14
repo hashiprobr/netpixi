@@ -1,8 +1,8 @@
 export default {
     graph: {
         directed: false,
-        borderX: 10,
-        borderY: 10,
+        hborder: 10,
+        vborder: 10,
         color: 0x000000,
         alpha: 1,
         alpha1: 1,

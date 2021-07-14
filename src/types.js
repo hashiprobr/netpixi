@@ -26,8 +26,8 @@ const isShape = (value) => ['circle', 'star', 'square', 'diamond', 'uptriangle',
 const differences = {
     graph: {
         directed: areNotEqual,
-        borderX: areNotClose,
-        borderY: areNotClose,
+        hborder: areNotClose,
+        vborder: areNotClose,
         color: areNotEqual,
         alpha: areNotClose,
         alpha1: areNotClose,
@@ -55,8 +55,8 @@ const conditions = {
     },
     graph: {
         directed: isBoolean,
-        borderX: isNonNegative,
-        borderY: isNonNegative,
+        hborder: isNonNegative,
+        vborder: isNonNegative,
         color: isColor,
         alpha: isAlpha,
         alpha1: isAlpha,

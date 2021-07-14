@@ -21,8 +21,8 @@ function exportImage(app, graph, filename) {
         const bounds = app.stage.getBounds();
         const scale = getScale();
 
-        const width = bounds.width + 2 * scale * settings.graph.borderX;
-        const height = bounds.height + 2 * scale * settings.graph.borderY;
+        const width = bounds.width + 2 * scale * settings.graph.hborder;
+        const height = bounds.height + 2 * scale * settings.graph.vborder;
 
         const renderTexture = PIXI.RenderTexture.create({ width, height });
 
@@ -33,8 +33,8 @@ function exportImage(app, graph, filename) {
         app.renderer.render(graphics, { renderTexture, clear });
         graphics.destroy();
 
-        const tx = scale * settings.graph.borderX - bounds.x;
-        const ty = scale * settings.graph.borderY - bounds.y;
+        const tx = scale * settings.graph.hborder - bounds.x;
+        const ty = scale * settings.graph.vborder - bounds.y;
         const transform = new PIXI.Matrix(1, 0, 0, 1, tx, ty);
         app.renderer.render(app.stage, { renderTexture, clear, transform });
 

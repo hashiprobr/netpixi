@@ -155,11 +155,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function normalizeHorizontal(x) {
-            return settings.graph.borderX + x * (width - 2 * settings.graph.borderX);
+            return settings.graph.hborder + x * (width - 2 * settings.graph.hborder);
         }
 
         function normalizeVertical(y) {
-            return settings.graph.borderY + y * (height - 2 * settings.graph.borderY);
+            return settings.graph.vborder + y * (height - 2 * settings.graph.vborder);
         }
 
         function drawTexture(props) {
