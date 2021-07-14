@@ -69,7 +69,8 @@ function loadLocal(initialize, process) {
             initialize();
             seek(input.files[0], process)
                 .then(resolve)
-                .catch(reject);
+                .catch(reject)
+                .finally(() => input.remove());
         });
 
         input.click();

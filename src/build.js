@@ -553,6 +553,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             return [toSprites, toView];
         }
 
+        function finalize() {
+            defaultTexture.destroy();
+        }
+
         if (settings === null) {
             settings = nullSettings;
         }
@@ -685,6 +689,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             updateBoundsAndDrawAreas,
             connectMouseToSprites,
             connectMouseToView,
+            finalize,
         };
     }
 

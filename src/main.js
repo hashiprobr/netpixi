@@ -52,6 +52,7 @@ export default function (uid) {
                 mutationObserver.disconnect();
                 resizeObserver.disconnect();
                 delete proxies[uid];
+                graph.finalize();
                 destroy();
             }
         });
