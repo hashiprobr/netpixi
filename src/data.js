@@ -30,15 +30,27 @@ function popProps(data) {
 
 function loosePop(props, name) {
     if (props !== null) {
-        const value = pop(props, name);
-        if (value !== null) {
-            if (isFinite(value)) {
-                return value;
-            }
-            throw `${name} must be null or a finite number`;
-        }
+        return pop(props, name);
     }
     return null;
+}
+
+
+function loosePopNum(props, name) {
+    const value = loosePop(props, name);
+    if (value === null || isFinite(value)) {
+        return value;
+    }
+    throw `${name} must be null or a finite number`;
+}
+
+
+function loosePopStr(props, name) {
+    const value = loosePop(props, name);
+    if (value === null || isString(value)) {
+        return value;
+    }
+    throw `${name} must be null or a string`;
 }
 
 
@@ -52,21 +64,21 @@ function tightPop(data, name) {
 }
 
 
-function tightPopStr(data, name) {
-    const value = tightPop(data, name);
-    if (isString(value)) {
-        return value;
-    }
-    throw `${name} must be a string`;
-}
-
-
 function tightPopInt(data, name) {
     const value = tightPop(data, name);
     if (isNonNegativeInteger(value)) {
         return value;
     }
     throw `${name} must be a non-negative integer`;
+}
+
+
+function tightPopStr(data, name) {
+    const value = tightPop(data, name);
+    if (isString(value)) {
+        return value;
+    }
+    throw `${name} must be a string`;
 }
 
 
@@ -183,10 +195,13 @@ const validate = {
         }
     },
     receivedX(props) {
-        return loosePop(props, 'x');
+        return loosePopNum(props, 'x');
     },
     receivedY(props) {
-        return loosePop(props, 'y');
+        return loosePopNum(props, 'y');
+    },
+    receivedLabel(props) {
+        return loosePopStr(props, 'label');
     },
     receivedSource(data, vertices) {
         const source = tightPopStr(data, 'source');

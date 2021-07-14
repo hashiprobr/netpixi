@@ -43,6 +43,7 @@ export default function (cell, graph, animation, panel) {
                         validate.notMissingVertex(id, vertices);
                         const x = validate.receivedX(props);
                         const y = validate.receivedY(props);
+                        const label = validate.receivedLabel(props);
                         let moved = false;
                         const vertex = vertices[id];
                         if (x !== null) {
@@ -56,6 +57,9 @@ export default function (cell, graph, animation, panel) {
                                 vertex.y = y;
                                 moved = true;
                             }
+                        }
+                        if (label !== null) {
+                            vertex.label = label;
                         }
                         vertex.props = union(vertex.props, props);
                         if (moved) {

@@ -38,7 +38,8 @@ function importProperties(graph, disable) {
                 validate.notDuplicateVertex(id, overVertices);
                 const x = validate.receivedX(props);
                 const y = validate.receivedY(props);
-                overVertices[id] = { x, y, props };
+                const label = validate.receivedLabel(props);
+                overVertices[id] = { x, y, label, props };
             },
             (data, props) => {
                 let source = validate.receivedSource(data, vertices);
@@ -81,6 +82,9 @@ function importProperties(graph, disable) {
                     vertex.y = overVertex.y;
                     moved = true;
                 }
+            }
+            if (overVertex.label !== null) {
+                vertex.label = overVertex.label;
             }
             vertex.props = union(vertex.props, overVertex.props);
             ids.add(id);

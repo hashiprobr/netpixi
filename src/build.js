@@ -48,6 +48,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 validate.notDuplicateVertex(id, vertices);
                 const x = validate.receivedX(props);
                 const y = validate.receivedY(props);
+                const label = validate.receivedLabel(props);
                 if (x !== null) {
                     if (minX > x) {
                         minX = x;
@@ -66,7 +67,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 }
                 const degree = 0;
                 const leaders = new Set();
-                vertices[id] = { x, y, degree, leaders, props };
+                vertices[id] = { x, y, label, degree, leaders, props };
                 n++;
             },
             (data, props) => {
@@ -195,7 +196,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             if (compare(props.bwidth, 0) > 0) {
                 let bwidth = props.bwidth;
                 if (!infinite) {
-                    bwidth *=scale;
+                    bwidth *= scale;
                 }
                 bwidth = Math.min(bwidth, radius / 2);
                 fillTexture(props.bcolor, props.shape, graphics, radius);
