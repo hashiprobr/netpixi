@@ -41,7 +41,7 @@ export default function (uid) {
         app.view.style.pointerEvents = 'auto';
     }
 
-    function connectToBody(graph) {
+    function connectToBody(proxies, uid, graph) {
         const resizeObserver = new ResizeObserver(() => {
             graph.updateSize();
             graph.updateBoundsAndDrawAreas();
@@ -51,6 +51,7 @@ export default function (uid) {
             if (!document.body.contains(element)) {
                 mutationObserver.disconnect();
                 resizeObserver.disconnect();
+                delete proxies[uid];
                 destroy();
             }
         });

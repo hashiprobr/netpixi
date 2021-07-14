@@ -13,7 +13,7 @@ function render(uid, path, horizontal, vertical, normalize, infinite, broker) {
 
     build(path, horizontal / vertical, normalize, infinite, broker, app, cell)
         .then((graph) => {
-            cell.connectToBody(graph);
+            cell.connectToBody(proxies, uid, graph);
 
             const animation = Animation();
 
