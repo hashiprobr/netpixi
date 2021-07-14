@@ -7,9 +7,15 @@ function exportImage(app, graph, filename) {
     const {
         settings,
         getScale,
+        setExporting,
+        drawAreas,
     } = graph;
 
     return new Promise((resolve) => {
+        setExporting(true);
+
+        drawAreas();
+
         const clear = false;
 
         const bounds = app.stage.getBounds();
@@ -41,6 +47,8 @@ function exportImage(app, graph, filename) {
         a.setAttribute('download', `${filename}.png`);
         a.click();
         a.remove();
+
+        setExporting(false);
 
         resolve();
     });

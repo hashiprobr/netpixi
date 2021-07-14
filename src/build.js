@@ -94,6 +94,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         let top;
         let bottom;
 
+        let exporting;
+
         function getScale() {
             return scale;
         }
@@ -108,6 +110,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function getBlue(color) {
             return color & 0x0000ff;
+        }
+
+        function setExporting(value) {
+            exporting = value;
         }
 
         function calculateBlend(a, b, alpha) {
@@ -208,7 +214,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 let dx = tx - sx;
                 let dy = ty - sy;
                 const distance = Math.sqrt(dx * dx + dy * dy) - (s.sprite.texture.radius + t.sprite.texture.radius);
-                if (compare(distance, 0) > 0) {
+                if (compare(distance, 0) > 0 || exporting) {
                     const props = merge(settings.edge, neighbor.props, differences.edge);
                     const sourceVisible = sx >= left && sx < right && sy >= top && sy < bottom;
                     const targetVisible = tx >= left && tx < right && ty >= top && ty < bottom;
@@ -223,7 +229,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             alpha *= settings.graph.alpha2;
                         }
                     }
-                    if (compare(alpha, 0) > 0) {
+                    if (compare(alpha, 0) > 0 || exporting) {
                         alpha = Math.min(alpha, 1);
                         let size = props.width;
                         if (!infinite) {
@@ -257,7 +263,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
                         }
                         const intersect = Intersection.intersect(edgeShape, boundsShape);
-                        if (sourceVisible || targetVisible || intersect.points.length > 0) {
+                        if (sourceVisible || targetVisible || intersect.points.length > 0 || exporting) {
                             if (compare(distance, minimum) < 0) {
                                 size *= distance / minimum;
                             }
@@ -629,6 +635,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         initializeScale();
         updateBackground();
         initializeTexture();
+        setExporting(false);
 
         let difX;
         if (Number.isFinite(minX) && Number.isFinite(maxX) && compare(minX, maxX) !== 0) {
@@ -694,6 +701,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertices,
             areas,
             getScale,
+            setExporting,
             drawEdges,
             drawAreas,
             drawNeighborAreas,
