@@ -224,6 +224,22 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             return app.renderer.generateTexture(graphics);
         }
 
+        function drawSprite(vertex, props) {
+            if (vertex.sprite.texture === defaultTexture) {
+                if (props !== settings.vertex) {
+                    vertex.sprite.texture = drawTexture(props, vertex.radius);
+                }
+            }
+            else {
+                vertex.sprite.texture.destroy();
+                if (props === settings.vertex) {
+                    vertex.sprite.texture = defaultTexture;
+                } else {
+                    vertex.sprite.texture = drawTexture(props, vertex.radius);
+                }
+            }
+        }
+
         function drawEdges(u) {
             const graphics = areas[u].graphics;
             graphics.clear();
@@ -388,19 +404,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             if (!infinite) {
                 vertex.radius *= scale;
             }
-            if (vertex.sprite.texture === defaultTexture) {
-                if (props !== settings.vertex) {
-                    vertex.sprite.texture = drawTexture(props, vertex.radius);
-                }
-            }
-            else {
-                vertex.sprite.texture.destroy();
-                if (props === settings.vertex) {
-                    vertex.sprite.texture = defaultTexture;
-                } else {
-                    vertex.sprite.texture = drawTexture(props, vertex.radius);
-                }
-            }
+            drawSprite(vertex, props);
         }
 
         function updateGeometry(vertex) {
@@ -412,7 +416,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function updateVisible() {
             updateBounds();
             for (const vertex of Object.values(vertices)) {
-                updateSprite(vertex);
+                const props = merge(settings.vertex, vertex.props, differences.vertex);
+                drawSprite(vertex, props);
             }
             drawAreas();
         }
