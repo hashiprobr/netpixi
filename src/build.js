@@ -48,7 +48,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 validate.notDuplicateVertex(id, vertices);
                 const x = validate.receivedX(props);
                 const y = validate.receivedY(props);
-                const label = validate.receivedLabel(props);
+                const value = validate.receivedValue(props);
+                const key = validate.receivedKey(props);
                 if (x !== null) {
                     if (minX > x) {
                         minX = x;
@@ -67,7 +68,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 }
                 const degree = 0;
                 const leaders = new Set();
-                vertices[id] = { x, y, label, degree, leaders, props };
+                vertices[id] = { x, y, value, key, degree, leaders, props };
                 n++;
             },
             (data, props) => {
@@ -792,6 +793,12 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     }
                     vertex.y = normalizeVertical(y);
                 }
+            }
+            if (vertex.value === null) {
+                vertex.value = '';
+            }
+            if (vertex.key === null) {
+                vertex.key = '';
             }
             delete vertex.degree;
             vertex.sprite = new PIXI.Sprite();
