@@ -10,9 +10,11 @@ export default function (cell, graph, animation, panel) {
         drawEdges,
         drawAreas,
         drawNeighborAreas,
-        updateBackgroundAndTexture,
-        updateSpriteAndShape,
-        updatePositionAndSpriteAndShape,
+        updateBackground,
+        updateTexture,
+        updatePosition,
+        updateSprite,
+        updateAccessories,
     } = graph;
 
     function send(d) {
@@ -31,9 +33,11 @@ export default function (cell, graph, animation, panel) {
                             overwrite(settings.vertex, overSettings.vertex);
                             overwrite(settings.edge, overSettings.edge);
                             settings.props = union(settings.props, overSettings.props);
-                            updateBackgroundAndTexture();
+                            updateBackground();
+                            updateTexture();
                             for (const vertex of Object.values(vertices)) {
-                                updateSpriteAndShape(vertex);
+                                updateSprite(vertex);
+                                updateAccessories(vertex);
                             }
                             drawAreas();
                         }
@@ -63,10 +67,10 @@ export default function (cell, graph, animation, panel) {
                         }
                         vertex.props = union(vertex.props, props);
                         if (moved) {
-                            updatePositionAndSpriteAndShape(vertex);
-                        } else {
-                            updateSpriteAndShape(vertex);
+                            updatePosition(vertex);
                         }
+                        updateSprite(vertex);
+                        updateAccessories(vertex);
                         drawNeighborAreas(vertex);
                     },
                     (data, props) => {

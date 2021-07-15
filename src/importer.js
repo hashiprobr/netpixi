@@ -9,9 +9,11 @@ function importProperties(graph, disable) {
         vertices,
         areas,
         drawEdges,
-        updateBackgroundAndTexture,
-        updateSpriteAndShape,
-        updatePositionAndSpriteAndShape,
+        updateBackground,
+        updateTexture,
+        updatePosition,
+        updateSprite,
+        updateAccessories,
     } = graph;
 
     let overSettings;
@@ -62,25 +64,26 @@ function importProperties(graph, disable) {
             overwrite(settings.vertex, overSettings.vertex);
             overwrite(settings.edge, overSettings.edge);
             settings.props = union(settings.props, overSettings.props);
-            updateBackgroundAndTexture();
+            updateBackground();
+            updateTexture();
             ids = new Set(Object.keys(vertices));
             leaders = new Set(Object.keys(areas));
         }
 
-        let moved = false;
+        const moved = Set();
 
         for (const [id, overVertex] of Object.entries(overVertices)) {
             const vertex = vertices[id];
             if (overVertex.x !== null) {
                 if (compare(vertex.x, overVertex.x) !== 0) {
                     vertex.x = overVertex.x;
-                    moved = true;
+                    moved.add(id);
                 }
             }
             if (overVertex.y !== null) {
                 if (compare(vertex.y, overVertex.y) !== 0) {
                     vertex.y = overVertex.y;
-                    moved = true;
+                    moved.add(id);
                 }
             }
             if (overVertex.label !== null) {
@@ -107,14 +110,12 @@ function importProperties(graph, disable) {
             }
         }
 
-        if (moved) {
-            for (const id of ids) {
-                updatePositionAndSpriteAndShape(vertices[id]);
+        for (const id of ids) {
+            if (moved.has(id)) {
+                updatePosition(vertices[id]);
             }
-        } else {
-            for (const id of ids) {
-                updateSpriteAndShape(vertices[id]);
-            }
+            updateSprite(vertices[id]);
+            updateAccessories(vertices[id]);
         }
         for (const u of leaders) {
             drawEdges(u);

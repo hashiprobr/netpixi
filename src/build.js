@@ -117,17 +117,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             exporting = value;
         }
 
-        function calculateBlend(a, b, alpha) {
-            return Math.round(alpha * a + (1 - alpha) * b);
-        }
-
-        function calculateIntersection(edgeShape, shape) {
-            const intersect = Intersection.intersect(edgeShape, shape);
-            const x = intersect.points[0].x;
-            const y = intersect.points[0].y;
-            return [x, y];
-        }
-
         function formatCircle(tx, ty, radius) {
             circleShape.args[0].x = tx;
             circleShape.args[0].y = ty;
@@ -155,12 +144,40 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             return curveShape;
         }
 
+        function calculateBlend(a, b, alpha) {
+            return Math.round(alpha * a + (1 - alpha) * b);
+        }
+
+        function calculateIntersection(edgeShape, shape) {
+            const intersect = Intersection.intersect(edgeShape, shape);
+            const x = intersect.points[0].x;
+            const y = intersect.points[0].y;
+            return [x, y];
+        }
+
         function normalizeHorizontal(x) {
             return settings.graph.hborder + x * (width - 2 * settings.graph.hborder);
         }
 
         function normalizeVertical(y) {
             return settings.graph.vborder + y * (height - 2 * settings.graph.vborder);
+        }
+
+        function initializeScale() {
+            scale = 1;
+        }
+
+        function initializeTexture() {
+            defaultTexture = drawTexture(settings.vertex);
+        }
+
+        function initializePosition(vertex) {
+            vertex.sprite.position.x = vertex.x;
+            vertex.sprite.position.y = vertex.y;
+        }
+
+        function initializeAlpha(vertex) {
+            vertex.alpha = 1;
         }
 
         function fillTexture(color, shape, graphics, radius) {
@@ -355,18 +372,18 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             initializeTexture();
         }
 
-        function updateBackgroundAndTexture() {
-            updateBackground();
-            updateTexture();
+        function updatePosition(vertex) {
+            vertex.sprite.position.x = scale * vertex.x;
+            vertex.sprite.position.y = scale * vertex.y;
         }
 
-        function updateShape(vertex) {
+        function updateAccessories(vertex) {
             vertex.shape.args[0].x = vertex.sprite.position.x;
             vertex.shape.args[0].y = vertex.sprite.position.y;
             vertex.shape.args[1] = vertex.sprite.texture.radius;
         }
 
-        function updateSpriteAndShape(vertex) {
+        function updateSprite(vertex) {
             const props = merge(settings.vertex, vertex.props, differences.vertex);
             if (vertex.sprite.texture === defaultTexture) {
                 if (props !== settings.vertex) {
@@ -381,13 +398,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.sprite.texture = drawTexture(props);
                 }
             }
-            updateShape(vertex);
-        }
-
-        function updatePositionAndSpriteAndShape(vertex) {
-            vertex.sprite.position.x = scale * vertex.x;
-            vertex.sprite.position.y = scale * vertex.y;
-            updateSpriteAndShape(vertex);
         }
 
         function updateBoundsAndDrawAreas() {
@@ -396,24 +406,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             boundsShape.args[1].x = right = left + width;
             boundsShape.args[1].y = bottom = top + height;
             drawAreas();
-        }
-
-        function initializeScale() {
-            scale = 1;
-        }
-
-        function initializeTexture() {
-            defaultTexture = drawTexture(settings.vertex);
-        }
-
-        function initializeAlpha(vertex) {
-            vertex.alpha = 1;
-        }
-
-        function initializePositionAndUpdateSpriteAndShape(vertex) {
-            vertex.sprite.position.x = vertex.x;
-            vertex.sprite.position.y = vertex.y;
-            updateSpriteAndShape(vertex);
         }
 
         function connectMouse() {
@@ -435,7 +427,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.sprite.move = (event) => {
                         vertex.sprite.position.x = event.offsetX - app.stage.position.x;
                         vertex.sprite.position.y = event.offsetY - app.stage.position.y;
-                        updateShape(vertex);
+                        updateAccessories(vertex);
                         drawNeighborAreas(vertex);
                     };
                     vertex.sprite.stop = () => {
@@ -533,9 +525,15 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     zoomId = null;
                                     app.stage.scale.x = 1;
                                     app.stage.scale.y = 1;
-                                    updateTexture();
+                                    if (!infinite) {
+                                        updateTexture();
+                                    }
                                     for (const vertex of Object.values(vertices)) {
-                                        updatePositionAndSpriteAndShape(vertex);
+                                        updatePosition(vertex);
+                                        if (!infinite) {
+                                            updateSprite(vertex);
+                                        }
+                                        updateAccessories(vertex);
                                     }
                                     updateBoundsAndDrawAreas();
                                 }, 100);
@@ -565,9 +563,15 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         }
                         if (compare(scale, 1) !== 0) {
                             initializeScale();
-                            updateTexture();
+                            if (!infinite) {
+                                updateTexture();
+                            }
                             for (const vertex of Object.values(vertices)) {
-                                initializePositionAndUpdateSpriteAndShape(vertex);
+                                initializePosition(vertex);
+                                if (!infinite) {
+                                    updateSprite(vertex);
+                                }
+                                updateAccessories(vertex);
                             }
                             updateBoundsAndDrawAreas();
                             panel.updateZoom();
@@ -692,13 +696,15 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 }
             }
             delete vertex.degree;
-            initializeAlpha(vertex);
             vertex.sprite = new PIXI.Sprite();
             vertex.sprite.anchor.x = 0.5;
             vertex.sprite.anchor.y = 0.5;
             vertex.sprite.texture = defaultTexture;
             vertex.shape = ShapeInfo.circle(0, 0, 0);
-            initializePositionAndUpdateSpriteAndShape(vertex);
+            initializePosition(vertex);
+            updateSprite(vertex);
+            updateAccessories(vertex);
+            initializeAlpha(vertex);
             app.stage.addChild(vertex.sprite);
         }
 
@@ -721,9 +727,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             drawAreas,
             drawNeighborAreas,
             updateSize,
-            updateBackgroundAndTexture,
-            updateSpriteAndShape,
-            updatePositionAndSpriteAndShape,
+            updateBackground,
+            updateTexture,
+            updatePosition,
+            updateSprite,
+            updateAccessories,
             updateBoundsAndDrawAreas,
             connectMouseToSprites,
             connectMouseToView,
