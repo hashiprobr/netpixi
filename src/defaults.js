@@ -7,6 +7,11 @@ export default {
         alpha: 1,
         alpha1: 1,
         alpha2: 1,
+        vhole: false,
+        vscale: 1,
+        vfamily: 'monospace',
+        kline: 1,
+        kscale: 1,
     },
     vertex: {
         size: 5,
@@ -14,6 +19,7 @@ export default {
         shape: 'circle',
         bwidth: 0,
         bcolor: 0x808080,
+        kfamily: 'sans-serif',
     },
     edge: {
         width: 1,
