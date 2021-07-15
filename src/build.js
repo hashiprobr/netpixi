@@ -117,6 +117,14 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             exporting = value;
         }
 
+        function formatRectangle(radius) {
+            rectangleShape.args[0].x = left - radius;
+            rectangleShape.args[0].y = top - radius;
+            rectangleShape.args[1].x = right + radius + 1;
+            rectangleShape.args[1].y = bottom + radius + 1;
+            return rectangleShape;
+        }
+
         function formatCircle(tx, ty, radius) {
             circleShape.args[0].x = tx;
             circleShape.args[0].y = ty;
@@ -144,6 +152,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             return curveShape;
         }
 
+        function calculateVisibility(x, y, radius) {
+            return x >= left - radius && x < right + radius && y >= top - radius && y < bottom + radius;
+        }
+
         function calculateBlend(a, b, alpha) {
             return Math.round(alpha * a + (1 - alpha) * b);
         }
@@ -168,11 +180,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function initializeTexture() {
-            let radius = settings.vertex.size / 2;
-            if (!infinite) {
-                radius *= scale;
-            }
-            defaultTexture = drawTexture(settings.vertex, radius);
+            defaultTexture = new PIXI.RenderTexture.create();
+            updateTexture();
         }
 
         function initializePosition(vertex) {
@@ -208,7 +217,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             graphics.endFill();
         }
 
-        function drawTexture(props, radius) {
+        function drawGraphics(props, radius) {
             const graphics = new PIXI.Graphics();
             if (compare(props.bwidth, 0) > 0) {
                 let bwidth = props.bwidth;
@@ -221,28 +230,30 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             } else {
                 fillTexture(props.color, props.shape, graphics, radius);
             }
-            return app.renderer.generateTexture(graphics);
+            return graphics;
+        }
+
+        function drawTexture(vertex, props) {
+            const graphics = drawGraphics(props, vertex.radius);
+            vertex.sprite.texture = app.renderer.generateTexture(graphics);
+            graphics.destroy();
         }
 
         function drawSprite(vertex, props) {
             if (vertex.sprite.texture === defaultTexture) {
                 if (props !== settings.vertex) {
-                    vertex.sprite.texture = drawTexture(props, vertex.radius);
+                    drawTexture(props, vertex.radius);
                 }
             }
             else {
-                vertex.sprite.texture.destroy();
+                const texture = vertex.sprite.texture;
                 if (props === settings.vertex) {
                     vertex.sprite.texture = defaultTexture;
                 } else {
-                    vertex.sprite.texture = drawTexture(props, vertex.radius);
+                    drawTexture(props, vertex.radius);
                 }
+                texture.destroy();
             }
-        }
-
-        function redrawSprite(vertex) {
-            const props = merge(settings.vertex, vertex.props, differences.vertex);
-            drawSprite(vertex, props);
         }
 
         function drawEdges(u) {
@@ -267,27 +278,30 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 const distance = Math.sqrt(dx * dx + dy * dy) - (s.radius + t.radius);
                 if (compare(distance, 0) > 0 || exporting) {
                     const props = merge(settings.edge, neighbor.props, differences.edge);
-                    const sourceVisible = sx >= left && sx < right && sy >= top && sy < bottom;
-                    const targetVisible = tx >= left && tx < right && ty >= top && ty < bottom;
                     let alpha = props.alpha * s.alpha * t.alpha;
-                    if (sourceVisible) {
-                        if (!targetVisible) {
+                    if (s.visible) {
+                        if (!t.visible) {
                             alpha *= settings.graph.alpha1;
                         }
                     } else {
                         alpha *= settings.graph.alpha1;
-                        if (!targetVisible) {
+                        if (!t.visible) {
                             alpha *= settings.graph.alpha2;
                         }
                     }
                     if (compare(alpha, 0) > 0 || exporting) {
                         alpha = Math.min(alpha, 1);
+                        const minimum = 9 * size;
                         let size = props.width;
                         if (!infinite) {
                             size *= scale;
                         }
                         size = Math.min(size, s.radius, t.radius);
-                        const minimum = 9 * size;
+                        let close = false;
+                        if (compare(distance, minimum) < 0) {
+                            size *= distance / minimum;
+                            close = true;
+                        }
                         const c1 = props.curve1;
                         const c2 = props.curve2;
                         let nx;
@@ -298,7 +312,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         let y2;
                         let straight;
                         let edgeShape;
-                        if (compare(distance, minimum) < 0 || (compare(c1, 0) === 0 && compare(c2, 0) === 0)) {
+                        if (close || (compare(c1, 0) === 0 && compare(c2, 0) === 0)) {
                             straight = true;
                             edgeShape = formatLine(sx, sy, tx, ty);
                         } else {
@@ -313,15 +327,38 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             straight = false;
                             edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
                         }
-                        const intersect = Intersection.intersect(edgeShape, boundsShape);
-                        if (sourceVisible || targetVisible || intersect.points.length > 0 || exporting) {
-                            if (compare(distance, minimum) < 0) {
-                                size *= distance / minimum;
+                        const radius = size / 2;
+                        let vertexShape;
+                        vertexShape = formatCircle(sx, sy, s.radius + radius);
+                        const [fx, fy] = calculateIntersection(edgeShape, vertexShape);
+                        vertexShape = formatCircle(tx, ty, t.radius + radius);
+                        const [gx, gy] = calculateIntersection(edgeShape, vertexShape);
+                        let x3;
+                        let y3;
+                        let x4;
+                        let y4;
+                        if (straight) {
+                            edgeShape = formatLine(fx, fy, gx, gy);
+                        } else {
+                            dx = 0.2 * (gx - fx);
+                            dy = 0.2 * (gy - fy);
+                            nx = -dy;
+                            ny = dx;
+                            x3 = fx + dx + c1 * nx;
+                            y3 = fy + dy + c1 * ny;
+                            x4 = gx - dx + c2 * nx;
+                            y4 = gy - dy + c2 * ny;
+                            edgeShape = formatCurve(fx, fy, x3, y3, x4, y4, gx, gy);
+                        }
+                        let visible = calculateVisibility(fx, fy, radius) || calculateVisibility(gx, gy, radius);
+                        if (!visible) {
+                            const boundsShape = formatRectangle(radius);
+                            const intersect = Intersection.intersect(edgeShape, boundsShape);
+                            if (intersect.points.length > 0) {
+                                visible = true;
                             }
-                            const sourceShape = formatCircle(sx, sy, s.radius + size / 2);
-                            const [fx, fy] = calculateIntersection(edgeShape, sourceShape);
-                            const targetShape = formatCircle(tx, ty, t.radius + size / 2);
-                            const [gx, gy] = calculateIntersection(edgeShape, targetShape);
+                        }
+                        if (visible || exporting) {
                             graphics.lineStyle({
                                 width: size,
                                 color: props.color,
@@ -332,12 +369,17 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             if (straight) {
                                 graphics.lineTo(gx, gy);
                             } else {
-                                graphics.bezierCurveTo(x1, y1, x2, y2, gx, gy);
+                                graphics.bezierCurveTo(x3, y3, x4, y4, gx, gy);
                             }
                             if (settings.graph.directed) {
                                 const r = calculateBlend(getRed(props.color), getRed(settings.graph.color), alpha);
                                 const g = calculateBlend(getGreen(props.color), getGreen(settings.graph.color), alpha);
                                 const b = calculateBlend(getBlue(props.color), getBlue(settings.graph.color), alpha);
+                                if (straight) {
+                                    edgeShape = formatLine(sx, sy, tx, ty);
+                                } else {
+                                    edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
+                                }
                                 const [hx, hy] = calculateIntersection(edgeShape, t.shape);
                                 dx = 2 * (hx - gx);
                                 dy = 2 * (hy - gy);
@@ -387,20 +429,36 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function updateTexture() {
-            defaultTexture.destroy();
-            initializeTexture();
+            let radius = settings.vertex.size;
+            if (!infinite) {
+                radius *= scale;
+            }
+            defaultTexture.resize(radius, radius);
+            radius /= 2;
+            const graphics = drawGraphics(settings.vertex, radius);
+            const matrix = new PIXI.Matrix(1, 0, 0, 1, radius, radius);
+            app.renderer.render(graphics, {
+                renderTexture: defaultTexture,
+                clear: true,
+                transform: matrix,
+            });
+            graphics.destroy();
         }
 
         function updateBounds() {
-            boundsShape.args[0].x = left = -app.stage.position.x;
-            boundsShape.args[0].y = top = -app.stage.position.y;
-            boundsShape.args[1].x = right = left + width;
-            boundsShape.args[1].y = bottom = top + height;
+            left = -app.stage.position.x;
+            top = -app.stage.position.y;
+            right = left + width;
+            bottom = top + height;
         }
 
         function updatePosition(vertex) {
             vertex.sprite.position.x = scale * vertex.x;
             vertex.sprite.position.y = scale * vertex.y;
+        }
+
+        function updateVisible(vertex) {
+            vertex.visible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.radius);
         }
 
         function updateSprite(vertex) {
@@ -409,7 +467,19 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             if (!infinite) {
                 vertex.radius *= scale;
             }
-            drawSprite(vertex, props);
+            updateVisible(vertex);
+            if (vertex.visible) {
+                drawSprite(vertex, props);
+            }
+        }
+
+        function updateSpriteIfEntered(vertex) {
+            const visible = vertex.visible;
+            updateVisible(vertex);
+            if (!visible && vertex.visible) {
+                const props = merge(settings.vertex, vertex.props, differences.vertex);
+                drawSprite(vertex, props);
+            }
         }
 
         function updateGeometry(vertex) {
@@ -479,7 +549,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         if (dragging) {
                             updateBounds();
                             for (const vertex of Object.values(vertices)) {
-                                redrawSprite(vertex);
+                                updateSpriteIfEntered(vertex);
                             }
                             drawAreas();
                             dragging = false;
@@ -546,7 +616,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     for (const vertex of Object.values(vertices)) {
                                         updatePosition(vertex);
                                         if (infinite) {
-                                            redrawSprite(vertex);
+                                            updateSpriteIfEntered(vertex);
                                         } else {
                                             updateSprite(vertex);
                                         }
@@ -587,7 +657,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             for (const vertex of Object.values(vertices)) {
                                 initializePosition(vertex);
                                 if (infinite) {
-                                    redrawSprite(vertex);
+                                    updateSpriteIfEntered(vertex);
                                 } else {
                                     updateSprite(vertex);
                                 }
@@ -599,7 +669,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             if (moved) {
                                 updateBounds();
                                 for (const vertex of Object.values(vertices)) {
-                                    redrawSprite(vertex);
+                                    updateSpriteIfEntered(vertex);
                                 }
                                 drawAreas();
                             }
@@ -674,11 +744,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             delete edges[source];
         }
 
-        const boundsShape = ShapeInfo.rectangle(0, 0, 0, 0);
-        const circleShape = ShapeInfo.circle(0, 0, 0);
-        const lineShape = ShapeInfo.line(0, 0, 0, 0);
-        const curveShape = ShapeInfo.cubicBezier(0, 0, 0, 0, 0, 0, 0, 0);
-
         updateSize();
         initializeScale();
         updateBackground();
@@ -725,7 +790,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 }
             }
             delete vertex.degree;
-            vertex.visible = false;
             vertex.sprite = new PIXI.Sprite();
             vertex.sprite.anchor.x = 0.5;
             vertex.sprite.anchor.y = 0.5;
@@ -737,6 +801,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             initializeAlpha(vertex);
             app.stage.addChild(vertex.sprite);
         }
+
+        const rectangleShape = ShapeInfo.rectangle(0, 0, 0, 0);
+        const circleShape = ShapeInfo.circle(0, 0, 0);
+        const lineShape = ShapeInfo.line(0, 0, 0, 0);
+        const curveShape = ShapeInfo.cubicBezier(0, 0, 0, 0, 0, 0, 0, 0);
 
         setExporting(false);
 
