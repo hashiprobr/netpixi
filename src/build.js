@@ -384,12 +384,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.sprite.position.y = scale * vertex.y;
         }
 
-        function updateGeometry(vertex) {
-            vertex.shape.args[0].x = vertex.sprite.position.x;
-            vertex.shape.args[0].y = vertex.sprite.position.y;
-            vertex.shape.args[1] = vertex.sprite.texture.radius;
-        }
-
         function updateSprite(vertex) {
             const props = merge(settings.vertex, vertex.props, differences.vertex);
             if (vertex.sprite.texture === defaultTexture) {
@@ -405,6 +399,20 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.sprite.texture = drawTexture(props);
                 }
             }
+        }
+
+        function updateGeometry(vertex) {
+            vertex.shape.args[0].x = vertex.sprite.position.x;
+            vertex.shape.args[0].y = vertex.sprite.position.y;
+            vertex.shape.args[1] = vertex.sprite.texture.radius;
+        }
+
+        function updateVisible() {
+            updateBounds();
+            for (const vertex of Object.values(vertices)) {
+                updateSprite(vertex);
+            }
+            drawAreas();
         }
 
         function connectMouse() {
@@ -466,8 +474,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 app.view.release = () => {
                     if (draggedVertex === null) {
                         if (dragging) {
-                            updateBounds();
-                            drawAreas();
+                            updateVisible();
                             dragging = false;
                         }
                     } else {
@@ -579,8 +586,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             panel.updateZoom();
                         } else {
                             if (moved) {
-                                updateBounds();
-                                drawAreas();
+                                updateVisible();
                             }
                         }
                     } else {
@@ -704,6 +710,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 }
             }
             delete vertex.degree;
+            vertex.visible = false;
             vertex.sprite = new PIXI.Sprite();
             vertex.sprite.anchor.x = 0.5;
             vertex.sprite.anchor.y = 0.5;
