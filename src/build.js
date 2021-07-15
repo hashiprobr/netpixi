@@ -653,12 +653,16 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             delete edges[source];
         }
 
+        const boundsShape = ShapeInfo.rectangle(0, 0, 0, 0);
+        const circleShape = ShapeInfo.circle(0, 0, 0);
+        const lineShape = ShapeInfo.line(0, 0, 0, 0);
+        const curveShape = ShapeInfo.cubicBezier(0, 0, 0, 0, 0, 0, 0, 0);
+
         updateSize();
         initializeScale();
         updateBackground();
         initializeTexture();
         updateBounds();
-        setExporting(false);
 
         let difX;
         if (Number.isFinite(minX) && Number.isFinite(maxX) && compare(minX, maxX) !== 0) {
@@ -712,10 +716,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             app.stage.addChild(vertex.sprite);
         }
 
-        const boundsShape = ShapeInfo.rectangle(0, 0, 0, 0);
-        const circleShape = ShapeInfo.circle(0, 0, 0);
-        const lineShape = ShapeInfo.line(0, 0, 0, 0);
-        const curveShape = ShapeInfo.cubicBezier(0, 0, 0, 0, 0, 0, 0, 0);
+        setExporting(false);
 
         drawAreas();
 
