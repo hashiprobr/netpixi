@@ -528,6 +528,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     if (!infinite) {
                                         updateTexture();
                                     }
+                                    updateBounds();
                                     for (const vertex of Object.values(vertices)) {
                                         updatePosition(vertex);
                                         if (!infinite) {
@@ -535,7 +536,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                         }
                                         updateAccessories(vertex);
                                     }
-                                    updateBounds();
                                     drawAreas();
                                 }, 100);
                             }
@@ -567,6 +567,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             if (!infinite) {
                                 updateTexture();
                             }
+                            updateBounds();
                             for (const vertex of Object.values(vertices)) {
                                 initializePosition(vertex);
                                 if (!infinite) {
@@ -574,7 +575,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 }
                                 updateAccessories(vertex);
                             }
-                            updateBounds();
                             drawAreas();
                             panel.updateZoom();
                         } else {
@@ -657,6 +657,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         initializeScale();
         updateBackground();
         initializeTexture();
+        updateBounds();
         setExporting(false);
 
         let difX;
@@ -716,7 +717,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         const lineShape = ShapeInfo.line(0, 0, 0, 0);
         const curveShape = ShapeInfo.cubicBezier(0, 0, 0, 0, 0, 0, 0, 0);
 
-        updateBounds();
         drawAreas();
 
         const [connectMouseToSprites, connectMouseToView] = connectMouse();
