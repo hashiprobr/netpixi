@@ -14,7 +14,7 @@ export default function (cell, graph, animation, panel) {
         updateTexture,
         updatePosition,
         updateSprite,
-        updateAccessories,
+        updateGeometry,
     } = graph;
 
     function send(d) {
@@ -37,7 +37,7 @@ export default function (cell, graph, animation, panel) {
                             updateTexture();
                             for (const vertex of Object.values(vertices)) {
                                 updateSprite(vertex);
-                                updateAccessories(vertex);
+                                updateGeometry(vertex);
                             }
                             drawAreas();
                         }
@@ -70,7 +70,7 @@ export default function (cell, graph, animation, panel) {
                             updatePosition(vertex);
                         }
                         updateSprite(vertex);
-                        updateAccessories(vertex);
+                        updateGeometry(vertex);
                         drawNeighborAreas(vertex);
                     },
                     (data, props) => {

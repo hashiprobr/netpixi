@@ -13,7 +13,7 @@ function importProperties(graph, disable) {
         updateTexture,
         updatePosition,
         updateSprite,
-        updateAccessories,
+        updateGeometry,
     } = graph;
 
     let overSettings;
@@ -115,7 +115,7 @@ function importProperties(graph, disable) {
                 updatePosition(vertices[id]);
             }
             updateSprite(vertices[id]);
-            updateAccessories(vertices[id]);
+            updateGeometry(vertices[id]);
         }
         for (const u of leaders) {
             drawEdges(u);

@@ -384,7 +384,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.sprite.position.y = scale * vertex.y;
         }
 
-        function updateAccessories(vertex) {
+        function updateGeometry(vertex) {
             vertex.shape.args[0].x = vertex.sprite.position.x;
             vertex.shape.args[0].y = vertex.sprite.position.y;
             vertex.shape.args[1] = vertex.sprite.texture.radius;
@@ -426,7 +426,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.sprite.move = (event) => {
                         vertex.sprite.position.x = event.offsetX - app.stage.position.x;
                         vertex.sprite.position.y = event.offsetY - app.stage.position.y;
-                        updateAccessories(vertex);
+                        updateGeometry(vertex);
                         drawNeighborAreas(vertex);
                     };
                     vertex.sprite.stop = () => {
@@ -534,7 +534,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                         if (!infinite) {
                                             updateSprite(vertex);
                                         }
-                                        updateAccessories(vertex);
+                                        updateGeometry(vertex);
                                     }
                                     drawAreas();
                                 }, 100);
@@ -573,7 +573,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 if (!infinite) {
                                     updateSprite(vertex);
                                 }
-                                updateAccessories(vertex);
+                                updateGeometry(vertex);
                             }
                             drawAreas();
                             panel.updateZoom();
@@ -707,7 +707,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.shape = ShapeInfo.circle(0, 0, 0);
             initializePosition(vertex);
             updateSprite(vertex);
-            updateAccessories(vertex);
+            updateGeometry(vertex);
             initializeAlpha(vertex);
             app.stage.addChild(vertex.sprite);
         }
@@ -736,7 +736,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             updateBounds,
             updatePosition,
             updateSprite,
-            updateAccessories,
+            updateGeometry,
             connectMouseToSprites,
             connectMouseToView,
             finalize,
