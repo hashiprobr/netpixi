@@ -242,7 +242,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function drawSprite(vertex, props) {
             if (vertex.sprite.texture === defaultTexture) {
                 if (props !== settings.vertex) {
-                    drawTexture(props, vertex.radius);
+                    drawTexture(vertex, props);
                 }
             }
             else {
@@ -250,7 +250,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 if (props === settings.vertex) {
                     vertex.sprite.texture = defaultTexture;
                 } else {
-                    drawTexture(props, vertex.radius);
+                    drawTexture(vertex, props);
                 }
                 texture.destroy();
             }
@@ -467,16 +467,20 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             if (!infinite) {
                 vertex.radius *= scale;
             }
+            const radius = vertex.sprite.width / 2;
+            const looksVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
             updateVisible(vertex);
-            if (vertex.visible) {
+            if (looksVisible || vertex.visible) {
                 drawSprite(vertex, props);
             }
         }
 
         function updateSpriteIfEntered(vertex) {
-            const visible = vertex.visible;
+            const wasInvisible = !vertex.visible;
+            const radius = vertex.sprite.height / 2;
+            const looksVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
             updateVisible(vertex);
-            if (!visible && vertex.visible) {
+            if (wasInvisible && (looksVisible || vertex.visible)) {
                 const props = merge(settings.vertex, vertex.props, differences.vertex);
                 drawSprite(vertex, props);
             }
