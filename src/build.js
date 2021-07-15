@@ -168,7 +168,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function initializeTexture() {
-            defaultTexture = drawTexture(settings.vertex);
+            let radius = settings.vertex.size / 2;
+            if (!infinite) {
+                radius *= scale;
+            }
+            defaultTexture = drawTexture(settings.vertex, radius);
         }
 
         function initializePosition(vertex) {
@@ -204,11 +208,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             graphics.endFill();
         }
 
-        function drawTexture(props) {
-            let radius = props.size / 2;
-            if (!infinite) {
-                radius *= scale;
-            }
+        function drawTexture(props, radius) {
             const graphics = new PIXI.Graphics();
             if (compare(props.bwidth, 0) > 0) {
                 let bwidth = props.bwidth;
@@ -221,9 +221,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             } else {
                 fillTexture(props.color, props.shape, graphics, radius);
             }
-            const texture = app.renderer.generateTexture(graphics);
-            texture.radius = radius;
-            return texture;
+            return app.renderer.generateTexture(graphics);
         }
 
         function drawEdges(u) {
@@ -245,7 +243,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 const ty = t.sprite.position.y;
                 let dx = tx - sx;
                 let dy = ty - sy;
-                const distance = Math.sqrt(dx * dx + dy * dy) - (s.sprite.texture.radius + t.sprite.texture.radius);
+                const distance = Math.sqrt(dx * dx + dy * dy) - (s.radius + t.radius);
                 if (compare(distance, 0) > 0 || exporting) {
                     const props = merge(settings.edge, neighbor.props, differences.edge);
                     const sourceVisible = sx >= left && sx < right && sy >= top && sy < bottom;
@@ -267,7 +265,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         if (!infinite) {
                             size *= scale;
                         }
-                        size = Math.min(size, s.sprite.texture.radius, t.sprite.texture.radius);
+                        size = Math.min(size, s.radius, t.radius);
                         const minimum = 9 * size;
                         const c1 = props.curve1;
                         const c2 = props.curve2;
@@ -299,9 +297,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             if (compare(distance, minimum) < 0) {
                                 size *= distance / minimum;
                             }
-                            const sourceShape = formatCircle(sx, sy, s.sprite.texture.radius + size / 2);
+                            const sourceShape = formatCircle(sx, sy, s.radius + size / 2);
                             const [fx, fy] = calculateIntersection(edgeShape, sourceShape);
-                            const targetShape = formatCircle(tx, ty, t.sprite.texture.radius + size / 2);
+                            const targetShape = formatCircle(tx, ty, t.radius + size / 2);
                             const [gx, gy] = calculateIntersection(edgeShape, targetShape);
                             graphics.lineStyle({
                                 width: size,
@@ -386,9 +384,13 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function updateSprite(vertex) {
             const props = merge(settings.vertex, vertex.props, differences.vertex);
+            vertex.radius = props.size / 2;
+            if (!infinite) {
+                vertex.radius *= scale;
+            }
             if (vertex.sprite.texture === defaultTexture) {
                 if (props !== settings.vertex) {
-                    vertex.sprite.texture = drawTexture(props);
+                    vertex.sprite.texture = drawTexture(props, vertex.radius);
                 }
             }
             else {
@@ -396,7 +398,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 if (props === settings.vertex) {
                     vertex.sprite.texture = defaultTexture;
                 } else {
-                    vertex.sprite.texture = drawTexture(props);
+                    vertex.sprite.texture = drawTexture(props, vertex.radius);
                 }
             }
         }
@@ -404,7 +406,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function updateGeometry(vertex) {
             vertex.shape.args[0].x = vertex.sprite.position.x;
             vertex.shape.args[0].y = vertex.sprite.position.y;
-            vertex.shape.args[1] = vertex.sprite.texture.radius;
+            vertex.shape.args[1] = vertex.radius;
         }
 
         function updateVisible() {
