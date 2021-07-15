@@ -240,6 +240,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             }
         }
 
+        function redrawSprite(vertex) {
+            const props = merge(settings.vertex, vertex.props, differences.vertex);
+            drawSprite(vertex, props);
+        }
+
         function drawEdges(u) {
             const graphics = areas[u].graphics;
             graphics.clear();
@@ -413,15 +418,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.shape.args[1] = vertex.radius;
         }
 
-        function updateVisible() {
-            updateBounds();
-            for (const vertex of Object.values(vertices)) {
-                const props = merge(settings.vertex, vertex.props, differences.vertex);
-                drawSprite(vertex, props);
-            }
-            drawAreas();
-        }
-
         function connectMouse() {
             let hoveredVertex = null;
             let draggedVertex = null;
@@ -481,7 +477,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 app.view.release = () => {
                     if (draggedVertex === null) {
                         if (dragging) {
-                            updateVisible();
+                            updateBounds();
+                            for (const vertex of Object.values(vertices)) {
+                                redrawSprite(vertex);
+                            }
+                            drawAreas();
                             dragging = false;
                         }
                     } else {
@@ -545,7 +545,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     updateBounds();
                                     for (const vertex of Object.values(vertices)) {
                                         updatePosition(vertex);
-                                        if (!infinite) {
+                                        if (infinite) {
+                                            redrawSprite(vertex);
+                                        } else {
                                             updateSprite(vertex);
                                         }
                                         updateGeometry(vertex);
@@ -584,7 +586,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             updateBounds();
                             for (const vertex of Object.values(vertices)) {
                                 initializePosition(vertex);
-                                if (!infinite) {
+                                if (infinite) {
+                                    redrawSprite(vertex);
+                                } else {
                                     updateSprite(vertex);
                                 }
                                 updateGeometry(vertex);
@@ -593,7 +597,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             panel.updateZoom();
                         } else {
                             if (moved) {
-                                updateVisible();
+                                updateBounds();
+                                for (const vertex of Object.values(vertices)) {
+                                    redrawSprite(vertex);
+                                }
+                                drawAreas();
                             }
                         }
                     } else {
