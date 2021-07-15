@@ -44,7 +44,9 @@ export default function (uid) {
     function connectToBody(proxies, uid, graph) {
         const resizeObserver = new ResizeObserver(() => {
             graph.updateSize();
-            graph.updateBoundsAndDrawAreas();
+            graph.updateBounds();
+            graph.drawAreas();
+
         });
         resizeObserver.observe(element);
         const mutationObserver = new MutationObserver(() => {

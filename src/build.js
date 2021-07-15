@@ -372,6 +372,13 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             initializeTexture();
         }
 
+        function updateBounds() {
+            boundsShape.args[0].x = left = -app.stage.position.x;
+            boundsShape.args[0].y = top = -app.stage.position.y;
+            boundsShape.args[1].x = right = left + width;
+            boundsShape.args[1].y = bottom = top + height;
+        }
+
         function updatePosition(vertex) {
             vertex.sprite.position.x = scale * vertex.x;
             vertex.sprite.position.y = scale * vertex.y;
@@ -398,14 +405,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.sprite.texture = drawTexture(props);
                 }
             }
-        }
-
-        function updateBoundsAndDrawAreas() {
-            boundsShape.args[0].x = left = -app.stage.position.x;
-            boundsShape.args[0].y = top = -app.stage.position.y;
-            boundsShape.args[1].x = right = left + width;
-            boundsShape.args[1].y = bottom = top + height;
-            drawAreas();
         }
 
         function connectMouse() {
@@ -467,7 +466,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 app.view.release = () => {
                     if (draggedVertex === null) {
                         if (dragging) {
-                            updateBoundsAndDrawAreas();
+                            updateBounds();
+                            drawAreas();
                             dragging = false;
                         }
                     } else {
@@ -535,7 +535,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                         }
                                         updateAccessories(vertex);
                                     }
-                                    updateBoundsAndDrawAreas();
+                                    updateBounds();
+                                    drawAreas();
                                 }, 100);
                             }
                         } else {
@@ -573,11 +574,13 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 }
                                 updateAccessories(vertex);
                             }
-                            updateBoundsAndDrawAreas();
+                            updateBounds();
+                            drawAreas();
                             panel.updateZoom();
                         } else {
                             if (moved) {
-                                updateBoundsAndDrawAreas();
+                                updateBounds();
+                                drawAreas();
                             }
                         }
                     } else {
@@ -713,7 +716,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         const lineShape = ShapeInfo.line(0, 0, 0, 0);
         const curveShape = ShapeInfo.cubicBezier(0, 0, 0, 0, 0, 0, 0, 0);
 
-        updateBoundsAndDrawAreas();
+        updateBounds();
+        drawAreas();
 
         const [connectMouseToSprites, connectMouseToView] = connectMouse();
 
@@ -729,10 +733,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             updateSize,
             updateBackground,
             updateTexture,
+            updateBounds,
             updatePosition,
             updateSprite,
             updateAccessories,
-            updateBoundsAndDrawAreas,
             connectMouseToSprites,
             connectMouseToView,
             finalize,
