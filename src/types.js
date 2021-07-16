@@ -35,6 +35,8 @@ const differences = {
         kscale: areNotClose,
         vscale: areNotClose,
         vfamily: areNotEqual,
+        lscale: areNotClose,
+        lfamily: areNotEqual,
     },
     vertex: {
         size: areNotClose,
@@ -50,6 +52,7 @@ const differences = {
         alpha: areNotClose,
         curve1: areNotClose,
         curve2: areNotClose,
+        lparam: areNotClose,
     },
 };
 
@@ -70,6 +73,8 @@ const conditions = {
         kscale: isPositive,
         vscale: isPositive,
         vfamily: isString,
+        lscale: isPositive,
+        lfamily: isString,
     },
     vertex: {
         size: isPositive,
@@ -85,6 +90,7 @@ const conditions = {
         alpha: isAlpha,
         curve1: isFinite,
         curve2: isFinite,
+        lparam: isAlpha,
     },
     frame: {
         graph: isObject,

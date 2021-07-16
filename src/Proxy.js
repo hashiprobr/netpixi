@@ -81,6 +81,7 @@ export default function (cell, graph, animation, panel) {
                         let source = validate.receivedSource(data, vertices);
                         let target = validate.receivedTarget(data, vertices, source);
                         [source, target] = validate.notMissingEdge(settings, source, target, vertices, areas);
+                        const label = validate.receivedLabel(props);
                         let neighbor;
                         let u;
                         if (vertices[target].leaders.has(source)) {
@@ -89,6 +90,9 @@ export default function (cell, graph, animation, panel) {
                         } else {
                             neighbor = areas[target].neighbors[source];
                             u = target;
+                        }
+                        if (label !== null) {
+                            neighbor.label = label;
                         }
                         neighbor.props = union(neighbor.props, props);
                         drawEdges(u);

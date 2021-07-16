@@ -46,13 +46,14 @@ class Base(ABC):
         self._push('settings', {}, kwargs)
 
     def send_vertex(self, id, **kwargs):
-        if kwargs is not None:
-            self._clean_num(kwargs, 'x')
-            self._clean_num(kwargs, 'y')
-            self._clean_str(kwargs, 'label')
+        self._clean_num(kwargs, 'x')
+        self._clean_num(kwargs, 'y')
+        self._clean_str(kwargs, 'key')
+        self._clean_str(kwargs, 'value')
         self._push_str('vertex', {'id': id}, kwargs)
 
     def send_edge(self, source, target, **kwargs):
+        self._clean_str(kwargs, 'label')
         self._push_str('edge', {'source': source, 'target': target}, kwargs)
 
     def send_frame(self, duration, **kwargs):

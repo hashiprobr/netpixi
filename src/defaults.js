@@ -10,6 +10,8 @@ export default {
         kscale: 1,
         vscale: 1,
         vfamily: 'monospace',
+        lscale: 2,
+        lfamily: 'monospace',
     },
     vertex: {
         size: 5,
@@ -25,5 +27,6 @@ export default {
         alpha: 0.5,
         curve1: 1,
         curve2: 1,
+        lparam: 0.5,
     },
 };

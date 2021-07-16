@@ -49,7 +49,8 @@ function importProperties(graph, disable) {
                 let target = validate.receivedTarget(data, vertices, source);
                 [source, target] = validate.notMissingEdge(settings, source, target, vertices, areas);
                 validate.notDuplicateEdge(source, target, overEdges);
-                overEdges[source][target] = props;
+                const label = validate.receivedLabel(props);
+                overEdges[source][target] = { label, props };
             });
     }
 
@@ -102,6 +103,7 @@ function importProperties(graph, disable) {
 
         for (const source in overEdges) {
             for (const target in overEdges[source]) {
+                const { label, props } = overEdges[source][target];
                 let neighbor;
                 if (vertices[target].leaders.has(source)) {
                     neighbor = areas[source].neighbors[target];
@@ -110,7 +112,10 @@ function importProperties(graph, disable) {
                     neighbor = areas[target].neighbors[source];
                     leaders.add(target);
                 }
-                neighbor.props = union(neighbor.props, overEdges[source][target]);
+                if (label !== null) {
+                    neighbor.label = label;
+                }
+                neighbor.props = union(neighbor.props, props);
             }
         }
 

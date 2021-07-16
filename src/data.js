@@ -259,6 +259,9 @@ const validate = {
             throw `existing edge with source ${target} and target ${source} but graph is not directed`;
         }
     },
+    receivedLabel(props) {
+        return loosePopStr(props, 'label');
+    },
     isFrame(data) {
         return data.type === 'frame';
     },

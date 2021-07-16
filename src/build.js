@@ -76,9 +76,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 const target = validate.receivedTarget(data, vertices, source);
                 validate.notDuplicateEdge(source, target, edges);
                 validate.notReversedEdge(settings, source, target, edges);
+                const label = validate.receivedLabel(props);
                 vertices[source].degree++;
                 vertices[target].degree++;
-                edges[source][target] = props;
+                edges[source][target] = { label, props };
                 m++;
             });
     }
@@ -266,12 +267,12 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             if (vertex.value !== '') {
                 valueText.text = vertex.value;
                 valueText.style.fontSize = settings.graph.vscale * vertex.radius;
-                transform.tx = vertex.radius - valueText.width / 2;
-                transform.ty = vertex.radius - valueText.height / 2;
+                matrix.tx = vertex.radius - valueText.width / 2;
+                matrix.ty = vertex.radius - valueText.height / 2;
                 app.renderer.render(valueText, {
                     renderTexture: vertex.sprite.texture,
                     clear: false,
-                    transform: transform,
+                    transform: matrix,
                 });
             }
         }
@@ -280,6 +281,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             const graphics = areas[u].graphics;
             graphics.clear();
             for (const [v, neighbor] of Object.entries(areas[u].neighbors)) {
+                if ('sprite' in neighbor) {
+                    neighbor.sprite.alpha = 0;
+                }
                 let s;
                 let t;
                 if (neighbor.reversed) {
@@ -311,13 +315,13 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     }
                     if (compare(alpha, 0) > 0 || exporting) {
                         alpha = Math.min(alpha, 1);
-                        const minimum = 9 * size;
                         let size = props.width;
                         if (!infinite) {
                             size *= scale;
                         }
                         size = Math.min(size, s.radius, t.radius);
                         let close = false;
+                        const minimum = 9 * size;
                         if (compare(distance, minimum) < 0) {
                             size *= distance / minimum;
                             close = true;
@@ -407,6 +411,49 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 graphics.moveTo(gx, gy);
                                 graphics.lineTo(gx - 2 * dx - nx, gy - 2 * dy - ny);
                             }
+                            if (neighbor.label === '') {
+                                if ('sprite' in neighbor) {
+                                    const sprite = neighbor.sprite;
+                                    delete neighbor.sprite;
+                                    sprite.destroy();
+                                }
+                            } else {
+                                labelText.text = neighbor.label;
+                                labelText.style.fontSize = settings.graph.lscale * size;
+                                if ('sprite' in neighbor) {
+                                    neighbor.sprite.alpha = 1;
+                                } else {
+                                    neighbor.sprite = new PIXI.Sprite(new PIXI.RenderTexture.create());
+                                    neighbor.sprite.anchor.x = 0.5;
+                                    neighbor.sprite.anchor.y = 0.5;
+                                    app.stage.addChild(neighbor.sprite);
+                                }
+                                neighbor.sprite.texture.resize(labelText.width, labelText.height);
+                                tag.clear();
+                                tag.beginFill(props.color, alpha);
+                                tag.drawRoundedRect(0, 0, labelText.width, labelText.height, size / 2);
+                                tag.endFill();
+                                app.renderer.render(tag, {
+                                    renderTexture: neighbor.sprite.texture,
+                                });
+                                app.renderer.render(labelText, {
+                                    renderTexture: neighbor.sprite.texture,
+                                    clear: false,
+                                });
+                                const a = props.lparam;
+                                const b = (1 - a);
+                                let mx;
+                                let my;
+                                if (straight) {
+                                    mx = b * fx + a * gx;
+                                    my = b * fy + a * gy;
+                                } else {
+                                    mx = b * b * b * fx + 3 * b * b * a * x3 + 3 * b * a * a * x4 + a * a * a * gx;
+                                    my = b * b * b * fy + 3 * b * b * a * y3 + 3 * b * a * a * y4 + a * a * a * gy;
+                                }
+                                neighbor.sprite.position.x = mx;
+                                neighbor.sprite.position.y = my;
+                            }
                         }
                     }
                 }
@@ -439,6 +486,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             app.renderer.backgroundAlpha = settings.graph.alpha;
             valueText.style.fill = settings.graph.color;
             valueText.style.fontFamily = settings.graph.vfamily;
+            labelText.style.fill = settings.graph.color;
+            labelText.style.fontFamily = settings.graph.lfamily;
         }
 
         function updateTexture() {
@@ -471,7 +520,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function updateVisible(vertex) {
-            vertex.visible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.radius);
+            const radius = vertex.sprite.width / 2;
+            const looksVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
+            const isVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.radius);
+            vertex.visible = looksVisible || isVisible;
         }
 
         function updateSprite(vertex) {
@@ -485,20 +537,16 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 vertex.bwidth *= scale;
             }
             vertex.bwidth = Math.min(vertex.bwidth, vertex.radius / 2);
-            const radius = vertex.sprite.width / 2;
-            const looksVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
             updateVisible(vertex);
-            if (looksVisible || vertex.visible || exporting) {
+            if (vertex.visible || exporting) {
                 drawSprite(vertex, props);
             }
         }
 
         function updateSpriteIfEntered(vertex) {
             const wasInvisible = !vertex.visible;
-            const radius = vertex.sprite.height / 2;
-            const looksVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
             updateVisible(vertex);
-            if (wasInvisible && (looksVisible || vertex.visible)) {
+            if (wasInvisible && vertex.visible) {
                 const props = merge(settings.vertex, vertex.props, differences.vertex);
                 drawSprite(vertex, props);
                 return true;
@@ -725,8 +773,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function finalize() {
             defaultTexture.destroy();
+            labelText.destroy();
             valueText.destroy();
             keyText.destroy();
+            tag.destroy();
         }
 
         if (settings === null) {
@@ -768,7 +818,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     u = source;
                     v = target;
                 }
-                const props = pop(edges[source], 'target');
+                if (edges[source][target].label === null) {
+                    edges[source][target].label = '';
+                }
+                const { label, props } = pop(edges[source], target);
                 if (!(u in areas)) {
                     const neighbors = {};
                     const graphics = new PIXI.Graphics();
@@ -776,15 +829,17 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertices[u].leaders.add(u);
                     app.stage.addChild(graphics);
                 }
-                areas[u].neighbors[v] = { reversed, props };
+                areas[u].neighbors[v] = { reversed, label, props };
                 vertices[v].leaders.add(u);
             }
             delete edges[source];
         }
 
+        const matrix = new PIXI.Matrix(1, 0, 0, 1, 0, 0);
+        const tag = new PIXI.Graphics();
         const keyText = new PIXI.Text();
         const valueText = new PIXI.Text();
-        const transform = new PIXI.Matrix(1, 0, 0, 1, 0, 0);
+        const labelText = new PIXI.Text();
 
         updateSize();
         initializeScale();
