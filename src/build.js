@@ -249,6 +249,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 keyText.text = vertex.key;
                 keyText.style.fill = props.color;
                 keyText.style.stroke = props.bcolor;
+                keyText.style.strokeThickness = vertex.bwidth / 2;
                 keyText.style.fontSize = settings.graph.kscale * vertex.radius;
                 keyText.style.fontFamily = props.kfamily;
                 if (!('keySprite' in vertex)) {
@@ -442,10 +443,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function updateTexture() {
             let radius = settings.vertex.size;
-            keyText.style.strokeThickness = settings.graph.kline;
             if (!infinite) {
                 radius *= scale;
-                keyText.style.strokeThickness *= scale;
             }
             defaultTexture.resize(radius, radius);
             radius /= 2;
@@ -481,6 +480,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             if (!infinite) {
                 vertex.radius *= scale;
             }
+            vertex.bwidth = props.bwidth;
+            if (!infinite) {
+                vertex.bwidth *= scale;
+            }
+            vertex.bwidth = Math.min(vertex.bwidth, vertex.radius / 2);
             const radius = vertex.sprite.width / 2;
             const looksVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
             updateVisible(vertex);

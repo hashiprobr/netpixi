@@ -7,7 +7,6 @@ export default {
         alpha: 1,
         alpha1: 1,
         alpha2: 1,
-        kline: 0,
         kscale: 1,
         vscale: 1,
         vfamily: 'monospace',
