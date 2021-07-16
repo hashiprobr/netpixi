@@ -102,18 +102,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             return scale;
         }
 
-        function getRed(color) {
-            return (color & 0xff0000) >> 16;
-        }
-
-        function getGreen(color) {
-            return (color & 0x00ff00) >> 8;
-        }
-
-        function getBlue(color) {
-            return color & 0x0000ff;
-        }
-
         function setExporting(value) {
             exporting = value;
         }
@@ -155,10 +143,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function calculateVisibility(x, y, radius) {
             return x >= left - radius && x < right + radius && y >= top - radius && y < bottom + radius;
-        }
-
-        function calculateBlend(a, b, alpha) {
-            return Math.round(alpha * a + (1 - alpha) * b);
         }
 
         function calculateIntersection(edgeShape, shape) {
@@ -407,9 +391,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 graphics.bezierCurveTo(x3, y3, x4, y4, gx, gy);
                             }
                             if (settings.graph.directed) {
-                                const r = calculateBlend(getRed(props.color), getRed(settings.graph.color), alpha);
-                                const g = calculateBlend(getGreen(props.color), getGreen(settings.graph.color), alpha);
-                                const b = calculateBlend(getBlue(props.color), getBlue(settings.graph.color), alpha);
                                 if (straight) {
                                     edgeShape = formatLine(sx, sy, tx, ty);
                                 } else {
@@ -420,16 +401,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 dy = 2 * (hy - gy);
                                 nx = -dy;
                                 ny = dx;
-                                graphics.lineStyle({
-                                    ...graphics.line,
-                                    color: (r << 16) + (g << 8) + b,
-                                    alpha: 1,
-                                    join: PIXI.LINE_JOIN.ROUND,
-                                });
+                                graphics.moveTo(gx, gy);
                                 graphics.lineTo(gx - 2 * dx + nx, gy - 2 * dy + ny);
-                                graphics.lineTo(gx - dx, gy - dy);
+                                graphics.moveTo(gx, gy);
                                 graphics.lineTo(gx - 2 * dx - nx, gy - 2 * dy - ny);
-                                graphics.lineTo(gx, gy);
                             }
                         }
                     }
