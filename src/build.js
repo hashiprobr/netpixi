@@ -48,8 +48,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 validate.notDuplicateVertex(id, vertices);
                 const x = validate.receivedX(props);
                 const y = validate.receivedY(props);
-                const value = validate.receivedValue(props);
                 const key = validate.receivedKey(props);
+                const value = validate.receivedValue(props);
                 if (x !== null) {
                     if (minX > x) {
                         minX = x;
@@ -68,7 +68,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 }
                 const degree = 0;
                 const leaders = new Set();
-                vertices[id] = { x, y, value, key, degree, leaders, props };
+                vertices[id] = { x, y, key, value, degree, leaders, props };
                 n++;
             },
             (data, props) => {
@@ -255,6 +255,40 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 }
                 texture.destroy();
             }
+            if (vertex.key === '') {
+                if ('keySprite' in vertex) {
+                    const keySprite = vertex.keySprite;
+                    delete vertex.keySprite;
+                    keySprite.destroy();
+                }
+            } else {
+                keyText.text = vertex.key;
+                keyText.style.fill = props.color;
+                keyText.style.stroke = props.bcolor;
+                keyText.style.fontSize = settings.graph.kscale * vertex.radius;
+                keyText.style.fontFamily = props.kfamily;
+                if (!('keySprite' in vertex)) {
+                    vertex.keySprite = new PIXI.Sprite(new PIXI.RenderTexture.create());
+                    vertex.keySprite.anchor.x = 0.5;
+                    vertex.keySprite.anchor.y = 0.5;
+                    app.stage.addChild(vertex.keySprite);
+                }
+                vertex.keySprite.texture.resize(keyText.width, keyText.height);
+                app.renderer.render(keyText, {
+                    renderTexture: vertex.keySprite.texture,
+                });
+            }
+            if (vertex.value !== '') {
+                valueText.text = vertex.value;
+                valueText.style.fontSize = settings.graph.vscale * vertex.radius;
+                transform.tx = vertex.radius - valueText.width / 2;
+                transform.ty = vertex.radius - valueText.height / 2;
+                app.renderer.render(valueText, {
+                    renderTexture: vertex.sprite.texture,
+                    clear: false,
+                    transform: transform,
+                });
+            }
         }
 
         function drawEdges(u) {
@@ -427,12 +461,16 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function updateBackground() {
             app.renderer.backgroundColor = settings.graph.color;
             app.renderer.backgroundAlpha = settings.graph.alpha;
+            valueText.style.fill = settings.graph.color;
+            valueText.style.fontFamily = settings.graph.vfamily;
         }
 
         function updateTexture() {
             let radius = settings.vertex.size;
+            keyText.style.strokeThickness = settings.graph.kline;
             if (!infinite) {
                 radius *= scale;
+                keyText.style.strokeThickness *= scale;
             }
             defaultTexture.resize(radius, radius);
             radius /= 2;
@@ -471,7 +509,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             const radius = vertex.sprite.width / 2;
             const looksVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
             updateVisible(vertex);
-            if (looksVisible || vertex.visible) {
+            if (looksVisible || vertex.visible || exporting) {
                 drawSprite(vertex, props);
             }
         }
@@ -484,6 +522,15 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             if (wasInvisible && (looksVisible || vertex.visible)) {
                 const props = merge(settings.vertex, vertex.props, differences.vertex);
                 drawSprite(vertex, props);
+                return true;
+            }
+            return false;
+        }
+
+        function updateKey(vertex) {
+            if ('keySprite' in vertex) {
+                vertex.keySprite.position.x = vertex.sprite.position.x;
+                vertex.keySprite.position.y = vertex.sprite.position.y - vertex.radius - vertex.keySprite.height / 2;
             }
         }
 
@@ -491,6 +538,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.shape.args[0].x = vertex.sprite.position.x;
             vertex.shape.args[0].y = vertex.sprite.position.y;
             vertex.shape.args[1] = vertex.radius;
+            updateKey(vertex);
         }
 
         function connectMouse() {
@@ -554,7 +602,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         if (dragging) {
                             updateBounds();
                             for (const vertex of Object.values(vertices)) {
-                                updateSpriteIfEntered(vertex);
+                                if (updateSpriteIfEntered(vertex)) {
+                                    updateKey(vertex);
+                                }
                             }
                             drawAreas();
                             dragging = false;
@@ -674,7 +724,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             if (moved) {
                                 updateBounds();
                                 for (const vertex of Object.values(vertices)) {
-                                    updateSpriteIfEntered(vertex);
+                                    if (updateSpriteIfEntered(vertex)) {
+                                        updateKey(vertex);
+                                    }
                                 }
                                 drawAreas();
                             }
@@ -694,6 +746,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function finalize() {
             defaultTexture.destroy();
+            valueText.destroy();
+            keyText.destroy();
         }
 
         if (settings === null) {
@@ -749,6 +803,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             delete edges[source];
         }
 
+        const keyText = new PIXI.Text();
+        const valueText = new PIXI.Text();
+        const transform = new PIXI.Matrix(1, 0, 0, 1, 0, 0);
+
         updateSize();
         initializeScale();
         updateBackground();
@@ -794,11 +852,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.y = normalizeVertical(y);
                 }
             }
-            if (vertex.value === null) {
-                vertex.value = '';
-            }
             if (vertex.key === null) {
                 vertex.key = '';
+            }
+            if (vertex.value === null) {
+                vertex.value = '';
             }
             delete vertex.degree;
             vertex.sprite = new PIXI.Sprite();

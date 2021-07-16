@@ -200,11 +200,11 @@ const validate = {
     receivedY(props) {
         return loosePopNum(props, 'y');
     },
-    receivedValue(props) {
-        return loosePopStr(props, 'value');
-    },
     receivedKey(props) {
         return loosePopStr(props, 'key');
+    },
+    receivedValue(props) {
+        return loosePopStr(props, 'value');
     },
     receivedSource(data, vertices) {
         const source = tightPopStr(data, 'source');

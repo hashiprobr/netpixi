@@ -40,9 +40,9 @@ function importProperties(graph, disable) {
                 validate.notDuplicateVertex(id, overVertices);
                 const x = validate.receivedX(props);
                 const y = validate.receivedY(props);
-                const value = validate.receivedValue(props);
                 const key = validate.receivedKey(props);
-                overVertices[id] = { x, y, value, key, props };
+                const value = validate.receivedValue(props);
+                overVertices[id] = { x, y, key, value, props };
             },
             (data, props) => {
                 let source = validate.receivedSource(data, vertices);
@@ -87,11 +87,11 @@ function importProperties(graph, disable) {
                     moved.add(id);
                 }
             }
-            if (overVertex.value !== null) {
-                vertex.value = overVertex.value;
-            }
             if (overVertex.key !== null) {
                 vertex.key = overVertex.key;
+            }
+            if (overVertex.value !== null) {
+                vertex.value = overVertex.value;
             }
             vertex.props = union(vertex.props, overVertex.props);
             ids.add(id);

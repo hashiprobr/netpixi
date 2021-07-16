@@ -6,14 +6,21 @@ import { pop } from './data';
 function exportImage(app, graph, filename) {
     const {
         settings,
+        vertices,
         getScale,
         setExporting,
         drawAreas,
+        updateSprite,
+        updateGeometry,
     } = graph;
 
     return new Promise((resolve) => {
         setExporting(true);
 
+        for (const vertex of Object.values(vertices)) {
+            updateSprite(vertex);
+            updateGeometry(vertex);
+        }
         drawAreas();
 
         const clear = false;
