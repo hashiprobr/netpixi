@@ -20,6 +20,9 @@ class Base(ABC):
         line = f'{json.dumps(data)}\n'
         self._send(line.encode())
 
+    def _push_empty(self, type, props):
+        self._push(type, {}, props)
+
     def _push_str(self, type, data, props):
         for key, value in data.items():
             if not isinstance(value, str):
@@ -42,25 +45,25 @@ class Base(ABC):
         if key in props and not isinstance(props[key], str):
             raise TypeError(f'{key} must be a string')
 
-    def send_settings(self, **kwargs):
-        self._push('settings', {}, kwargs)
+    def _send_settings(self, props):
+        self._push_empty('settings', props)
 
-    def send_vertex(self, id, **kwargs):
-        self._clean_num(kwargs, 'x')
-        self._clean_num(kwargs, 'y')
-        self._clean_str(kwargs, 'key')
-        self._clean_str(kwargs, 'value')
-        self._push_str('vertex', {'id': id}, kwargs)
+    def _send_vertex(self, id, props):
+        self._clean_num(props, 'x')
+        self._clean_num(props, 'y')
+        self._clean_str(props, 'key')
+        self._clean_str(props, 'value')
+        self._push_str('vertex', {'id': id}, props)
 
-    def send_edge(self, source, target, **kwargs):
-        self._clean_str(kwargs, 'label')
-        self._push_str('edge', {'source': source, 'target': target}, kwargs)
+    def _send_edge(self, source, target, props):
+        self._clean_str(props, 'label')
+        self._push_str('edge', {'source': source, 'target': target}, props)
 
-    def send_frame(self, duration, **kwargs):
-        self._push_int('frame', {'duration': duration}, kwargs)
+    def _send_frame(self, duration, props):
+        self._push_int('frame', {'duration': duration}, props)
 
 
-class File(Base):
+class BaseFile(Base):
     def _send(self, array):
         self.file.write(array)
 
@@ -74,12 +77,72 @@ class File(Base):
         self.file.close()
 
 
-class Render(Base):
-    def _send(self, array):
-        run(f"netpixi.send({{}}, '{self.uid}', '{b64encode(array).decode()}');")
+class File(BaseFile):
+    def write_vertex(self, id, **kwargs):
+        self._send_vertex(id, kwargs)
 
-    def __init__(self, uid):
+    def write_edge(self, source, target, **kwargs):
+        self._send_edge(source, target, kwargs)
+
+
+class AnimationFile(BaseFile):
+    def write_frame(self, duration, **kwargs):
+        self._send_frame(duration, kwargs)
+
+
+class Proxy(Base):
+    def _send(self, array):
+        run(f"netpixi.call({{}}, '{self.uid}', '{self.name}', '{b64encode(array).decode()}');")
+
+    def __init__(self, uid, name):
         self.uid = uid
+        self.name = name
+
+
+class Changer(Proxy):
+    def __init__(self, uid):
+        super().__init__(uid, 'change')
+
+
+class Lister(Proxy):
+    def __init__(self, uid):
+        super().__init__(uid, 'list')
+
+
+class Render:
+    def __init__(self, uid):
+        self.changer = Changer(uid)
+        self.lister = Lister(uid)
+
+    def change_graph(self, **kwargs):
+        self.changer._send_settings({'graph': kwargs})
+
+    def change_vertex_defaults(self, **kwargs):
+        self.changer._send_settings({'vertex': kwargs})
+
+    def change_edge_defaults(self, **kwargs):
+        self.changer._send_settings({'edge': kwargs})
+
+    def change_vertex_selection(self, **kwargs):
+        self.changer._send_settings({'vertex': kwargs})
+
+    def change_edge_selection(self, **kwargs):
+        self.changer._send_settings({'edge': kwargs})
+
+    def change_vertex(self, id, **kwargs):
+        self.changer._send_vertex(id, kwargs)
+
+    def change_edge(self, source, target, **kwargs):
+        self.changer._send_edge(source, target, kwargs)
+
+    def add_frame(self, duration, **kwargs):
+        self.changer._send_frame(duration, kwargs)
+
+    def list_vertices(self, **kwargs):
+        self.lister._push_empty('vertex', kwargs)
+
+    def list_edges(self, **kwargs):
+        self.lister._push_empty('edge', kwargs)
 
 
 def run(script):
@@ -93,19 +156,19 @@ def run(script):
 
 def open(path, **kwargs):
     file = File(path)
-    file.send_settings(**kwargs)
+    file._send_settings(kwargs)
     return file
 
 
 def open_animation(path):
-    return File(path)
+    return AnimationFile(path)
 
 
-def render(path, horizontal=16, vertical=9, normalize=True, infinite=False, broker=False):
-    if not isinstance(horizontal, int) or not isinstance(vertical, int):
-        raise TypeError('aspect dimensions must be integers')
-    if horizontal <= 0 or vertical <= 0:
-        raise ValueError('aspect dimensions must be positive')
+def render(path, aspect=16/9, normalize=True, infinite=False, broker=False):
+    if not isinstance(aspect, (int, float)):
+        raise TypeError(f'aspect must be an integer or a float')
+    if aspect < 0.1 or aspect > 10:
+        raise ValueError('aspect must be between 0.1 and 10')
     if not isinstance(normalize, bool):
         raise TypeError('normalize must be a boolean')
     if not isinstance(infinite, bool):
@@ -115,7 +178,7 @@ def render(path, horizontal=16, vertical=9, normalize=True, infinite=False, brok
     normalizeJS = str(normalize).lower()
     infiniteJS = str(infinite).lower()
     brokerJS = str(broker).lower()
-    uid = run(f"netpixi.render({{}}, '{path}', {horizontal}, {vertical}, {normalizeJS}, {infiniteJS}, {brokerJS});")
+    uid = run(f"netpixi.render({{}}, '{path}', {aspect}, {normalizeJS}, {infiniteJS}, {brokerJS});")
     return Render(uid)
 
 

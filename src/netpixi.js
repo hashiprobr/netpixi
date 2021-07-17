@@ -8,10 +8,10 @@ import Proxy from './Proxy';
 const proxies = {};
 
 
-function render(uid, path, horizontal, vertical, normalize, infinite, broker) {
+function render(uid, path, aspect, normalize, infinite, broker) {
     const { app, cell } = main(uid);
 
-    build(path, horizontal / vertical, normalize, infinite, broker, app, cell)
+    build(path, aspect, normalize, infinite, broker, app, cell)
         .then((graph) => {
             cell.connectToBody(proxies, uid, graph);
 
@@ -39,15 +39,15 @@ function render(uid, path, horizontal, vertical, normalize, infinite, broker) {
 }
 
 
-function send(localUid, globalUid, code) {
+function call(localUid, globalUid, name, code) {
+    const element = document.getElementById(localUid);
     if (globalUid in proxies) {
-        const proxy = proxies[globalUid];
-        proxy.send(JSON.parse(atob(code)));
+        element.remove();
+        proxies[globalUid](name, code);
     } else {
-        const element = document.getElementById(localUid);
         element.innerHTML = 'Render not found';
     }
 }
 
 
-export default { proxies, render, send };
+export default { proxies, render, call };
