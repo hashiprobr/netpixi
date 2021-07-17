@@ -428,17 +428,22 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     neighbor.sprite.anchor.y = 0.5;
                                     app.stage.addChild(neighbor.sprite);
                                 }
-                                neighbor.sprite.texture.resize(labelText.width, labelText.height);
+                                const labelWidth = labelText.width + size;
+                                const labelHeight = labelText.height + size;
+                                neighbor.sprite.texture.resize(labelWidth, labelHeight);
                                 tag.clear();
                                 tag.beginFill(props.color, alpha);
-                                tag.drawRoundedRect(0, 0, labelText.width, labelText.height, size / 2);
+                                tag.drawRoundedRect(0, 0, labelWidth, labelHeight, radius);
                                 tag.endFill();
                                 app.renderer.render(tag, {
                                     renderTexture: neighbor.sprite.texture,
                                 });
+                                matrix.tx = radius;
+                                matrix.ty = radius;
                                 app.renderer.render(labelText, {
                                     renderTexture: neighbor.sprite.texture,
                                     clear: false,
+                                    transform: matrix,
                                 });
                                 const a = props.lparam;
                                 const b = (1 - a);

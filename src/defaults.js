@@ -10,7 +10,7 @@ export default {
         kscale: 1,
         vscale: 1,
         vfamily: 'monospace',
-        lscale: 2,
+        lscale: 1,
         lfamily: 'monospace',
     },
     vertex: {
