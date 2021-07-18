@@ -203,24 +203,20 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             graphics.endFill();
         }
 
-        function drawGraphics(props, radius) {
+        function drawGraphics(props, outerRadius, bwidth) {
             const graphics = new PIXI.Graphics();
             if (compare(props.bwidth, 0) > 0) {
-                let bwidth = props.bwidth;
-                if (!infinite) {
-                    bwidth *= scale;
-                }
-                bwidth = Math.min(bwidth, radius / 2);
-                fillTexture(props.bcolor, props.shape, graphics, radius);
-                fillTexture(props.color, props.shape, graphics, radius - bwidth);
+                fillTexture(props.bcolor, props.shape, graphics, outerRadius);
+                const innerRadius = outerRadius - Math.min(bwidth, outerRadius / 2);
+                fillTexture(props.color, props.shape, graphics, innerRadius);
             } else {
-                fillTexture(props.color, props.shape, graphics, radius);
+                fillTexture(props.color, props.shape, graphics, outerRadius);
             }
             return graphics;
         }
 
         function drawTexture(vertex, props) {
-            const graphics = drawGraphics(props, vertex.radius);
+            const graphics = drawGraphics(props, vertex.radius, vertex.bwidth);
             vertex.sprite.texture = app.renderer.generateTexture(graphics);
             graphics.destroy();
         }
@@ -503,7 +499,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             }
             defaultTexture.resize(radius, radius);
             radius /= 2;
-            const graphics = drawGraphics(settings.vertex, radius);
+            let bwidth = settings.vertex.bwidth;
+            if (!infinite) {
+                bwidth *= scale;
+            }
+            const graphics = drawGraphics(settings.vertex, radius, bwidth);
             const matrix = new PIXI.Matrix(1, 0, 0, 1, radius, radius);
             app.renderer.render(graphics, {
                 renderTexture: defaultTexture,
