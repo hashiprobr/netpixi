@@ -110,8 +110,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function formatRectangle(radius) {
             rectangleShape.args[0].x = left - radius;
             rectangleShape.args[0].y = top - radius;
-            rectangleShape.args[1].x = right + radius + 1;
-            rectangleShape.args[1].y = bottom + radius + 1;
+            rectangleShape.args[1].x = right + radius;
+            rectangleShape.args[1].y = bottom + radius;
             return rectangleShape;
         }
 
