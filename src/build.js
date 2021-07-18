@@ -275,6 +275,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     transform: matrix,
                 });
             }
+            vertex.dirty = false;
         }
 
         function drawEdges(u) {
@@ -303,13 +304,13 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 if (compare(distance, 0) > 0 || exporting) {
                     const props = merge(settings.edge, neighbor.props, differences.edge);
                     let alpha = props.alpha * s.alpha * t.alpha;
-                    if (s.visible) {
-                        if (!t.visible) {
+                    if (s.sprite.visible) {
+                        if (!t.sprite.visible) {
                             alpha *= settings.graph.alpha1;
                         }
                     } else {
                         alpha *= settings.graph.alpha1;
-                        if (!t.visible) {
+                        if (!t.sprite.visible) {
                             alpha *= settings.graph.alpha2;
                         }
                     }
@@ -526,9 +527,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function updateVisible(vertex) {
             const radius = vertex.sprite.width / 2;
-            const looksVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
-            const isVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.radius);
-            vertex.visible = looksVisible || isVisible;
+            const pseudoVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
+            const reallyVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.radius);
+            vertex.sprite.visible = pseudoVisible || reallyVisible;
         }
 
         function updateSprite(vertex) {
@@ -542,16 +543,16 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 vertex.bwidth *= scale;
             }
             vertex.bwidth = Math.min(vertex.bwidth, vertex.radius / 2);
+            vertex.dirty = true;
             updateVisible(vertex);
-            if (vertex.visible || exporting) {
+            if (vertex.sprite.visible || exporting) {
                 drawSprite(vertex, props);
             }
         }
 
-        function updateSpriteIfEntered(vertex) {
-            const wasInvisible = !vertex.visible;
+        function updateSpriteStyle(vertex) {
             updateVisible(vertex);
-            if (wasInvisible && vertex.visible) {
+            if (vertex.dirty && vertex.sprite.visible) {
                 const props = merge(settings.vertex, vertex.props, differences.vertex);
                 drawSprite(vertex, props);
                 return true;
@@ -634,7 +635,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         if (dragging) {
                             updateBounds();
                             for (const vertex of Object.values(vertices)) {
-                                if (updateSpriteIfEntered(vertex)) {
+                                if (updateSpriteStyle(vertex)) {
                                     updateKey(vertex);
                                 }
                             }
@@ -703,7 +704,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     for (const vertex of Object.values(vertices)) {
                                         updatePosition(vertex);
                                         if (infinite) {
-                                            updateSpriteIfEntered(vertex);
+                                            updateSpriteStyle(vertex);
                                         } else {
                                             updateSprite(vertex);
                                         }
@@ -744,7 +745,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             for (const vertex of Object.values(vertices)) {
                                 initializePosition(vertex);
                                 if (infinite) {
-                                    updateSpriteIfEntered(vertex);
+                                    updateSpriteStyle(vertex);
                                 } else {
                                     updateSprite(vertex);
                                 }
@@ -756,7 +757,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             if (moved) {
                                 updateBounds();
                                 for (const vertex of Object.values(vertices)) {
-                                    if (updateSpriteIfEntered(vertex)) {
+                                    if (updateSpriteStyle(vertex)) {
                                         updateKey(vertex);
                                     }
                                 }
