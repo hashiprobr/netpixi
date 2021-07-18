@@ -530,6 +530,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             const pseudoVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
             const reallyVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.radius);
             vertex.sprite.visible = pseudoVisible || reallyVisible;
+            if ('keySprite' in vertex) {
+                vertex.keySprite.visible = vertex.sprite.visible;
+            }
         }
 
         function updateSprite(vertex) {
