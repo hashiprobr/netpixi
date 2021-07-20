@@ -469,7 +469,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     if ('sprite' in neighbor) {
                         neighbor.sprite.destroy();
                         delete neighbor.sprite;
-                        neighbors.remove(neighbor);
+                        neighbors.delete(neighbor);
                     }
                 }
             }
@@ -1030,7 +1030,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.sprite.anchor.y = 0.5;
             vertex.sprite.texture = defaultTexture;
             vertex.shape = ShapeInfo.circle(0, 0, 0);
-            vertex.induced = false;
+            vertex.induced = true;
             initializePosition(vertex);
             updateSprite(vertex);
             updateGeometry(vertex);
