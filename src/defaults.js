@@ -14,7 +14,7 @@ export default {
         lfamily: 'monospace',
     },
     vertex: {
-        size: 5,
+        size: 10,
         color: 0xffffff,
         shape: 'circle',
         bwidth: 0,

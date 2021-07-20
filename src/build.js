@@ -296,6 +296,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             const graphics = areas[u].graphics;
             graphics.clear();
             for (const [v, neighbor] of Object.entries(areas[u].neighbors)) {
+                let destroy = true;
                 let s;
                 let t;
                 if (neighbor.reversed) {
@@ -433,13 +434,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 graphics.moveTo(gx, gy);
                                 graphics.lineTo(gx - 2 * dx - nx, gy - 2 * dy - ny);
                             }
-                            if (neighbor.label === '') {
-                                if ('sprite' in neighbor) {
-                                    neighbor.sprite.destroy();
-                                    delete neighbor.sprite;
-                                    neighbors.remove(neighbor);
-                                }
-                            } else {
+                            if (neighbor.label !== '') {
+                                destroy = false;
                                 if (!('sprite' in neighbor)) {
                                     neighbors.add(neighbor);
                                     neighbor.sprite = new PIXI.Sprite(new PIXI.RenderTexture.create());
@@ -467,6 +463,13 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 updateLabelSprite(neighbor);
                             }
                         }
+                    }
+                }
+                if (destroy) {
+                    if ('sprite' in neighbor) {
+                        neighbor.sprite.destroy();
+                        delete neighbor.sprite;
+                        neighbors.remove(neighbor);
                     }
                 }
             }
