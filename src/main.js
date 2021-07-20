@@ -45,8 +45,6 @@ export default function (uid) {
         const resizeObserver = new ResizeObserver(() => {
             graph.updateSize();
             graph.updateBounds();
-            graph.drawAreas();
-
         });
         resizeObserver.observe(element);
         const mutationObserver = new MutationObserver(() => {

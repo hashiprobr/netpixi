@@ -146,6 +146,12 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             return x >= left - radius && x < right + radius && y >= top - radius && y < bottom + radius;
         }
 
+        function calculateTextVisibility(x, y, rectangleWidth, rectangleHeight) {
+            const radiusX = rectangleWidth / 2;
+            const radiusY = rectangleHeight / 2;
+            return x >= left - radiusX && x < right + radiusX && y >= top - radiusY && y < bottom + radiusY;
+        }
+
         function calculateIntersection(edgeShape, shape) {
             const intersect = Intersection.intersect(edgeShape, shape);
             const x = intersect.points[0].x;
@@ -203,20 +209,19 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             graphics.endFill();
         }
 
-        function drawGraphics(props, outerRadius, bwidth) {
+        function drawGraphics(props, radius, bwidth) {
             const graphics = new PIXI.Graphics();
-            if (compare(props.bwidth, 0) > 0) {
-                fillTexture(props.bcolor, props.shape, graphics, outerRadius);
-                const innerRadius = outerRadius - Math.min(bwidth, outerRadius / 2);
-                fillTexture(props.color, props.shape, graphics, innerRadius);
+            if (compare(bwidth, 0) > 0) {
+                fillTexture(props.bcolor, props.shape, graphics, radius);
+                fillTexture(props.color, props.shape, graphics, radius - bwidth);
             } else {
-                fillTexture(props.color, props.shape, graphics, outerRadius);
+                fillTexture(props.color, props.shape, graphics, radius);
             }
             return graphics;
         }
 
         function drawTexture(vertex, props) {
-            const graphics = drawGraphics(props, vertex.radius, vertex.bwidth);
+            const graphics = drawGraphics(props, vertex.sprite.radius, vertex.sprite.bwidth);
             vertex.sprite.texture = app.renderer.generateTexture(graphics);
             graphics.destroy();
         }
@@ -236,35 +241,26 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 }
                 texture.destroy();
             }
-            if (vertex.key === '') {
-                if ('keySprite' in vertex) {
-                    const keySprite = vertex.keySprite;
-                    delete vertex.keySprite;
-                    keySprite.destroy();
-                }
-            } else {
+            if (vertex.key !== '') {
                 keyText.text = vertex.key;
+                keyText.style.fontSize = vertex.keyStyle.fontSize;
+                keyText.style.fontFamily = vertex.keyStyle.fontFamily;
+                keyText.style.strokeThickness = vertex.keyStyle.strokeThickness;
                 keyText.style.fill = props.color;
                 keyText.style.stroke = props.bcolor;
-                keyText.style.strokeThickness = vertex.bwidth / 2;
-                keyText.style.fontSize = settings.graph.kscale * vertex.radius;
-                keyText.style.fontFamily = props.kfamily;
-                if (!('keySprite' in vertex)) {
-                    vertex.keySprite = new PIXI.Sprite(new PIXI.RenderTexture.create());
-                    vertex.keySprite.anchor.x = 0.5;
-                    vertex.keySprite.anchor.y = 0.5;
-                    app.stage.addChild(vertex.keySprite);
-                }
-                vertex.keySprite.texture.resize(keyText.width, keyText.height);
+                vertex.keySprite.texture.resize(vertex.keyWidth, vertex.keyHeight);
                 app.renderer.render(keyText, {
                     renderTexture: vertex.keySprite.texture,
                 });
             }
             if (vertex.value !== '') {
                 valueText.text = vertex.value;
-                valueText.style.fontSize = settings.graph.vscale * vertex.radius;
-                matrix.tx = vertex.radius - valueText.width / 2;
-                matrix.ty = vertex.radius - valueText.height / 2;
+                valueText.style.fontSize = vertex.valueStyle.fontSize;
+                if (vertex.sprite.texture === defaultTexture) {
+                    drawTexture(vertex, props);
+                }
+                matrix.tx = vertex.valueX;
+                matrix.ty = vertex.valueY;
                 app.renderer.render(valueText, {
                     renderTexture: vertex.sprite.texture,
                     clear: false,
@@ -274,13 +270,32 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.dirty = false;
         }
 
+        function drawLabelSprite(neighbor) {
+            const radius = neighbor.style.fontSize / 2;
+            neighbor.sprite.texture.resize(neighbor.width, neighbor.height);
+            labelBackground.clear();
+            labelBackground.beginFill(neighbor.color, neighbor.alpha);
+            labelBackground.drawRoundedRect(0, 0, neighbor.width, neighbor.height, radius);
+            labelBackground.endFill();
+            app.renderer.render(labelBackground, {
+                renderTexture: neighbor.sprite.texture,
+            });
+            labelText.text = neighbor.label;
+            labelText.style.fontSize = neighbor.style.fontSize;
+            matrix.tx = radius;
+            matrix.ty = radius;
+            app.renderer.render(labelText, {
+                renderTexture: neighbor.sprite.texture,
+                clear: false,
+                transform: matrix,
+            });
+            neighbor.dirty = false;
+        }
+
         function drawEdges(u) {
             const graphics = areas[u].graphics;
             graphics.clear();
             for (const [v, neighbor] of Object.entries(areas[u].neighbors)) {
-                if ('sprite' in neighbor) {
-                    neighbor.sprite.alpha = 0;
-                }
                 let s;
                 let t;
                 if (neighbor.reversed) {
@@ -290,33 +305,40 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     s = vertices[u];
                     t = vertices[v];
                 }
-                const sx = s.sprite.position.x;
-                const sy = s.sprite.position.y;
-                const tx = t.sprite.position.x;
-                const ty = t.sprite.position.y;
+                let sx;
+                let sy;
+                let tx;
+                let ty;
+                if (infinite) {
+                    sx = s.sprite.position.x;
+                    sy = s.sprite.position.y;
+                    tx = t.sprite.position.x;
+                    ty = t.sprite.position.y;
+                } else {
+                    sx = s.x;
+                    sy = s.y;
+                    tx = t.x;
+                    ty = t.y;
+                }
                 let dx = tx - sx;
                 let dy = ty - sy;
                 const distance = Math.sqrt(dx * dx + dy * dy) - (s.radius + t.radius);
                 if (compare(distance, 0) > 0 || exporting) {
                     const props = merge(settings.edge, neighbor.props, differences.edge);
                     let alpha = props.alpha * s.alpha * t.alpha;
-                    if (s.sprite.visible) {
-                        if (!t.sprite.visible) {
+                    if (s.induced) {
+                        if (!t.induced) {
                             alpha *= settings.graph.alpha1;
                         }
                     } else {
                         alpha *= settings.graph.alpha1;
-                        if (!t.sprite.visible) {
+                        if (!t.induced) {
                             alpha *= settings.graph.alpha2;
                         }
                     }
                     if (compare(alpha, 0) > 0 || exporting) {
                         alpha = Math.min(alpha, 1);
-                        let size = props.width;
-                        if (!infinite) {
-                            size *= scale;
-                        }
-                        size = Math.min(size, s.radius, t.radius);
+                        let size = Math.min(props.width, s.radius, t.radius);
                         let close = false;
                         const minimum = 9 * size;
                         if (compare(distance, minimum) < 0) {
@@ -348,8 +370,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             straight = false;
                             edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
                         }
-                        const radius = size / 2;
                         let vertexShape;
+                        const radius = size / 2;
                         vertexShape = formatCircle(sx, sy, s.radius + radius);
                         const [fx, fy] = calculateIntersection(edgeShape, vertexShape);
                         vertexShape = formatCircle(tx, ty, t.radius + radius);
@@ -371,12 +393,15 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             y4 = gy - dy + c2 * ny;
                             edgeShape = formatCurve(fx, fy, x3, y3, x4, y4, gx, gy);
                         }
-                        let visible = calculateVisibility(fx, fy, radius) || calculateVisibility(gx, gy, radius);
+                        let visible = !infinite;
                         if (!visible) {
-                            const boundsShape = formatRectangle(radius);
-                            const intersect = Intersection.intersect(edgeShape, boundsShape);
-                            if (intersect.points.length > 0) {
-                                visible = true;
+                            visible = calculateVisibility(fx, fy, radius) || calculateVisibility(gx, gy, radius);
+                            if (!visible) {
+                                const boundsShape = formatRectangle(radius);
+                                const intersect = Intersection.intersect(edgeShape, boundsShape);
+                                if (intersect.points.length > 0) {
+                                    visible = true;
+                                }
                             }
                         }
                         if (visible || exporting) {
@@ -410,51 +435,36 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             }
                             if (neighbor.label === '') {
                                 if ('sprite' in neighbor) {
-                                    const sprite = neighbor.sprite;
+                                    neighbor.sprite.destroy();
                                     delete neighbor.sprite;
-                                    sprite.destroy();
+                                    neighbors.remove(neighbor);
                                 }
                             } else {
-                                labelText.text = neighbor.label;
-                                labelText.style.fontSize = settings.graph.lscale * size;
-                                if ('sprite' in neighbor) {
-                                    neighbor.sprite.alpha = 1;
-                                } else {
+                                if (!('sprite' in neighbor)) {
+                                    neighbors.add(neighbor);
                                     neighbor.sprite = new PIXI.Sprite(new PIXI.RenderTexture.create());
                                     neighbor.sprite.anchor.x = 0.5;
                                     neighbor.sprite.anchor.y = 0.5;
                                     app.stage.addChild(neighbor.sprite);
                                 }
-                                const labelWidth = labelText.width + size;
-                                const labelHeight = labelText.height + size;
-                                neighbor.sprite.texture.resize(labelWidth, labelHeight);
-                                tag.clear();
-                                tag.beginFill(props.color, alpha);
-                                tag.drawRoundedRect(0, 0, labelWidth, labelHeight, radius);
-                                tag.endFill();
-                                app.renderer.render(tag, {
-                                    renderTexture: neighbor.sprite.texture,
-                                });
-                                matrix.tx = radius;
-                                matrix.ty = radius;
-                                app.renderer.render(labelText, {
-                                    renderTexture: neighbor.sprite.texture,
-                                    clear: false,
-                                    transform: matrix,
-                                });
                                 const a = props.lparam;
                                 const b = (1 - a);
-                                let mx;
-                                let my;
                                 if (straight) {
-                                    mx = b * fx + a * gx;
-                                    my = b * fy + a * gy;
+                                    neighbor.x = b * fx + a * gx;
+                                    neighbor.y = b * fy + a * gy;
                                 } else {
-                                    mx = b * b * b * fx + 3 * b * b * a * x3 + 3 * b * a * a * x4 + a * a * a * gx;
-                                    my = b * b * b * fy + 3 * b * b * a * y3 + 3 * b * a * a * y4 + a * a * a * gy;
+                                    neighbor.x = b * b * b * fx + 3 * b * b * a * x3 + 3 * b * a * a * x4 + a * a * a * gx;
+                                    neighbor.y = b * b * b * fy + 3 * b * b * a * y3 + 3 * b * a * a * y4 + a * a * a * gy;
                                 }
-                                neighbor.sprite.position.x = mx;
-                                neighbor.sprite.position.y = my;
+                                if (infinite) {
+                                    neighbor.x /= scale;
+                                    neighbor.y /= scale;
+                                }
+                                neighbor.size = settings.graph.lscale * size;
+                                neighbor.color = props.color;
+                                neighbor.alpha = alpha;
+                                updateLabelPosition(neighbor);
+                                updateLabelSprite(neighbor);
                             }
                         }
                     }
@@ -493,21 +503,23 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function updateTexture() {
-            let radius = settings.vertex.size;
-            if (!infinite) {
-                radius *= scale;
+            let radius;
+            let bwidth;
+            if (infinite) {
+                radius = settings.vertex.size;
+                bwidth = settings.vertex.bwidth;
+            } else {
+                radius = scale * settings.vertex.size;
+                bwidth = scale * settings.vertex.bwidth;
             }
             defaultTexture.resize(radius, radius);
             radius /= 2;
-            let bwidth = settings.vertex.bwidth;
-            if (!infinite) {
-                bwidth *= scale;
-            }
+            bwidth = Math.min(bwidth, radius / 2);
             const graphics = drawGraphics(settings.vertex, radius, bwidth);
-            const matrix = new PIXI.Matrix(1, 0, 0, 1, radius, radius);
+            matrix.tx = radius;
+            matrix.ty = radius;
             app.renderer.render(graphics, {
                 renderTexture: defaultTexture,
-                clear: true,
                 transform: matrix,
             });
             graphics.destroy();
@@ -526,11 +538,15 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function updateVisible(vertex) {
-            const radius = vertex.sprite.width / 2;
-            const pseudoVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, radius);
-            const reallyVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.radius);
-            vertex.sprite.visible = pseudoVisible || reallyVisible;
-            if ('keySprite' in vertex) {
+            let wronglyVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.sprite.width / 2);
+            let rightlyVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.sprite.radius);
+            vertex.sprite.visible = wronglyVisible || rightlyVisible;
+            if (vertex.key !== '') {
+                if (!vertex.sprite.visible) {
+                    wronglyVisible = calculateTextVisibility(vertex.keySprite.position.x, vertex.keySprite.position.y, vertex.keySprite.width, vertex.keySprite.height);
+                    rightlyVisible = calculateTextVisibility(vertex.keySprite.position.x, vertex.keySprite.position.y, vertex.keyWidth, vertex.keyHeight);
+                    vertex.sprite.visible = wronglyVisible || rightlyVisible;
+                }
                 vertex.keySprite.visible = vertex.sprite.visible;
             }
         }
@@ -538,16 +554,49 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function updateSprite(vertex) {
             const props = merge(settings.vertex, vertex.props, differences.vertex);
             vertex.radius = props.size / 2;
-            if (!infinite) {
-                vertex.radius *= scale;
+            if (infinite) {
+                vertex.sprite.radius = vertex.radius;
+                vertex.sprite.bwidth = props.bwidth;
+            } else {
+                vertex.sprite.radius = scale * vertex.radius;
+                vertex.sprite.bwidth = scale * props.bwidth;
             }
-            vertex.bwidth = props.bwidth;
-            if (!infinite) {
-                vertex.bwidth *= scale;
+            vertex.sprite.bwidth = Math.min(vertex.sprite.bwidth, vertex.sprite.radius / 2);
+            if (vertex.key === '') {
+                if ('keySprite' in vertex) {
+                    vertex.keySprite.destroy();
+                    delete vertex.keySprite;
+                }
+            } else {
+                if (!('keySprite' in vertex)) {
+                    vertex.keySprite = new PIXI.Sprite(new PIXI.RenderTexture.create());
+                    vertex.keySprite.anchor.x = 0.5;
+                    vertex.keySprite.anchor.y = 0.5;
+                    app.stage.addChild(vertex.keySprite);
+                }
+                vertex.keyStyle = {
+                    fontSize: settings.graph.kscale * vertex.sprite.radius,
+                    fontFamily: props.kfamily,
+                    strokeThickness: vertex.sprite.bwidth / 2,
+                };
+                keyText.text = vertex.key;
+                keyText.style.fontSize = vertex.keyStyle.fontSize;
+                keyText.style.fontFamily = vertex.keyStyle.fontFamily;
+                keyText.style.strokeThickness = vertex.keyStyle.strokeThickness;
+                vertex.keyWidth = keyText.width;
+                vertex.keyHeight = keyText.height;
             }
-            vertex.bwidth = Math.min(vertex.bwidth, vertex.radius / 2);
-            vertex.dirty = true;
+            if (vertex.value !== '') {
+                vertex.valueStyle = {
+                    fontSize: settings.graph.vscale * vertex.sprite.radius,
+                };
+                valueText.text = vertex.value;
+                valueText.style.fontSize = vertex.valueStyle.fontSize;
+                vertex.valueX = vertex.sprite.radius - valueText.width / 2;
+                vertex.valueY = vertex.sprite.radius - valueText.height / 2;
+            }
             updateVisible(vertex);
+            vertex.dirty = true;
             if (vertex.sprite.visible || exporting) {
                 drawSprite(vertex, props);
             }
@@ -558,23 +607,61 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             if (vertex.dirty && vertex.sprite.visible) {
                 const props = merge(settings.vertex, vertex.props, differences.vertex);
                 drawSprite(vertex, props);
-                return true;
-            }
-            return false;
-        }
-
-        function updateKey(vertex) {
-            if ('keySprite' in vertex) {
-                vertex.keySprite.position.x = vertex.sprite.position.x;
-                vertex.keySprite.position.y = vertex.sprite.position.y - vertex.radius - vertex.keySprite.height / 2;
             }
         }
 
         function updateGeometry(vertex) {
-            vertex.shape.args[0].x = vertex.sprite.position.x;
-            vertex.shape.args[0].y = vertex.sprite.position.y;
+            if (infinite) {
+                vertex.shape.args[0].x = vertex.sprite.position.x;
+                vertex.shape.args[0].y = vertex.sprite.position.y;
+            } else {
+                vertex.shape.args[0].x = vertex.x;
+                vertex.shape.args[0].y = vertex.y;
+            }
             vertex.shape.args[1] = vertex.radius;
-            updateKey(vertex);
+            if (vertex.key !== '') {
+                vertex.keySprite.position.x = vertex.sprite.position.x;
+                vertex.keySprite.position.y = vertex.sprite.position.y - vertex.sprite.radius - vertex.keyHeight / 2;
+            }
+        }
+
+        function updateLabelPosition(neighbor) {
+            neighbor.sprite.position.x = scale * neighbor.x;
+            neighbor.sprite.position.y = scale * neighbor.y;
+        }
+
+        function updateLabelVisible(neighbor) {
+            const wronglyVisible = calculateTextVisibility(neighbor.sprite.position.x, neighbor.sprite.position.y, neighbor.sprite.width, neighbor.sprite.height);
+            const rightlyVisible = calculateTextVisibility(neighbor.sprite.position.x, neighbor.sprite.position.y, neighbor.width, neighbor.height);
+            neighbor.sprite.visible = wronglyVisible || rightlyVisible;
+        }
+
+        function updateLabelSprite(neighbor) {
+            if (infinite) {
+                neighbor.style = {
+                    fontSize: neighbor.size,
+                };
+            } else {
+                neighbor.style = {
+                    fontSize: scale * neighbor.size,
+                };
+            }
+            labelText.text = neighbor.label;
+            labelText.style.fontSize = neighbor.style.fontSize;
+            neighbor.width = labelText.width + neighbor.style.fontSize;
+            neighbor.height = labelText.height + neighbor.style.fontSize;
+            updateLabelVisible(neighbor);
+            neighbor.dirty = true;
+            if (neighbor.sprite.visible || exporting) {
+                drawLabelSprite(neighbor);
+            }
+        }
+
+        function updateLabelSpriteStyle(neighbor) {
+            updateLabelVisible(neighbor);
+            if (neighbor.dirty && neighbor.sprite.visible) {
+                drawLabelSprite(neighbor);
+            }
         }
 
         function connectMouse() {
@@ -596,12 +683,12 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.sprite.move = (event) => {
                         vertex.sprite.position.x = event.offsetX - app.stage.position.x;
                         vertex.sprite.position.y = event.offsetY - app.stage.position.y;
+                        vertex.x = vertex.sprite.position.x / scale;
+                        vertex.y = vertex.sprite.position.y / scale;
                         updateGeometry(vertex);
                         drawNeighborAreas(vertex);
                     };
                     vertex.sprite.stop = () => {
-                        vertex.x = vertex.sprite.position.x / scale;
-                        vertex.y = vertex.sprite.position.y / scale;
                         draggedVertex = null;
                     };
                     vertex.sprite.on('mousedown', () => {
@@ -638,11 +725,15 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         if (dragging) {
                             updateBounds();
                             for (const vertex of Object.values(vertices)) {
-                                if (updateSpriteStyle(vertex)) {
-                                    updateKey(vertex);
+                                updateSpriteStyle(vertex);
+                            }
+                            if (infinite) {
+                                drawAreas();
+                            } else {
+                                for (const neighbor of neighbors) {
+                                    updateLabelSpriteStyle(neighbor);
                                 }
                             }
-                            drawAreas();
                             dragging = false;
                         }
                     } else {
@@ -713,7 +804,18 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                         }
                                         updateGeometry(vertex);
                                     }
-                                    drawAreas();
+                                    if (infinite) {
+                                        drawAreas();
+                                    } else {
+                                        for (const area of Object.values(areas)) {
+                                            area.graphics.scale.x = scale;
+                                            area.graphics.scale.y = scale;
+                                        }
+                                        for (const neighbor of neighbors) {
+                                            updateLabelPosition(neighbor);
+                                            updateLabelSprite(neighbor);
+                                        }
+                                    }
                                 }, 100);
                             }
                         } else {
@@ -754,17 +856,32 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 }
                                 updateGeometry(vertex);
                             }
-                            drawAreas();
+                            if (infinite) {
+                                drawAreas();
+                            } else {
+                                for (const area of Object.values(areas)) {
+                                    area.graphics.scale.x = 1;
+                                    area.graphics.scale.y = 1;
+                                }
+                                for (const neighbor of neighbors) {
+                                    updateLabelPosition(neighbor);
+                                    updateLabelSprite(neighbor);
+                                }
+                            }
                             panel.updateZoom();
                         } else {
                             if (moved) {
                                 updateBounds();
                                 for (const vertex of Object.values(vertices)) {
-                                    if (updateSpriteStyle(vertex)) {
-                                        updateKey(vertex);
+                                    updateSpriteStyle(vertex);
+                                }
+                                if (infinite) {
+                                    drawAreas();
+                                } else {
+                                    for (const neighbor of neighbors) {
+                                        updateLabelSpriteStyle(neighbor);
                                     }
                                 }
-                                drawAreas();
                             }
                         }
                     } else {
@@ -782,10 +899,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function finalize() {
             defaultTexture.destroy();
+            labelBackground.destroy();
             labelText.destroy();
             valueText.destroy();
             keyText.destroy();
-            tag.destroy();
         }
 
         if (settings === null) {
@@ -796,6 +913,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         settings.edge = merge({ ...defaults.edge }, settings.edge, differences.edge);
 
         const areas = {};
+
+        const neighbors = new Set();
 
         for (const source of Object.keys(edges)) {
             const sd = vertices[source].degree;
@@ -845,16 +964,17 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         const matrix = new PIXI.Matrix(1, 0, 0, 1, 0, 0);
-        const tag = new PIXI.Graphics();
         const keyText = new PIXI.Text();
         const valueText = new PIXI.Text();
         const labelText = new PIXI.Text();
+        const labelBackground = new PIXI.Graphics();
 
         updateSize();
         initializeScale();
         updateBackground();
         initializeTexture();
         updateBounds();
+        setExporting(false);
 
         let difX;
         if (Number.isFinite(minX) && Number.isFinite(maxX) && compare(minX, maxX) !== 0) {
@@ -907,6 +1027,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.sprite.anchor.y = 0.5;
             vertex.sprite.texture = defaultTexture;
             vertex.shape = ShapeInfo.circle(0, 0, 0);
+            vertex.induced = false;
             initializePosition(vertex);
             updateSprite(vertex);
             updateGeometry(vertex);
@@ -918,8 +1039,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         const circleShape = ShapeInfo.circle(0, 0, 0);
         const lineShape = ShapeInfo.line(0, 0, 0, 0);
         const curveShape = ShapeInfo.cubicBezier(0, 0, 0, 0, 0, 0, 0, 0);
-
-        setExporting(false);
 
         drawAreas();
 
