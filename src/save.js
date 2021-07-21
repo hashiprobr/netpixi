@@ -37,7 +37,16 @@ export default function (graph, filename) {
         pushLine('settings', {}, settings.props);
 
         for (const [id, vertex] of Object.entries(vertices)) {
-            pushLine('vertex', { id }, { x: vertex.x, y: vertex.y, ...vertex.props });
+            const props = { ...vertex.props };
+            props.x = vertex.x;
+            props.y = vertex.y;
+            if (vertex.key !== '') {
+                props.key = vertex.key;
+            }
+            if (vertex.value !== '') {
+                props.value = vertex.value;
+            }
+            pushLine('vertex', { id }, props);
         }
 
         for (const [u, area] of Object.entries(areas)) {
@@ -50,6 +59,10 @@ export default function (graph, filename) {
                 } else {
                     source = u;
                     target = v;
+                }
+                const props = { ...neighbor.props };
+                if (neighbor.label !== '') {
+                    props.label = neighbor.label;
                 }
                 pushLine('edge', { source, target }, neighbor.props);
             }
