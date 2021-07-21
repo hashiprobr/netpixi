@@ -329,7 +329,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 let dx = tx - sx;
                 let dy = ty - sy;
                 const distance = Math.sqrt(dx * dx + dy * dy) - (s.radius + t.radius);
-                if (compare(distance, 0) > 0 || exporting) {
+                if (compare(distance, 0) > 0) {
                     const props = merge(settings.edge, neighbor.props, differences.edge);
                     let alpha = props.alpha * s.alpha * t.alpha;
                     if (s.induced) {
@@ -342,7 +342,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             alpha *= settings.graph.alpha2;
                         }
                     }
-                    if (compare(alpha, 0) > 0 || exporting) {
+                    if (compare(alpha, 0) > 0) {
                         alpha = Math.min(alpha, 1);
                         let size = Math.min(props.width, s.radius, t.radius);
                         let close = false;
@@ -548,7 +548,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function updateVisible(vertex) {
             let wronglyVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.sprite.width / 2);
             let rightlyVisible = calculateVisibility(vertex.sprite.position.x, vertex.sprite.position.y, vertex.sprite.radius);
-            vertex.sprite.visible = wronglyVisible || rightlyVisible;
+            vertex.sprite.visible = wronglyVisible || rightlyVisible || exporting;
             if (vertex.key !== '') {
                 if (!vertex.sprite.visible) {
                     wronglyVisible = calculateTextVisibility(vertex.keySprite.position.x, vertex.keySprite.position.y, vertex.keySprite.width, vertex.keySprite.height);
@@ -605,7 +605,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             }
             updateVisible(vertex);
             vertex.dirty = true;
-            if (vertex.sprite.visible || exporting) {
+            if (vertex.sprite.visible) {
                 drawSprite(vertex, props);
             }
         }
@@ -641,7 +641,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function updateLabelVisible(neighbor) {
             const wronglyVisible = calculateTextVisibility(neighbor.sprite.position.x, neighbor.sprite.position.y, neighbor.sprite.width, neighbor.sprite.height);
             const rightlyVisible = calculateTextVisibility(neighbor.sprite.position.x, neighbor.sprite.position.y, neighbor.width, neighbor.height);
-            neighbor.sprite.visible = wronglyVisible || rightlyVisible;
+            neighbor.sprite.visible = wronglyVisible || rightlyVisible || exporting;
         }
 
         function updateLabelSprite(neighbor) {
@@ -660,7 +660,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             neighbor.height = labelText.height + neighbor.style.fontSize;
             updateLabelVisible(neighbor);
             neighbor.dirty = true;
-            if (neighbor.sprite.visible || exporting) {
+            if (neighbor.sprite.visible) {
                 drawLabelSprite(neighbor);
             }
         }
