@@ -185,7 +185,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.alpha = 1;
         }
 
-        function fillTexture(color, shape, graphics, radius) {
+        function fillGraphics(color, shape, graphics, radius) {
+            graphics.beginFill(color, 0);
+            graphics.drawCircle(0, 0, radius);
+            graphics.endFill();
             graphics.beginFill(color, 1);
             switch (shape) {
                 case 'downtriangle':
@@ -212,10 +215,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function drawGraphics(props, radius, bwidth) {
             const graphics = new PIXI.Graphics();
             if (compare(bwidth, 0) > 0) {
-                fillTexture(props.bcolor, props.shape, graphics, radius);
-                fillTexture(props.color, props.shape, graphics, radius - bwidth);
+                fillGraphics(props.bcolor, props.shape, graphics, radius);
+                fillGraphics(props.color, props.shape, graphics, radius - bwidth);
             } else {
-                fillTexture(props.color, props.shape, graphics, radius);
+                fillGraphics(props.color, props.shape, graphics, radius);
             }
             return graphics;
         }
