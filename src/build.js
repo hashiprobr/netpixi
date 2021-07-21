@@ -346,7 +346,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         alpha = Math.min(alpha, 1);
                         let size = Math.min(props.width, s.radius, t.radius);
                         let close = false;
-                        const minimum = 9 * size;
+                        const minimum = 21 * size;
                         if (compare(distance, minimum) < 0) {
                             size *= distance / minimum;
                             close = true;
@@ -430,14 +430,14 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
                                 }
                                 const [hx, hy] = calculateIntersection(edgeShape, t.shape);
-                                dx = 2 * (hx - gx);
-                                dy = 2 * (hy - gy);
+                                dx = 4 * (hx - gx);
+                                dy = 4 * (hy - gy);
                                 nx = -dy;
                                 ny = dx;
                                 graphics.moveTo(gx, gy);
-                                graphics.lineTo(gx - 2 * dx + nx, gy - 2 * dy + ny);
+                                graphics.lineTo(gx - 3 * dx + nx, gy - 3 * dy + ny);
                                 graphics.moveTo(gx, gy);
-                                graphics.lineTo(gx - 2 * dx - nx, gy - 2 * dy - ny);
+                                graphics.lineTo(gx - 3 * dx - nx, gy - 3 * dy - ny);
                             }
                             if (neighbor.label !== '') {
                                 destroy = false;
