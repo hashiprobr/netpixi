@@ -35,9 +35,9 @@ export default function (app, cell, graph, animation, filename) {
     function disableExceptPlay() {
         disabled = true;
         propertiesButton.disabled = true;
-        animationButton.disabled = true;
         networkButton.disabled = true;
         imageButton.disabled = true;
+        animationButton.disabled = true;
         videoButton.disabled = true;
         range.disabled = true;
         cell.disable();
@@ -58,21 +58,21 @@ export default function (app, cell, graph, animation, filename) {
         cell.enable();
         range.disabled = false;
         videoButton.disabled = false;
+        animationButton.disabled = false;
         imageButton.disabled = false;
         networkButton.disabled = false;
-        animationButton.disabled = false;
         propertiesButton.disabled = false;
         initializeDisabled();
     }
 
     function updateZoom() {
         const zoom = Math.round(100 * graph.getScale());
-        zoomLabel.innerHTML = `Zoom: ${zoom}%`;
+        zoomLabel.innerHTML = `zoom: ${zoom}%`;
     }
 
     function updateOpacity(vertex) {
         const opacity = Math.round(100 * vertex.alpha);
-        opacityLabel.innerHTML = `Opacity: ${opacity}%`;
+        opacityLabel.innerHTML = `edge opacity: ${opacity}%`;
     }
 
     function showOpacity() {
@@ -85,15 +85,15 @@ export default function (app, cell, graph, animation, filename) {
 
     function toggleAnimation() {
         if (animation.tweens.length === 0) {
-            middle.style.display = 'none';
+            media.style.display = 'none';
             bottom.style.display = 'none';
         } else {
             bottom.style.display = 'flex';
-            middle.style.display = 'flex';
+            media.style.display = 'inline-flex';
         }
     }
 
-    const propertiesButton = createButton('Import Properties');
+    const propertiesButton = createButton('import properties');
     propertiesButton.addEventListener('click', () => {
         importProperties(graph, disable)
             .catch((error) => {
@@ -102,19 +102,7 @@ export default function (app, cell, graph, animation, filename) {
             .finally(enable);
     });
 
-    const animationButton = createButton('Import Animation');
-    animationButton.addEventListener('click', () => {
-        importAnimation(graph, animation, disable)
-            .catch((error) => {
-                cell.warn(error);
-            })
-            .finally(() => {
-                toggleAnimation();
-                enable();
-            });
-    });
-
-    const networkButton = createButton('Export Network');
+    const networkButton = createButton('save network');
     networkButton.addEventListener('click', () => {
         disable();
         const start = Date.now();
@@ -128,7 +116,7 @@ export default function (app, cell, graph, animation, filename) {
             });
     });
 
-    const imageButton = createButton('Export Image');
+    const imageButton = createButton('export png');
     imageButton.addEventListener('click', () => {
         disable();
         exportImage(app, graph, filename)
@@ -154,13 +142,24 @@ export default function (app, cell, graph, animation, filename) {
     const top = document.createElement('div');
     top.style.display = 'flex';
     top.appendChild(propertiesButton);
-    top.appendChild(animationButton);
     top.appendChild(networkButton);
     top.appendChild(imageButton);
     top.appendChild(zoomLabel);
     top.appendChild(opacityLabel);
 
-    const videoButton = createButton('Export Video');
+    const animationButton = createButton('import animation');
+    animationButton.addEventListener('click', () => {
+        importAnimation(graph, animation, disable)
+            .catch((error) => {
+                cell.warn(error);
+            })
+            .finally(() => {
+                toggleAnimation();
+                enable();
+            });
+    });
+
+    const videoButton = createButton('export video');
     videoButton.addEventListener('click', () => {
         disable();
         exportVideo()
@@ -170,9 +169,22 @@ export default function (app, cell, graph, animation, filename) {
             .finally(enable);
     });
 
+    const media = document.createElement('div');
+    media.style.display = 'none';
+    media.appendChild(videoButton);
+
+    const frameLabel = document.createElement('p');
+    frameLabel.innerHTML = 'no frames';
+    frameLabel.style.margin = '1em 0 1em 1em';
+    frameLabel.style.fontSize = '.75em';
+    frameLabel.style.whiteSpace = 'nowrap';
+    frameLabel.style.userSelect = 'none';
+
     const middle = document.createElement('div');
-    middle.style.display = 'none';
-    middle.appendChild(videoButton);
+    middle.style.display = 'flex';
+    middle.appendChild(animationButton);
+    middle.appendChild(media);
+    middle.appendChild(frameLabel);
 
     const playButton = document.createElement('a');
     playButton.style.margin = '.25em .5em .5em';
