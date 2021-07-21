@@ -186,9 +186,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function fillGraphics(color, shape, graphics, radius) {
-            graphics.beginFill(color, 0);
-            graphics.drawCircle(0, 0, radius);
-            graphics.endFill();
             graphics.beginFill(color, 1);
             switch (shape) {
                 case 'downtriangle':
@@ -214,6 +211,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function drawGraphics(props, radius, bwidth) {
             const graphics = new PIXI.Graphics();
+            if (props.shape !== 'circle') {
+                graphics.beginFill(props.color, 0);
+                graphics.drawCircle(0, 0, radius);
+                graphics.endFill();
+            }
             if (compare(bwidth, 0) > 0) {
                 fillGraphics(props.bcolor, props.shape, graphics, radius);
                 fillGraphics(props.color, props.shape, graphics, radius - bwidth);
