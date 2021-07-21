@@ -461,7 +461,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     neighbor.x /= scale;
                                     neighbor.y /= scale;
                                 }
-                                neighbor.size = settings.graph.lscale * size;
+                                neighbor.size = settings.graph.lshift + 2 * size;
                                 neighbor.color = props.color;
                                 neighbor.alpha = alpha;
                                 updateLabelPosition(neighbor);

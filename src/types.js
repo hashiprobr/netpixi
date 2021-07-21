@@ -35,7 +35,7 @@ const differences = {
         kscale: areNotClose,
         vscale: areNotClose,
         vfamily: areNotEqual,
-        lscale: areNotClose,
+        lshift: areNotClose,
         lfamily: areNotEqual,
     },
     vertex: {
@@ -73,7 +73,7 @@ const conditions = {
         kscale: isPositive,
         vscale: isPositive,
         vfamily: isString,
-        lscale: isPositive,
+        lshift: isNonNegative,
         lfamily: isString,
     },
     vertex: {

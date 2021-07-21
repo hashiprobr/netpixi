@@ -10,11 +10,11 @@ export default {
         kscale: 1,
         vscale: 1,
         vfamily: 'monospace',
-        lscale: 5,
+        lshift: 6,
         lfamily: 'monospace',
     },
     vertex: {
-        size: 10,
+        size: 20,
         color: 0xffffff,
         shape: 'circle',
         bwidth: 0,
@@ -22,7 +22,7 @@ export default {
         kfamily: 'sans-serif',
     },
     edge: {
-        width: 1,
+        width: 2,
         color: 0xffffff,
         alpha: 0.5,
         curve1: 1,
