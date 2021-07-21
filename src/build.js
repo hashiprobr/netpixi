@@ -961,12 +961,12 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 if (!(u in areas)) {
                     const neighbors = {};
                     const graphics = new PIXI.Graphics();
-                    areas[u] = { neighbors, graphics };
                     vertices[u].leaders.add(u);
+                    areas[u] = { neighbors, graphics };
                     app.stage.addChild(graphics);
                 }
-                areas[u].neighbors[v] = { reversed, label, props };
                 vertices[v].leaders.add(u);
+                areas[u].neighbors[v] = { reversed, label, props };
             }
             delete edges[source];
         }
