@@ -42,7 +42,7 @@ function render(uid, path, aspect, normalize, infinite, broker) {
 function call(localUid, globalUid, name, code) {
     const element = document.getElementById(localUid);
     if (globalUid in proxies) {
-        element.remove();
+        element.parentElement.remove();
         proxies[globalUid](name, code);
     } else {
         element.innerHTML = 'Render not found';
