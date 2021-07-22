@@ -81,18 +81,10 @@ function exportSvg(app, graph, filename) {
     } = graph;
 
     return new Promise((resolve) => {
-        setExporting(true);
-        for (const vertex of Object.values(vertices)) {
-            updateSprite(vertex);
-            updateGeometry(vertex);
-        }
-        drawAreas();
-        setExporting(false);
+        const encoder = new TextEncoder();
 
         const stream = streamSaver.createWriteStream(`${filename}.svg`);
         const writer = stream.getWriter();
-
-        const encoder = new TextEncoder();
 
         window.addEventListener('unload', () => {
             writer.abort();
@@ -193,202 +185,213 @@ function exportSvg(app, graph, filename) {
             }
         }
 
-        write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>');
+        try {
+            setExporting(true);
+            for (const vertex of Object.values(vertices)) {
+                updateSprite(vertex);
+                updateGeometry(vertex);
+            }
+            drawAreas();
+            setExporting(false);
 
-        const bounds = app.stage.getBounds();
-        const scale = getScale();
+            write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>');
 
-        const width = bounds.width + 2 * scale * settings.graph.hborder;
-        const height = bounds.height + 2 * scale * settings.graph.vborder;
+            const bounds = app.stage.getBounds();
+            const scale = getScale();
 
-        write(`<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="${width}" height="${height}">`);
+            const width = bounds.width + 2 * scale * settings.graph.hborder;
+            const height = bounds.height + 2 * scale * settings.graph.vborder;
 
-        writeTag('rect', {
-            'x': -1,
-            'y': -1,
-            'width': width + 2,
-            'height': height + 2,
-            'stroke-width': 0,
-            'fill': css(settings.graph.color),
-            'fill-opacity': settings.graph.alpha,
-        });
+            write(`<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="${width}" height="${height}">`);
 
-        const infinite = getInfinite();
+            writeTag('rect', {
+                'x': -1,
+                'y': -1,
+                'width': width + 2,
+                'height': height + 2,
+                'stroke-width': 0,
+                'fill': css(settings.graph.color),
+                'fill-opacity': settings.graph.alpha,
+            });
 
-        const tx = scale * settings.graph.hborder + app.stage.position.x - bounds.x;
-        const ty = scale * settings.graph.vborder + app.stage.position.y - bounds.y;
+            const infinite = getInfinite();
 
-        let styleProps;
+            const tx = scale * settings.graph.hborder + app.stage.position.x - bounds.x;
+            const ty = scale * settings.graph.vborder + app.stage.position.y - bounds.y;
 
-        for (const area of Object.values(areas)) {
-            for (const neighbor of Object.values(area.neighbors)) {
-                if (neighbor.body !== null) {
-                    styleProps = {
-                        'stroke': css(neighbor.color),
-                        'stroke-opacity': neighbor.alpha,
-                        'fill-opacity': 0,
-                        'stroke-linecap': 'round',
-                    };
-                    let fx;
-                    let fy;
-                    let gx;
-                    let gy;
-                    if (infinite) {
-                        styleProps['stroke-width'] = neighbor.size;
-                        fx = neighbor.body.fx + tx;
-                        fy = neighbor.body.fy + ty;
-                        gx = neighbor.body.gx + tx;
-                        gy = neighbor.body.gy + ty;
-                    } else {
-                        styleProps['stroke-width'] = scale * neighbor.size;
-                        fx = scale * neighbor.body.fx + tx;
-                        fy = scale * neighbor.body.fy + ty;
-                        gx = scale * neighbor.body.gx + tx;
-                        gy = scale * neighbor.body.gy + ty;
-                    }
-                    let name;
-                    let props;
-                    if (neighbor.body.straight) {
-                        name = 'line';
-                        props = {
-                            x1: fx,
-                            y1: fy,
-                            x2: gx,
-                            y2: gy,
+            let styleProps;
+
+            for (const area of Object.values(areas)) {
+                for (const neighbor of Object.values(area.neighbors)) {
+                    if (neighbor.body !== null) {
+                        styleProps = {
+                            'stroke': css(neighbor.color),
+                            'stroke-opacity': neighbor.alpha,
+                            'fill-opacity': 0,
+                            'stroke-linecap': 'round',
                         };
-                    } else {
-                        let x3;
-                        let y3;
-                        let x4;
-                        let y4;
+                        let fx;
+                        let fy;
+                        let gx;
+                        let gy;
                         if (infinite) {
-                            x3 = neighbor.body.x3 + tx;
-                            y3 = neighbor.body.y3 + ty;
-                            x4 = neighbor.body.x4 + tx;
-                            y4 = neighbor.body.y4 + ty;
+                            styleProps['stroke-width'] = neighbor.size;
+                            fx = neighbor.body.fx + tx;
+                            fy = neighbor.body.fy + ty;
+                            gx = neighbor.body.gx + tx;
+                            gy = neighbor.body.gy + ty;
                         } else {
-                            x3 = scale * neighbor.body.x3 + tx;
-                            y3 = scale * neighbor.body.y3 + ty;
-                            x4 = scale * neighbor.body.x4 + tx;
-                            y4 = scale * neighbor.body.y4 + ty;
+                            styleProps['stroke-width'] = scale * neighbor.size;
+                            fx = scale * neighbor.body.fx + tx;
+                            fy = scale * neighbor.body.fy + ty;
+                            gx = scale * neighbor.body.gx + tx;
+                            gy = scale * neighbor.body.gy + ty;
                         }
-                        name = 'path';
-                        props = {
-                            d: `M ${fx} ${fy} C ${x3} ${y3} ${x4} ${y4} ${gx} ${gy}`,
-                        };
-                    }
-                    writeTag(name, { ...styleProps, ...props });
-                    if (neighbor.head !== null) {
-                        let dx;
-                        let dy;
-                        let nx;
-                        let ny;
-                        if (infinite) {
-                            dx = neighbor.head.dx;
-                            dy = neighbor.head.dy;
-                            nx = neighbor.head.nx;
-                            ny = neighbor.head.ny;
+                        let name;
+                        let props;
+                        if (neighbor.body.straight) {
+                            name = 'line';
+                            props = {
+                                x1: fx,
+                                y1: fy,
+                                x2: gx,
+                                y2: gy,
+                            };
                         } else {
-                            dx = scale * neighbor.head.dx;
-                            dy = scale * neighbor.head.dy;
-                            nx = scale * neighbor.head.nx;
-                            ny = scale * neighbor.head.ny;
+                            let x3;
+                            let y3;
+                            let x4;
+                            let y4;
+                            if (infinite) {
+                                x3 = neighbor.body.x3 + tx;
+                                y3 = neighbor.body.y3 + ty;
+                                x4 = neighbor.body.x4 + tx;
+                                y4 = neighbor.body.y4 + ty;
+                            } else {
+                                x3 = scale * neighbor.body.x3 + tx;
+                                y3 = scale * neighbor.body.y3 + ty;
+                                x4 = scale * neighbor.body.x4 + tx;
+                                y4 = scale * neighbor.body.y4 + ty;
+                            }
+                            name = 'path';
+                            props = {
+                                d: `M ${fx} ${fy} C ${x3} ${y3} ${x4} ${y4} ${gx} ${gy}`,
+                            };
                         }
-                        props = {
-                            x1: gx,
-                            y1: gy,
-                            x2: gx - 3 * dx + nx,
-                            y2: gy - 3 * dy + ny,
-                        };
-                        writeTag('line', { ...styleProps, ...props });
-                        props = {
-                            x1: gx,
-                            y1: gy,
-                            x2: gx - 3 * dx - nx,
-                            y2: gy - 3 * dy - ny,
-                        };
-                        writeTag('line', { ...styleProps, ...props });
+                        writeTag(name, { ...styleProps, ...props });
+                        if (neighbor.head !== null) {
+                            let dx;
+                            let dy;
+                            let nx;
+                            let ny;
+                            if (infinite) {
+                                dx = neighbor.head.dx;
+                                dy = neighbor.head.dy;
+                                nx = neighbor.head.nx;
+                                ny = neighbor.head.ny;
+                            } else {
+                                dx = scale * neighbor.head.dx;
+                                dy = scale * neighbor.head.dy;
+                                nx = scale * neighbor.head.nx;
+                                ny = scale * neighbor.head.ny;
+                            }
+                            props = {
+                                x1: gx,
+                                y1: gy,
+                                x2: gx - 3 * dx + nx,
+                                y2: gy - 3 * dy + ny,
+                            };
+                            writeTag('line', { ...styleProps, ...props });
+                            props = {
+                                x1: gx,
+                                y1: gy,
+                                x2: gx - 3 * dx - nx,
+                                y2: gy - 3 * dy - ny,
+                            };
+                            writeTag('line', { ...styleProps, ...props });
+                        }
                     }
                 }
             }
-        }
 
-        for (const vertex of Object.values(vertices)) {
-            const props = merge(settings.vertex, vertex.props, differences.vertex);
-            const x = vertex.sprite.x + tx;
-            const y = vertex.sprite.y + ty;
-            styleProps = {
-                'stroke-width': 0,
-            };
-            if (compare(vertex.sprite.bwidth, 0) > 0) {
-                styleProps.fill = css(props.bcolor);
-                writeShape(styleProps, x, y, props.shape, vertex.sprite.radius);
-                styleProps.fill = css(props.color);
-                writeShape(styleProps, x, y, props.shape, vertex.sprite.radius - vertex.sprite.bwidth);
-            } else {
-                styleProps.fill = css(props.color);
-                writeShape(styleProps, x, y, props.shape, vertex.sprite.radius);
-            }
-            if (vertex.key !== '') {
-                writeContentTag('text', vertex.key, {
-                    'x': vertex.keySprite.position.x + tx,
-                    'y': vertex.keySprite.position.y + ty,
-                    'text-anchor': 'middle',
-                    'dy': vertex.keyStyle.fontSize / 3,
-                    'font-size': vertex.keyStyle.fontSize,
-                    'font-family': vertex.keyStyle.fontFamily,
-                    'stroke-width': vertex.keyStyle.strokeThickness,
-                    'fill': css(props.color),
-                    'stroke': css(props.bcolor),
-                });
-            }
-            if (vertex.value !== '') {
-                writeContentTag('text', vertex.value, {
-                    'x': x,
-                    'y': y,
-                    'text-anchor': 'middle',
-                    'dy': vertex.valueStyle.fontSize / 3,
-                    'font-size': vertex.valueStyle.fontSize,
-                    'font-family': settings.graph.vfamily,
+            for (const vertex of Object.values(vertices)) {
+                const props = merge(settings.vertex, vertex.props, differences.vertex);
+                const x = vertex.sprite.x + tx;
+                const y = vertex.sprite.y + ty;
+                styleProps = {
                     'stroke-width': 0,
-                    'fill': css(settings.graph.color),
-                });
-            }
-        }
-
-        for (const area of Object.values(areas)) {
-            for (const neighbor of Object.values(area.neighbors)) {
-                if (neighbor.body !== null && neighbor.label !== '') {
-                    const x = neighbor.sprite.x + tx;
-                    const y = neighbor.sprite.y + ty;
-                    const radius = neighbor.style.fontSize / 2;
-                    writeTag('rect', {
-                        'x': x - neighbor.width / 2,
-                        'y': y - neighbor.height / 2,
-                        'width': neighbor.width,
-                        'height': neighbor.height,
-                        'rx': radius,
-                        'ry': radius,
-                        'stroke-width': 0,
-                        'fill': css(neighbor.color),
-                        'fill-opacity': neighbor.alpha,
+                };
+                if (compare(vertex.sprite.bwidth, 0) > 0) {
+                    styleProps.fill = css(props.bcolor);
+                    writeShape(styleProps, x, y, props.shape, vertex.sprite.radius);
+                    styleProps.fill = css(props.color);
+                    writeShape(styleProps, x, y, props.shape, vertex.sprite.radius - vertex.sprite.bwidth);
+                } else {
+                    styleProps.fill = css(props.color);
+                    writeShape(styleProps, x, y, props.shape, vertex.sprite.radius);
+                }
+                if (vertex.key !== '') {
+                    writeContentTag('text', vertex.key, {
+                        'x': vertex.keySprite.position.x + tx,
+                        'y': vertex.keySprite.position.y + ty,
+                        'text-anchor': 'middle',
+                        'dy': vertex.keyStyle.fontSize / 3,
+                        'font-size': vertex.keyStyle.fontSize,
+                        'font-family': vertex.keyStyle.fontFamily,
+                        'stroke-width': vertex.keyStyle.strokeThickness,
+                        'fill': css(props.color),
+                        'stroke': css(props.bcolor),
                     });
-                    writeContentTag('text', neighbor.label, {
+                }
+                if (vertex.value !== '') {
+                    writeContentTag('text', vertex.value, {
                         'x': x,
                         'y': y,
                         'text-anchor': 'middle',
-                        'dy': neighbor.style.fontSize / 3,
-                        'font-size': neighbor.style.fontSize,
-                        'font-family': settings.graph.lfamily,
+                        'dy': vertex.valueStyle.fontSize / 3,
+                        'font-size': vertex.valueStyle.fontSize,
+                        'font-family': settings.graph.vfamily,
                         'stroke-width': 0,
                         'fill': css(settings.graph.color),
                     });
                 }
             }
+
+            for (const area of Object.values(areas)) {
+                for (const neighbor of Object.values(area.neighbors)) {
+                    if (neighbor.body !== null && neighbor.label !== '') {
+                        const x = neighbor.sprite.x + tx;
+                        const y = neighbor.sprite.y + ty;
+                        const radius = neighbor.style.fontSize / 2;
+                        writeTag('rect', {
+                            'x': x - neighbor.width / 2,
+                            'y': y - neighbor.height / 2,
+                            'width': neighbor.width,
+                            'height': neighbor.height,
+                            'rx': radius,
+                            'ry': radius,
+                            'stroke-width': 0,
+                            'fill': css(neighbor.color),
+                            'fill-opacity': neighbor.alpha,
+                        });
+                        writeContentTag('text', neighbor.label, {
+                            'x': x,
+                            'y': y,
+                            'text-anchor': 'middle',
+                            'dy': neighbor.style.fontSize / 3,
+                            'font-size': neighbor.style.fontSize,
+                            'font-family': settings.graph.lfamily,
+                            'stroke-width': 0,
+                            'fill': css(settings.graph.color),
+                        });
+                    }
+                }
+            }
+            write('</svg>');
+        } catch (error) {
+            writer.close();
+            throw error;
         }
-
-        write('</svg>');
-
         writer.close();
         resolve();
     });

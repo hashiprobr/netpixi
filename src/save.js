@@ -32,42 +32,47 @@ export default function (graph, filename) {
             resolve();
         }
 
-        const [pushLine, pushEnd] = useDeflate(process, finalize);
+        try {
+            const [pushLine, pushEnd] = useDeflate(process, finalize);
 
-        pushLine('settings', {}, settings.props);
+            pushLine('settings', {}, settings.props);
 
-        for (const [id, vertex] of Object.entries(vertices)) {
-            const props = { ...vertex.props };
-            props.x = vertex.x;
-            props.y = vertex.y;
-            if (vertex.key !== '') {
-                props.key = vertex.key;
-            }
-            if (vertex.value !== '') {
-                props.value = vertex.value;
-            }
-            pushLine('vertex', { id }, props);
-        }
-
-        for (const [u, area] of Object.entries(areas)) {
-            for (const [v, neighbor] of Object.entries(area.neighbors)) {
-                let source;
-                let target;
-                if (neighbor.reversed) {
-                    source = v;
-                    target = u;
-                } else {
-                    source = u;
-                    target = v;
+            for (const [id, vertex] of Object.entries(vertices)) {
+                const props = { ...vertex.props };
+                props.x = vertex.x;
+                props.y = vertex.y;
+                if (vertex.key !== '') {
+                    props.key = vertex.key;
                 }
-                const props = { ...neighbor.props };
-                if (neighbor.label !== '') {
-                    props.label = neighbor.label;
+                if (vertex.value !== '') {
+                    props.value = vertex.value;
                 }
-                pushLine('edge', { source, target }, props);
+                pushLine('vertex', { id }, props);
             }
-        }
 
-        pushEnd();
+            for (const [u, area] of Object.entries(areas)) {
+                for (const [v, neighbor] of Object.entries(area.neighbors)) {
+                    let source;
+                    let target;
+                    if (neighbor.reversed) {
+                        source = v;
+                        target = u;
+                    } else {
+                        source = u;
+                        target = v;
+                    }
+                    const props = { ...neighbor.props };
+                    if (neighbor.label !== '') {
+                        props.label = neighbor.label;
+                    }
+                    pushLine('edge', { source, target }, props);
+                }
+            }
+
+            pushEnd();
+        } catch (error) {
+            writer.close();
+            throw error;
+        }
     });
 }
