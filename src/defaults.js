@@ -5,6 +5,7 @@ export default {
         vborder: 10,
         color: 0x000000,
         alpha: 1,
+        alpha0: 0.5,
         alpha1: 0.2,
         alpha2: 0,
         kscale: 1,

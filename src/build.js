@@ -338,14 +338,16 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 if (compare(distance, 0) > 0) {
                     const props = merge(settings.edge, neighbor.props, differences.edge);
                     let alpha = props.alpha * s.alpha * t.alpha;
-                    if (s.induced) {
-                        if (!t.induced) {
+                    if (selected.size > 0) {
+                        if (s.selected) {
+                            if (!t.selected) {
+                                alpha *= settings.graph.alpha1;
+                            }
+                        } else {
                             alpha *= settings.graph.alpha1;
-                        }
-                    } else {
-                        alpha *= settings.graph.alpha1;
-                        if (!t.induced) {
-                            alpha *= settings.graph.alpha2;
+                            if (!t.selected) {
+                                alpha *= settings.graph.alpha2;
+                            }
                         }
                     }
                     if (compare(alpha, 0) > 0) {
@@ -547,6 +549,19 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             top = -app.stage.position.y;
             right = left + width;
             bottom = top + height;
+        }
+
+        function updateSelected(vertex) {
+            let alpha;
+            if (selected.size === 0 || vertex.selected) {
+                alpha = 1;
+            } else {
+                alpha = settings.graph.alpha0;
+            }
+            vertex.sprite.alpha = alpha;
+            if (vertex.key !== '') {
+                vertex.keySprite.alpha = alpha;
+            }
         }
 
         function updatePosition(vertex) {
@@ -931,6 +946,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         const areas = {};
 
+        const selected = new Set();
+
         const neighbors = new Set();
 
         for (const source of Object.keys(edges)) {
@@ -1044,7 +1061,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.sprite.anchor.y = 0.5;
             vertex.sprite.texture = defaultTexture;
             vertex.shape = ShapeInfo.circle(0, 0, 0);
-            vertex.induced = true;
+            vertex.selected = false;
             initializePosition(vertex);
             updateSprite(vertex);
             updateGeometry(vertex);
