@@ -774,7 +774,39 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 };
                 app.view.addEventListener('mousedown', (event) => {
                     event.preventDefault();
-                    app.view.grab(event);
+                    if (event.shiftKey) {
+                        if (draggedVertex === null) {
+                            if (selected.size > 0) {
+                                for (const vertex of selected) {
+                                    vertex.selected = false;
+                                }
+                                selected.clear();
+                                for (const vertex of Object.values(vertices)) {
+                                    updateSelected(vertex);
+                                }
+                                drawAreas();
+                            }
+                        } else {
+                            if (draggedVertex.selected) {
+                                selected.delete(draggedVertex);
+                                draggedVertex.selected = false;
+                            } else {
+                                draggedVertex.selected = true;
+                                selected.add(draggedVertex);
+                            }
+                            if (selected.size === 0 || selected.size === 1) {
+                                for (const vertex of Object.values(vertices)) {
+                                    updateSelected(vertex);
+                                }
+                                drawAreas();
+                            } else {
+                                updateSelected(draggedVertex);
+                                drawNeighborAreas(draggedVertex);
+                            }
+                        }
+                    } else {
+                        app.view.grab(event);
+                    }
                 });
                 app.view.addEventListener('mouseup', (event) => {
                     event.preventDefault();
