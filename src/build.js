@@ -99,6 +99,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         let exporting;
 
+        function getInfinite() {
+            return infinite;
+        }
+
         function getScale() {
             return scale;
         }
@@ -185,7 +189,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             vertex.alpha = 1;
         }
 
-        function fillGraphics(color, shape, graphics, radius) {
+        function drawGeometry(graphics, color, shape, radius) {
             graphics.beginFill(color, 1);
             switch (shape) {
                 case 'downtriangle':
@@ -217,10 +221,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 graphics.endFill();
             }
             if (compare(bwidth, 0) > 0) {
-                fillGraphics(props.bcolor, props.shape, graphics, radius);
-                fillGraphics(props.color, props.shape, graphics, radius - bwidth);
+                drawGeometry(graphics, props.bcolor, props.shape, radius);
+                drawGeometry(graphics, props.color, props.shape, radius - bwidth);
             } else {
-                fillGraphics(props.color, props.shape, graphics, radius);
+                drawGeometry(graphics, props.color, props.shape, radius);
             }
             return graphics;
         }
@@ -302,6 +306,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             graphics.clear();
             for (const [v, neighbor] of Object.entries(areas[u].neighbors)) {
                 let destroy = true;
+                neighbor.head = null;
+                neighbor.body = null;
                 let s;
                 let t;
                 if (neighbor.reversed) {
@@ -420,8 +426,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             graphics.moveTo(fx, fy);
                             if (straight) {
                                 graphics.lineTo(gx, gy);
+                                neighbor.body = { straight, fx, fy, gx, gy };
                             } else {
                                 graphics.bezierCurveTo(x3, y3, x4, y4, gx, gy);
+                                neighbor.body = { straight, fx, fy, x3, y3, x4, y4, gx, gy };
                             }
                             if (settings.graph.directed) {
                                 if (straight) {
@@ -438,9 +446,9 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                 graphics.lineTo(gx - 3 * dx + nx, gy - 3 * dy + ny);
                                 graphics.moveTo(gx, gy);
                                 graphics.lineTo(gx - 3 * dx - nx, gy - 3 * dy - ny);
+                                neighbor.head = { dx, dy, nx, ny };
                             }
                             if (neighbor.label !== '') {
-                                destroy = false;
                                 if (!('sprite' in neighbor)) {
                                     neighbors.add(neighbor);
                                     neighbor.sprite = new PIXI.Sprite(new PIXI.RenderTexture.create());
@@ -461,11 +469,12 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     neighbor.x /= scale;
                                     neighbor.y /= scale;
                                 }
-                                neighbor.size = settings.graph.lshift + 2 * size;
+                                neighbor.size = size;
                                 neighbor.color = props.color;
                                 neighbor.alpha = alpha;
                                 updateLabelPosition(neighbor);
                                 updateLabelSprite(neighbor);
+                                destroy = false;
                             }
                         }
                     }
@@ -647,11 +656,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function updateLabelSprite(neighbor) {
             if (infinite) {
                 neighbor.style = {
-                    fontSize: neighbor.size,
+                    fontSize: settings.graph.lshift + 2 * neighbor.size,
                 };
             } else {
                 neighbor.style = {
-                    fontSize: scale * neighbor.size,
+                    fontSize: scale * (settings.graph.lshift + 2 * neighbor.size),
                 };
             }
             labelText.text = neighbor.label;
@@ -1056,6 +1065,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             settings,
             vertices,
             areas,
+            getInfinite,
             getScale,
             setExporting,
             drawEdges,

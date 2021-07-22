@@ -1,6 +1,6 @@
 import save from './save';
 import { importProperties, importAnimation } from './importer';
-import { exportImage, exportVideo } from './exporter';
+import { exportPng, exportSvg, exportVideo } from './exporter';
 
 
 export default function (app, cell, graph, animation, filename) {
@@ -36,7 +36,8 @@ export default function (app, cell, graph, animation, filename) {
         disabled = true;
         propertiesButton.disabled = true;
         networkButton.disabled = true;
-        imageButton.disabled = true;
+        pngButton.disabled = true;
+        svgButton.disabled = true;
         animationButton.disabled = true;
         videoButton.disabled = true;
         range.disabled = true;
@@ -59,7 +60,8 @@ export default function (app, cell, graph, animation, filename) {
         range.disabled = false;
         videoButton.disabled = false;
         animationButton.disabled = false;
-        imageButton.disabled = false;
+        svgButton.disabled = false;
+        pngButton.disabled = false;
         networkButton.disabled = false;
         propertiesButton.disabled = false;
         initializeDisabled();
@@ -116,10 +118,20 @@ export default function (app, cell, graph, animation, filename) {
             });
     });
 
-    const imageButton = createButton('export png');
-    imageButton.addEventListener('click', () => {
+    const pngButton = createButton('export png');
+    pngButton.addEventListener('click', () => {
         disable();
-        exportImage(app, graph, filename)
+        exportPng(app, graph, filename)
+            .catch((error) => {
+                cell.warn(error);
+            })
+            .finally(enable);
+    });
+
+    const svgButton = createButton('export svg');
+    svgButton.addEventListener('click', () => {
+        disable();
+        exportSvg(app, graph, filename)
             .catch((error) => {
                 cell.warn(error);
             })
@@ -143,7 +155,8 @@ export default function (app, cell, graph, animation, filename) {
     top.style.display = 'flex';
     top.appendChild(propertiesButton);
     top.appendChild(networkButton);
-    top.appendChild(imageButton);
+    top.appendChild(pngButton);
+    top.appendChild(svgButton);
     top.appendChild(zoomLabel);
     top.appendChild(opacityLabel);
 
