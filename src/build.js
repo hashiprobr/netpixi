@@ -716,18 +716,41 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 for (const vertex of Object.values(vertices)) {
                     vertex.sprite.interactive = true;
                     vertex.sprite.move = (event) => {
-                        vertex.sprite.position.x = event.offsetX - app.stage.position.x;
-                        vertex.sprite.position.y = event.offsetY - app.stage.position.y;
-                        vertex.x = vertex.sprite.position.x / scale;
-                        vertex.y = vertex.sprite.position.y / scale;
-                        updateGeometry(vertex);
-                        drawNeighborAreas(vertex);
+                        if (selected.has(draggedVertex)) {
+                            const deltaX = event.offsetX - app.stage.position.x - stageX;
+                            const deltaY = event.offsetY - app.stage.position.y - stageY;
+                            const leaders = new Set();
+                            for (const vertex of selected) {
+                                vertex.sprite.position.x += deltaX;
+                                vertex.sprite.position.y += deltaY;
+                                vertex.x = vertex.sprite.position.x / scale;
+                                vertex.y = vertex.sprite.position.y / scale;
+                                updateGeometry(vertex);
+                                for (const u of vertex.leaders) {
+                                    leaders.add(u);
+                                }
+                            }
+                            for (const u of leaders) {
+                                drawEdges(u);
+                            }
+                            stageX = draggedVertex.sprite.position.x;
+                            stageY = draggedVertex.sprite.position.y;
+                        } else {
+                            vertex.sprite.position.x = event.offsetX - app.stage.position.x;
+                            vertex.sprite.position.y = event.offsetY - app.stage.position.y;
+                            vertex.x = vertex.sprite.position.x / scale;
+                            vertex.y = vertex.sprite.position.y / scale;
+                            updateGeometry(vertex);
+                            drawNeighborAreas(vertex);
+                        }
                     };
                     vertex.sprite.stop = () => {
                         draggedVertex = null;
                     };
                     vertex.sprite.on('mousedown', () => {
                         draggedVertex = vertex;
+                        stageX = draggedVertex.sprite.position.x;
+                        stageY = draggedVertex.sprite.position.y;
                     });
                     vertex.sprite.on('mouseover', () => {
                         if (hoveredVertex === null) {
