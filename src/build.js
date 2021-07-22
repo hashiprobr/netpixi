@@ -700,6 +700,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             let hoveredVertex = null;
             let draggedVertex = null;
 
+            let selecting = false;
             let dragging = false;
             let zoomId = null;
 
@@ -708,6 +709,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
             let stageX;
             let stageY;
+
+            let box;
 
             function toSprites(panel) {
                 for (const vertex of Object.values(vertices)) {
@@ -743,6 +746,48 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             }
 
             function toView(panel) {
+                app.view.expand = (event) => {
+                    if (event.offsetX < mouseX) {
+                        minX = event.offsetX;
+                        maxX = mouseX;
+                    } else {
+                        minX = mouseX;
+                        maxX = event.offsetX;
+                    }
+                    if (event.offsetY < mouseY) {
+                        minY = event.offsetY;
+                        maxY = mouseY;
+                    } else {
+                        minY = mouseY;
+                        maxY = event.offsetY;
+                    }
+                    box.clear();
+                    box.beginFill(settings.vertex.color, 0.5);
+                    box.drawRect(minX - app.stage.position.x, minY - app.stage.position.y, maxX - minX, maxY - minY);
+                    box.endFill();
+                };
+                app.view.select = () => {
+                    box.destroy();
+                    selected.clear();
+                    minX -= app.stage.position.x;
+                    maxX -= app.stage.position.x;
+                    minY -= app.stage.position.y;
+                    maxY -= app.stage.position.y;
+                    for (const vertex of Object.values(vertices)) {
+                        if (vertex.sprite.position.x >= minX && vertex.sprite.position.x < maxX && vertex.sprite.position.y >= minY && vertex.sprite.position.y < maxY) {
+                            vertex.selected = true;
+                            selected.add(vertex);
+                        } else {
+                            selected.delete(vertex);
+                            vertex.selected = false;
+                        }
+                    }
+                    for (const vertex of Object.values(vertices)) {
+                        updateSelected(vertex);
+                    }
+                    drawAreas();
+                    selecting = false;
+                };
                 app.view.grab = (event) => {
                     if (draggedVertex === null) {
                         dragging = true;
@@ -776,16 +821,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     event.preventDefault();
                     if (event.shiftKey) {
                         if (draggedVertex === null) {
-                            if (selected.size > 0) {
-                                for (const vertex of selected) {
-                                    vertex.selected = false;
-                                }
-                                selected.clear();
-                                for (const vertex of Object.values(vertices)) {
-                                    updateSelected(vertex);
-                                }
-                                drawAreas();
-                            }
+                            selecting = true;
+                            minX = maxX = mouseX = event.offsetX;
+                            minY = maxY = mouseY = event.offsetY;
+                            box = new PIXI.Graphics();
+                            app.stage.addChild(box);
                         } else {
                             if (draggedVertex.selected) {
                                 selected.delete(draggedVertex);
@@ -810,25 +850,41 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 });
                 app.view.addEventListener('mouseup', (event) => {
                     event.preventDefault();
-                    app.view.release();
-                });
-                app.view.addEventListener('mouseenter', (event) => {
-                    event.preventDefault();
-                    if (event.buttons === 1) {
-                        app.view.grab(event);
+                    if (selecting) {
+                        app.view.select();
                     } else {
                         app.view.release();
                     }
                 });
-                app.view.addEventListener('mousemove', (event) => {
+                app.view.addEventListener('mouseenter', (event) => {
                     event.preventDefault();
-                    if (draggedVertex === null) {
-                        if (dragging) {
-                            app.stage.position.x = stageX + (event.offsetX - mouseX);
-                            app.stage.position.y = stageY + (event.offsetY - mouseY);
+                    if (selecting) {
+                        if (event.buttons === 1) {
+                            app.view.expand(event);
+                        } else {
+                            app.view.select();
                         }
                     } else {
-                        draggedVertex.sprite.move(event);
+                        if (event.buttons === 1) {
+                            app.view.grab(event);
+                        } else {
+                            app.view.release();
+                        }
+                    }
+                });
+                app.view.addEventListener('mousemove', (event) => {
+                    event.preventDefault();
+                    if (selecting) {
+                        app.view.expand(event);
+                    } else {
+                        if (draggedVertex === null) {
+                            if (dragging) {
+                                app.stage.position.x = stageX + (event.offsetX - mouseX);
+                                app.stage.position.y = stageY + (event.offsetY - mouseY);
+                            }
+                        } else {
+                            draggedVertex.sprite.move(event);
+                        }
                     }
                 });
                 app.view.addEventListener('wheel', (event) => {

@@ -227,8 +227,8 @@ function exportSvg(app, graph, filename) {
                         styleProps = {
                             'stroke': css(neighbor.color),
                             'stroke-opacity': neighbor.alpha,
-                            'fill-opacity': 0,
                             'stroke-linecap': 'round',
+                            'fill-opacity': 0,
                         };
                         let fx;
                         let fy;
@@ -320,6 +320,7 @@ function exportSvg(app, graph, filename) {
                 const y = vertex.sprite.y + ty;
                 styleProps = {
                     'stroke-width': 0,
+                    'fill-opacity': vertex.sprite.alpha,
                 };
                 if (compare(vertex.sprite.bwidth, 0) > 0) {
                     styleProps.fill = css(props.bcolor);
@@ -339,8 +340,9 @@ function exportSvg(app, graph, filename) {
                         'font-size': vertex.keyStyle.fontSize,
                         'font-family': vertex.keyStyle.fontFamily,
                         'stroke-width': vertex.keyStyle.strokeThickness,
-                        'fill': css(props.color),
                         'stroke': css(props.bcolor),
+                        'fill': css(props.color),
+                        'fill-opacity': vertex.sprite.alpha,
                     });
                 }
                 if (vertex.value !== '') {
@@ -353,6 +355,7 @@ function exportSvg(app, graph, filename) {
                         'font-family': settings.graph.vfamily,
                         'stroke-width': 0,
                         'fill': css(settings.graph.color),
+                        'fill-opacity': vertex.sprite.alpha,
                     });
                 }
             }
