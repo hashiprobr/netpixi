@@ -99,50 +99,44 @@ class Proxy(Base):
         self.name = name
 
 
-class Changer(Proxy):
+class Graph(Proxy):
     def __init__(self, uid):
-        super().__init__(uid, 'change')
+        super().__init__(uid, 'changeGraph')
 
 
-class Lister(Proxy):
+class Selection(Proxy):
     def __init__(self, uid):
-        super().__init__(uid, 'list')
+        super().__init__(uid, 'changeSelection')
 
 
 class Render:
     def __init__(self, uid):
-        self.changer = Changer(uid)
-        self.lister = Lister(uid)
+        self.graph = Graph(uid)
+        self.selection = Selection(uid)
 
     def change_graph(self, **kwargs):
-        self.changer._send_settings({'graph': kwargs})
+        self.graph._send_settings({'graph': kwargs})
 
     def change_vertex_defaults(self, **kwargs):
-        self.changer._send_settings({'vertex': kwargs})
+        self.graph._send_settings({'vertex': kwargs})
 
     def change_edge_defaults(self, **kwargs):
-        self.changer._send_settings({'edge': kwargs})
+        self.graph._send_settings({'edge': kwargs})
 
     def change_vertex_selection(self, **kwargs):
-        self.changer._send_settings({'vertex': kwargs})
+        self.selection._push_empty('vertex', kwargs)
 
     def change_edge_selection(self, **kwargs):
-        self.changer._send_settings({'edge': kwargs})
+        self.selection._push_empty('edge', kwargs)
 
     def change_vertex(self, id, **kwargs):
-        self.changer._send_vertex(id, kwargs)
+        self.graph._send_vertex(id, kwargs)
 
     def change_edge(self, source, target, **kwargs):
-        self.changer._send_edge(source, target, kwargs)
+        self.graph._send_edge(source, target, kwargs)
 
     def add_frame(self, duration, **kwargs):
-        self.changer._send_frame(duration, kwargs)
-
-    def list_vertices(self, **kwargs):
-        self.lister._push_empty('vertex', kwargs)
-
-    def list_edges(self, **kwargs):
-        self.lister._push_empty('edge', kwargs)
+        self.graph._send_frame(duration, kwargs)
 
 
 def run(script):

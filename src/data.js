@@ -319,4 +319,4 @@ const nullSettings = {
 };
 
 
-export { pop, popProps, overwrite, merge, union, processGraph, validate, nullSettings };
+export { pop, overwrite, merge, union, processGraph, validate, nullSettings };

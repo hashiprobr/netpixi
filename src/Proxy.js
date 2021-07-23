@@ -1,5 +1,5 @@
 import { compare, isString } from './types';
-import { pop, popProps, overwrite, union, processGraph, validate } from './data';
+import { pop, overwrite, union, processGraph, validate } from './data';
 
 
 export default function (cell, graph, animation, panel) {
@@ -7,6 +7,7 @@ export default function (cell, graph, animation, panel) {
         settings,
         vertices,
         areas,
+        selected,
         drawEdges,
         drawAreas,
         drawNeighborAreas,
@@ -17,7 +18,7 @@ export default function (cell, graph, animation, panel) {
         updateGeometry,
     } = graph;
 
-    function change(d) {
+    function changeGraph(d) {
         if (!validate.isFrame(d)) {
             processGraph(d,
                 (props) => {
@@ -139,12 +140,65 @@ export default function (cell, graph, animation, panel) {
         }
     }
 
-    function list(d) {
-        const props = popProps(d);
+    function changeSelection(d) {
+        processGraph(d,
+            () => {
+                throw 'unknown selection';
+            },
+            (data, props) => {
+                pop(props, 'x');
+                pop(props, 'y');
+                const key = validate.receivedKey(props);
+                const value = validate.receivedValue(props);
+                const leaders = new Set();
+                for (const vertex of selected) {
+                    if (key !== null) {
+                        vertex.key = key;
+                    }
+                    if (value !== null) {
+                        vertex.value = value;
+                    }
+                    vertex.props = union(vertex.props, props);
+                    updateSprite(vertex);
+                    updateGeometry(vertex);
+                    for (const u of vertex.leaders) {
+                        leaders.add(u);
+                    }
+                }
+                for (const u of leaders) {
+                    drawEdges(u);
+                }
+            },
+            (data, props) => {
+                const label = validate.receivedLabel(props);
+                const leaders = new Set();
+                for (const vertex of selected) {
+                    for (const u of vertex.leaders) {
+                        if (selected.has(vertices[u])) {
+                            leaders.add(u);
+                        }
+                    }
+                }
+                for (const u of leaders) {
+                    let changed = false;
+                    for (const [v, neighbor] of Object.entries(areas[u].neighbors)) {
+                        if (selected.has(vertices[v])) {
+                            if (label !== null) {
+                                neighbor.label = label;
+                            }
+                            neighbor.props = union(neighbor.props, props);
+                            changed = true;
+                        }
+                    }
+                    if (changed) {
+                        drawEdges(u);
+                    }
+                }
+            });
     }
 
     return function (name, code) {
-        const actions = { change, list };
+        const actions = { changeGraph, changeSelection };
         if (panel.isDisabled()) {
             return;
         }

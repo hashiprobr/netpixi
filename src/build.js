@@ -1193,6 +1193,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             settings,
             vertices,
             areas,
+            selected,
             getInfinite,
             getScale,
             setExporting,
