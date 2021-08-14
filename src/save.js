@@ -8,6 +8,15 @@ if (!streamSaver.WritableStream) {
 }
 
 
+function parseInt(value) {
+    const valueInt = Number.parseInt(value);
+    if (Number.isNaN(valueInt)) {
+        return value;
+    }
+    return valueInt;
+}
+
+
 export default function (graph, filename) {
     const {
         settings,
@@ -47,7 +56,10 @@ export default function (graph, filename) {
                 if (vertex.value !== '') {
                     props.value = vertex.value;
                 }
-                pushLine('vertex', { id }, props);
+                const data = {
+                    id: parseInt(id),
+                };
+                pushLine('vertex', data, props);
             }
 
             for (const [u, area] of Object.entries(areas)) {
@@ -65,7 +77,11 @@ export default function (graph, filename) {
                     if (neighbor.label !== '') {
                         props.label = neighbor.label;
                     }
-                    pushLine('edge', { source, target }, props);
+                    const data = {
+                        source: parseInt(source),
+                        target: parseInt(target),
+                    };
+                    pushLine('edge', data, props);
                 }
             }
 

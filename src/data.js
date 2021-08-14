@@ -75,10 +75,13 @@ function tightPopInt(data, name) {
 
 function tightPopStr(data, name) {
     const value = tightPop(data, name);
+    if (Number.isInteger(value)) {
+        return value.toString();
+    }
     if (isString(value)) {
         return value;
     }
-    throw `${name} must be a string`;
+    throw `${name} must be an integer or a string`;
 }
 
 
