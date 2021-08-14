@@ -419,10 +419,13 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                             }
                         }
                         if (visible || exporting) {
+                            neighbor.size = size;
+                            neighbor.color = props.color;
+                            neighbor.alpha = alpha;
                             graphics.lineStyle({
-                                width: size,
-                                color: props.color,
-                                alpha: alpha,
+                                width: neighbor.size,
+                                color: neighbor.color,
+                                alpha: neighbor.alpha,
                                 cap: PIXI.LINE_CAP.ROUND,
                             });
                             graphics.moveTo(fx, fy);
@@ -471,9 +474,6 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                                     neighbor.x /= scale;
                                     neighbor.y /= scale;
                                 }
-                                neighbor.size = size;
-                                neighbor.color = props.color;
-                                neighbor.alpha = alpha;
                                 updateLabelPosition(neighbor);
                                 updateLabelSprite(neighbor);
                                 destroy = false;
