@@ -97,14 +97,19 @@ class Proxy(Base):
         self.name = name
 
 
+class GraphDeleter(Proxy):
+    def __init__(self, uid):
+        super().__init__(uid, 'deleteGraph')
+
+
 class GraphCopier(Proxy):
     def __init__(self, uid):
         super().__init__(uid, 'copyGraph')
 
 
-class GraphLabeler(Proxy):
+class GraphSetter(Proxy):
     def __init__(self, uid):
-        super().__init__(uid, 'labelGraph')
+        super().__init__(uid, 'setGraph')
 
 
 class GraphNormalizer(Proxy):
@@ -124,11 +129,39 @@ class SelectionChanger(Proxy):
 
 class Render:
     def __init__(self, uid):
+        self.graph_deleter = GraphDeleter(uid)
         self.graph_copier = GraphCopier(uid)
-        self.graph_labeler = GraphLabeler(uid)
+        self.graph_setter = GraphSetter(uid)
         self.graph_normalizer = GraphNormalizer(uid)
         self.graph_changer = GraphChanger(uid)
         self.selection_changer = SelectionChanger(uid)
+
+    def delete_vertex_property(self, src):
+        self.graph_deleter._push_empty('vertex', {'src': src})
+
+    def delete_edge_property(self, src):
+        self.graph_deleter._push_empty('edge', {'src': src})
+
+    def copy_vertex_property(self, src, dst):
+        self.graph_copier._push_empty('vertex', {'src': src, 'dst': dst})
+
+    def copy_edge_property(self, src, dst):
+        self.graph_copier._push_empty('edge', {'src': src, 'dst': dst})
+
+    def set_vertex_key(self, src):
+        self.graph_setter._push_empty('vertex', {'src': src, 'dst': 'key'})
+
+    def set_vertex_value(self, src):
+        self.graph_setter._push_empty('vertex', {'src': src, 'dst': 'value'})
+
+    def set_edge_label(self, src):
+        self.graph_setter._push_empty('edge', {'src': src})
+
+    def normalize_vertices(self, src, min, max):
+        self.graph_normalizer._push_empty('vertex', {'src': src, 'min': min, 'max': max})
+
+    def normalize_edges(self, src, min, max):
+        self.graph_normalizer._push_empty('edge', {'src': src, 'min': min, 'max': max})
 
     def change_graph(self, **kwargs):
         self.graph_changer._send_settings({'graph': kwargs})

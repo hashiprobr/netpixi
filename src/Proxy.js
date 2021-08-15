@@ -18,6 +18,22 @@ export default function (cell, graph, animation, panel) {
         updateGeometry,
     } = graph;
 
+    function deleteGraph(d) {
+        console.log('delete', d);
+    }
+
+    function copyGraph(d) {
+        console.log('copy', d);
+    }
+
+    function setGraph(d) {
+        console.log('set', d);
+    }
+
+    function normalizeGraph(d) {
+        console.log('normalize', d);
+    }
+
     function changeGraph(d) {
         if (!validate.isFrame(d)) {
             processGraph(d,
@@ -198,7 +214,14 @@ export default function (cell, graph, animation, panel) {
     }
 
     return function (name, code) {
-        const actions = { changeGraph, changeSelection };
+        const actions = {
+            deleteGraph,
+            copyGraph,
+            setGraph,
+            normalizeGraph,
+            changeGraph,
+            changeSelection,
+        };
         if (panel.isDisabled()) {
             return;
         }
