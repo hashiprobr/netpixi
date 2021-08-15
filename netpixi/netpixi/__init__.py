@@ -97,44 +97,62 @@ class Proxy(Base):
         self.name = name
 
 
-class Graph(Proxy):
+class GraphCopier(Proxy):
+    def __init__(self, uid):
+        super().__init__(uid, 'copyGraph')
+
+
+class GraphLabeler(Proxy):
+    def __init__(self, uid):
+        super().__init__(uid, 'labelGraph')
+
+
+class GraphNormalizer(Proxy):
+    def __init__(self, uid):
+        super().__init__(uid, 'normalizeGraph')
+
+
+class GraphChanger(Proxy):
     def __init__(self, uid):
         super().__init__(uid, 'changeGraph')
 
 
-class Selection(Proxy):
+class SelectionChanger(Proxy):
     def __init__(self, uid):
         super().__init__(uid, 'changeSelection')
 
 
 class Render:
     def __init__(self, uid):
-        self.graph = Graph(uid)
-        self.selection = Selection(uid)
+        self.graph_copier = GraphCopier(uid)
+        self.graph_labeler = GraphLabeler(uid)
+        self.graph_normalizer = GraphNormalizer(uid)
+        self.graph_changer = GraphChanger(uid)
+        self.selection_changer = SelectionChanger(uid)
 
     def change_graph(self, **kwargs):
-        self.graph._send_settings({'graph': kwargs})
+        self.graph_changer._send_settings({'graph': kwargs})
 
     def change_vertex_defaults(self, **kwargs):
-        self.graph._send_settings({'vertex': kwargs})
+        self.graph_changer._send_settings({'vertex': kwargs})
 
     def change_edge_defaults(self, **kwargs):
-        self.graph._send_settings({'edge': kwargs})
+        self.graph_changer._send_settings({'edge': kwargs})
 
     def change_vertex_selection(self, **kwargs):
-        self.selection._push_empty('vertex', kwargs)
+        self.selection_changer._push_empty('vertex', kwargs)
 
     def change_edge_selection(self, **kwargs):
-        self.selection._push_empty('edge', kwargs)
+        self.selection_changer._push_empty('edge', kwargs)
 
     def change_vertex(self, id, **kwargs):
-        self.graph._send_vertex(id, kwargs)
+        self.graph_changer._send_vertex(id, kwargs)
 
     def change_edge(self, source, target, **kwargs):
-        self.graph._send_edge(source, target, kwargs)
+        self.graph_changer._send_edge(source, target, kwargs)
 
     def add_frame(self, duration, **kwargs):
-        self.graph._send_frame(duration, kwargs)
+        self.graph_changer._send_frame(duration, kwargs)
 
 
 def run(script):
