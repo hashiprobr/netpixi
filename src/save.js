@@ -47,6 +47,9 @@ export default function (graph, filename) {
             pushLine('settings', {}, settings.props);
 
             for (const [id, vertex] of Object.entries(vertices)) {
+                const data = {
+                    id: parseInt(id),
+                };
                 const props = { ...vertex.props };
                 props.x = vertex.x;
                 props.y = vertex.y;
@@ -56,9 +59,6 @@ export default function (graph, filename) {
                 if (vertex.value !== '') {
                     props.value = vertex.value;
                 }
-                const data = {
-                    id: parseInt(id),
-                };
                 pushLine('vertex', data, props);
             }
 
@@ -73,14 +73,14 @@ export default function (graph, filename) {
                         source = u;
                         target = v;
                     }
-                    const props = { ...neighbor.props };
-                    if (neighbor.label !== '') {
-                        props.label = neighbor.label;
-                    }
                     const data = {
                         source: parseInt(source),
                         target: parseInt(target),
                     };
+                    const props = { ...neighbor.props };
+                    if (neighbor.label !== '') {
+                        props.label = neighbor.label;
+                    }
                     pushLine('edge', data, props);
                 }
             }
