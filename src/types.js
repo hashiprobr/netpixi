@@ -101,4 +101,4 @@ const conditions = {
     },
 };
 
-export { compare, isFinite, isNonNegativeInteger, isString, isObject, differences, conditions };
+export { compare, isFinite, isPositive, isNonNegativeInteger, isString, isObject, differences, conditions };

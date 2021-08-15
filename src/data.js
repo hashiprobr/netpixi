@@ -1,4 +1,4 @@
-import { isFinite, isNonNegativeInteger, isString, isObject, conditions } from './types';
+import { compare, isFinite, isPositive, isNonNegativeInteger, isString, isObject, conditions } from './types';
 
 
 function get(props, name) {
@@ -38,6 +38,24 @@ function loosePop(props, name) {
 
 function loosePopNum(props, name) {
     const value = loosePop(props, name);
+    if (isPositive(value)) {
+        return value;
+    }
+    throw `${name} must be a positive number`;
+}
+
+
+function loosePopStr(props, name) {
+    const value = loosePop(props, name);
+    if (isString(value)) {
+        return value;
+    }
+    throw `${name} must be a string`;
+}
+
+
+function loosePopNulNum(props, name) {
+    const value = loosePop(props, name);
     if (value === null || isFinite(value)) {
         return value;
     }
@@ -45,7 +63,7 @@ function loosePopNum(props, name) {
 }
 
 
-function loosePopStr(props, name) {
+function loosePopNulStr(props, name) {
     const value = loosePop(props, name);
     if (value === null || isString(value)) {
         return value;
@@ -73,7 +91,7 @@ function tightPopInt(data, name) {
 }
 
 
-function tightPopStr(data, name) {
+function tightPopIntStr(data, name) {
     const value = tightPop(data, name);
     if (Number.isInteger(value)) {
         return value.toString();
@@ -185,7 +203,7 @@ const validate = {
         }
     },
     receivedId(data) {
-        return tightPopStr(data, 'id');
+        return tightPopIntStr(data, 'id');
     },
     notMissingVertex(id, vertices) {
         if (!(id in vertices)) {
@@ -198,26 +216,26 @@ const validate = {
         }
     },
     receivedX(props) {
-        return loosePopNum(props, 'x');
+        return loosePopNulNum(props, 'x');
     },
     receivedY(props) {
-        return loosePopNum(props, 'y');
+        return loosePopNulNum(props, 'y');
     },
     receivedKey(props) {
-        return loosePopStr(props, 'key');
+        return loosePopNulStr(props, 'key');
     },
     receivedValue(props) {
-        return loosePopStr(props, 'value');
+        return loosePopNulStr(props, 'value');
     },
     receivedSource(data, vertices) {
-        const source = tightPopStr(data, 'source');
+        const source = tightPopIntStr(data, 'source');
         if (!(source in vertices)) {
             throw `missing source with id ${source}`;
         }
         return source;
     },
     receivedTarget(data, vertices, source) {
-        const target = tightPopStr(data, 'target');
+        const target = tightPopIntStr(data, 'target');
         if (!(target in vertices)) {
             throw `missing target with id ${target}`;
         }
@@ -263,7 +281,7 @@ const validate = {
         }
     },
     receivedLabel(props) {
-        return loosePopStr(props, 'label');
+        return loosePopNulStr(props, 'label');
     },
     isFrame(data) {
         return data.type === 'frame';
@@ -310,6 +328,26 @@ const validate = {
                 }
             }
         }
+    },
+    receivedSrc(props) {
+        return loosePopStr(props, 'src');
+    },
+    receivedDst(props, src) {
+        const dst = loosePopStr(props, 'dst');
+        if (src === dst) {
+            throw 'src and dst must be different';
+        }
+        return dst;
+    },
+    receivedMin(props) {
+        return loosePopNum(props, 'min');
+    },
+    receivedMax(props, min) {
+        const max = loosePopNum(props, 'max');
+        if (compare(min, max) >= 0) {
+            throw 'min must be less than max';
+        }
+        return max;
     },
 };
 

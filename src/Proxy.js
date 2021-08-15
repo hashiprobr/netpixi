@@ -1,4 +1,6 @@
-import { compare, isString } from './types';
+import atob from 'atob';
+
+import { compare, isFinite, isString } from './types';
 import { pop, overwrite, union, processGraph, validate } from './data';
 
 
@@ -19,40 +21,250 @@ export default function (cell, graph, animation, panel) {
     } = graph;
 
     function deleteGraph(d) {
-        console.log('delete', d);
+        processGraph(d,
+            () => {
+                throw 'unknown delete';
+            },
+            (data, props) => {
+                const src = validate.receivedSrc(props);
+                const leaders = [];
+                for (const vertex of Object.values(vertices)) {
+                    if (vertex.props !== null && src in vertex.props) {
+                        delete vertex.props[src];
+                        updateSprite(vertex);
+                        updateGeometry(vertex);
+                        for (const u of vertex.leaders) {
+                            leaders.push(u);
+                        }
+                    }
+                }
+                for (const u of leaders) {
+                    drawEdges(u);
+                }
+            },
+            (data, props) => {
+                const src = validate.receivedSrc(props);
+                for (const [u, area] of Object.entries(areas)) {
+                    let changed = false;
+                    for (const neighbor of Object.values(area.neighbors)) {
+                        if (neighbor.props !== null && src in neighbor.props) {
+                            delete neighbor.props[src];
+                            changed = true;
+                        }
+                    }
+                    if (changed) {
+                        drawEdges(u);
+                    }
+                }
+            });
     }
 
     function copyGraph(d) {
-        console.log('copy', d);
+        processGraph(d,
+            () => {
+                throw 'unknown copy';
+            },
+            (data, props) => {
+                const src = validate.receivedSrc(props);
+                const dst = validate.receivedDst(props);
+                const leaders = [];
+                for (const vertex of Object.values(vertices)) {
+                    if (vertex.props !== null && src in vertex.props) {
+                        vertex.props[dst] = vertex.props[src];
+                        updateSprite(vertex);
+                        updateGeometry(vertex);
+                        for (const u of vertex.leaders) {
+                            leaders.push(u);
+                        }
+                    }
+                }
+                for (const u of leaders) {
+                    drawEdges(u);
+                }
+            },
+            (data, props) => {
+                const src = validate.receivedSrc(props);
+                const dst = validate.receivedDst(props);
+                for (const [u, area] of Object.entries(areas)) {
+                    let changed = false;
+                    for (const neighbor of Object.values(area.neighbors)) {
+                        if (neighbor.props !== null && src in neighbor.props) {
+                            neighbor.props[dst] = neighbor.props[src];
+                            changed = true;
+                        }
+                    }
+                    if (changed) {
+                        drawEdges(u);
+                    }
+                }
+            });
     }
 
     function setGraph(d) {
-        console.log('set', d);
+        processGraph(d,
+            () => {
+                throw 'unknown set';
+            },
+            (data, props) => {
+                const src = validate.receivedSrc(props);
+                const dst = validate.receivedDst(props);
+                if (dst !== 'key' && dst !== 'value') {
+                    throw 'dst must be key or value';
+                }
+                for (const vertex of Object.values(vertices)) {
+                    if (vertex.props !== null && src in vertex.props) {
+                        vertex[dst] = vertex.props[src].toString();
+                        updateSprite(vertex);
+                        if (dst === 'key') {
+                            updateGeometry(vertex);
+                        }
+                    }
+                }
+            },
+            (data, props) => {
+                const src = validate.receivedSrc(props);
+                for (const [u, area] of Object.entries(areas)) {
+                    let changed = false;
+                    for (const neighbor of Object.values(area.neighbors)) {
+                        if (neighbor.props !== null && src in neighbor.props) {
+                            neighbor.label = neighbor.props[src].toString();
+                            changed = true;
+                        }
+                    }
+                    if (changed) {
+                        drawEdges(u);
+                    }
+                }
+            });
     }
 
     function normalizeGraph(d) {
-        console.log('normalize', d);
+        processGraph(d,
+            () => {
+                throw 'unknown normalize';
+            },
+            (data, props) => {
+                const src = validate.receivedSrc(props);
+                const newMin = validate.receivedMin(props);
+                const newMax = validate.receivedMax(props);
+                const oldMin = Number.POSITIVE_INFINITY;
+                const oldMax = Number.NEGATIVE_INFINITY;
+                for (const [id, vertex] of Object.entries(vertices)) {
+                    let value;
+                    if (vertex.props !== null && src in vertex.props) {
+                        value = vertex.props[src];
+                    } else {
+                        if (src in settings.vertex) {
+                            value = settings.vertex[src];
+                        } else {
+                            throw `vertex with id ${id} does not have ${src}`;
+                        }
+                    }
+                    if (isFinite(value)) {
+                        if (compare(oldMin, value) > 0) {
+                            oldMin = value;
+                        }
+                        if (compare(oldMax, value) < 0) {
+                            oldMax = value;
+                        }
+                    } else {
+                        throw `vertex with id ${id} has non-numeric ${src}`;
+                    }
+                }
+                const oldDif = oldMax - oldMin;
+                const newDif = newMax - newMin;
+                for (const vertex of Object.values(vertices)) {
+                    if (vertex.props === null) {
+                        vertex.props = {};
+                    }
+                    let value;
+                    if (src in vertex.props) {
+                        value = vertex.props[src];
+                    } else {
+                        value = settings.vertex[src];
+                    }
+                    vertex.props[src] = newMin + newDif * (value - oldMin) / oldDif;
+                    updateSprite(vertex);
+                    updateGeometry(vertex);
+                }
+                drawAreas();
+            },
+            (data, props) => {
+                const src = validate.receivedSrc(props);
+                const newMin = validate.receivedMin(props);
+                const newMax = validate.receivedMax(props);
+                const oldMin = Number.POSITIVE_INFINITY;
+                const oldMax = Number.NEGATIVE_INFINITY;
+                for (const [u, area] of Object.entries(areas)) {
+                    for (const [v, neighbor] of Object.entries(area.neighbors)) {
+                        let source;
+                        let target;
+                        if (neighbor.reversed) {
+                            source = v;
+                            target = u;
+                        } else {
+                            source = u;
+                            target = v;
+                        }
+                        let value;
+                        if (neighbor.props !== null && src in neighbor.props) {
+                            value = neighbor.props[src];
+                        } else {
+                            if (src in settings.edge) {
+                                value = settings.edge[src];
+                            } else {
+                                throw `edge with source ${source} and target ${target} does not have ${src}`;
+                            }
+                        }
+                        if (isFinite(value)) {
+                            if (compare(oldMin, value) > 0) {
+                                oldMin = value;
+                            }
+                            if (compare(oldMax, value) < 0) {
+                                oldMax = value;
+                            }
+                        } else {
+                            throw `edge with source ${source} and target ${target} has non-numeric ${src}`;
+                        }
+                    }
+                }
+                const oldDif = oldMax - oldMin;
+                const newDif = newMax - newMin;
+                for (const area of Object.values(areas)) {
+                    for (const neighbor of Object.values(area.neighbors)) {
+                        if (neighbor.props === null) {
+                            neighbor.props = {};
+                        }
+                        let value;
+                        if (src in neighbor.props) {
+                            value = neighbor.props[src];
+                        } else {
+                            value = settings.edge[src];
+                        }
+                        neighbor.props[src] = newMin + newDif * (value - oldMin) / oldDif;
+                    }
+                }
+                drawAreas();
+            });
     }
 
     function changeGraph(d) {
         if (!validate.isFrame(d)) {
             processGraph(d,
                 (props) => {
-                    if (props !== null) {
-                        const overSettings = validate.receivedSettings(props);
-                        validate.missingDirected(settings.graph, overSettings.graph);
-                        overwrite(settings.graph, overSettings.graph);
-                        overwrite(settings.vertex, overSettings.vertex);
-                        overwrite(settings.edge, overSettings.edge);
-                        settings.props = union(settings.props, overSettings.props);
-                        updateBackground();
-                        updateTexture();
-                        for (const vertex of Object.values(vertices)) {
-                            updateSprite(vertex);
-                            updateGeometry(vertex);
-                        }
-                        drawAreas();
+                    const overSettings = validate.receivedSettings(props);
+                    validate.missingDirected(settings.graph, overSettings.graph);
+                    overwrite(settings.graph, overSettings.graph);
+                    overwrite(settings.vertex, overSettings.vertex);
+                    overwrite(settings.edge, overSettings.edge);
+                    settings.props = union(settings.props, overSettings.props);
+                    updateBackground();
+                    updateTexture();
+                    for (const vertex of Object.values(vertices)) {
+                        updateSprite(vertex);
+                        updateGeometry(vertex);
                     }
+                    drawAreas();
                 },
                 (data, props) => {
                     const id = validate.receivedId(data);
