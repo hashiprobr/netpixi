@@ -95,7 +95,7 @@ function useDeflate(process, finalize) {
 
     function pushLine(type, data, props) {
         data.type = type;
-        if (props !== null) {
+        if (props !== null && Object.keys(props).length > 0) {
             data.props = props;
         }
         const line = `${JSON.stringify(data)}\n`;
