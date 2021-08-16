@@ -29,13 +29,26 @@ export default function (cell, graph, animation, panel) {
                 const src = validate.receivedSrc(props);
                 const leaders = [];
                 for (const vertex of Object.values(vertices)) {
-                    if (vertex.props !== null && src in vertex.props) {
-                        delete vertex.props[src];
-                        updateSprite(vertex);
-                        updateGeometry(vertex);
-                        for (const u of vertex.leaders) {
-                            leaders.push(u);
-                        }
+                    switch (src) {
+                        case 'key':
+                            vertex.key = '';
+                            updateSprite(vertex);
+                            updateGeometry(vertex);
+                            break;
+                        case 'value':
+                            vertex.value = '';
+                            updateSprite(vertex);
+                            break;
+                        default:
+                            if (vertex.props !== null && src in vertex.props) {
+                                delete vertex.props[src];
+                                updateSprite(vertex);
+                                updateGeometry(vertex);
+                                for (const u of vertex.leaders) {
+                                    leaders.push(u);
+                                }
+                            }
+                            break;
                     }
                 }
                 for (const u of leaders) {
@@ -47,9 +60,14 @@ export default function (cell, graph, animation, panel) {
                 for (const [u, area] of Object.entries(areas)) {
                     let changed = false;
                     for (const neighbor of Object.values(area.neighbors)) {
-                        if (neighbor.props !== null && src in neighbor.props) {
-                            delete neighbor.props[src];
+                        if (src === 'label') {
+                            neighbor.label = '';
                             changed = true;
+                        } else {
+                            if (neighbor.props !== null && src in neighbor.props) {
+                                delete neighbor.props[src];
+                                changed = true;
+                            }
                         }
                     }
                     if (changed) {
@@ -66,11 +84,22 @@ export default function (cell, graph, animation, panel) {
             },
             (data, props) => {
                 const src = validate.receivedSrc(props);
-                const dst = validate.receivedDst(props);
+                const dst = validate.receivedDst(props, src);
                 const leaders = [];
                 for (const vertex of Object.values(vertices)) {
-                    if (vertex.props !== null && src in vertex.props) {
-                        vertex.props[dst] = vertex.props[src];
+                    let changed = false;
+                    if (vertex.props !== null) {
+                        if (src in vertex.props) {
+                            vertex.props[dst] = vertex.props[src];
+                            changed = true;
+                        } else {
+                            if (dst in vertex.props) {
+                                delete vertex.props[dst];
+                                changed = true;
+                            }
+                        }
+                    }
+                    if (changed) {
                         updateSprite(vertex);
                         updateGeometry(vertex);
                         for (const u of vertex.leaders) {
@@ -84,13 +113,20 @@ export default function (cell, graph, animation, panel) {
             },
             (data, props) => {
                 const src = validate.receivedSrc(props);
-                const dst = validate.receivedDst(props);
+                const dst = validate.receivedDst(props, src);
                 for (const [u, area] of Object.entries(areas)) {
                     let changed = false;
                     for (const neighbor of Object.values(area.neighbors)) {
-                        if (neighbor.props !== null && src in neighbor.props) {
-                            neighbor.props[dst] = neighbor.props[src];
-                            changed = true;
+                        if (neighbor.props !== null) {
+                            if (src in neighbor.props) {
+                                neighbor.props[dst] = neighbor.props[src];
+                                changed = true;
+                            } else {
+                                if (dst in neighbor.props) {
+                                    delete neighbor.props[dst];
+                                    changed = true;
+                                }
+                            }
                         }
                     }
                     if (changed) {
@@ -107,33 +143,41 @@ export default function (cell, graph, animation, panel) {
             },
             (data, props) => {
                 const src = validate.receivedSrc(props);
-                const dst = validate.receivedDst(props);
+                const dst = validate.receivedDst(props, src);
                 if (dst !== 'key' && dst !== 'value') {
                     throw 'dst must be key or value';
                 }
                 for (const vertex of Object.values(vertices)) {
-                    if (vertex.props !== null && src in vertex.props) {
-                        vertex[dst] = vertex.props[src].toString();
-                        updateSprite(vertex);
-                        if (dst === 'key') {
-                            updateGeometry(vertex);
-                        }
+                    let value = '';
+                    if (vertex.props !== null && src in vertex.props && vertex.props[src] !== null) {
+                        value = vertex.props[src];
+                    }
+                    if (typeof value === 'string') {
+                        vertex[dst] = value;
+                    } else {
+                        vertex[dst] = value.toString();
+                    }
+                    updateSprite(vertex);
+                    if (dst === 'key') {
+                        updateGeometry(vertex);
                     }
                 }
             },
             (data, props) => {
                 const src = validate.receivedSrc(props);
                 for (const [u, area] of Object.entries(areas)) {
-                    let changed = false;
                     for (const neighbor of Object.values(area.neighbors)) {
-                        if (neighbor.props !== null && src in neighbor.props) {
-                            neighbor.label = neighbor.props[src].toString();
-                            changed = true;
+                        let value = '';
+                        if (neighbor.props !== null && src in neighbor.props && neighbor.props[src] !== null) {
+                            value = neighbor.props[src];
+                        }
+                        if (typeof value === 'string') {
+                            neighbor.label = value;
+                        } else {
+                            neighbor.label = value.toString();
                         }
                     }
-                    if (changed) {
-                        drawEdges(u);
-                    }
+                    drawEdges(u);
                 }
             });
     }
@@ -146,7 +190,7 @@ export default function (cell, graph, animation, panel) {
             (data, props) => {
                 const src = validate.receivedSrc(props);
                 const newMin = validate.receivedMin(props);
-                const newMax = validate.receivedMax(props);
+                const newMax = validate.receivedMax(props, newMin);
                 const oldMin = Number.POSITIVE_INFINITY;
                 const oldMax = Number.NEGATIVE_INFINITY;
                 for (const [id, vertex] of Object.entries(vertices)) {
@@ -171,19 +215,30 @@ export default function (cell, graph, animation, panel) {
                         throw `vertex with id ${id} has non-numeric ${src}`;
                     }
                 }
-                const oldDif = oldMax - oldMin;
-                const newDif = newMax - newMin;
+                let newDif;
+                let oldDif;
+                if (compare(oldMin, oldMax) === 0) {
+                    newDif = (newMin + newMax) / 2;
+                    oldDif = 0;
+                } else {
+                    newDif = newMax - newMin;
+                    oldDif = oldMax - oldMin;
+                }
                 for (const vertex of Object.values(vertices)) {
                     if (vertex.props === null) {
                         vertex.props = {};
                     }
-                    let value;
-                    if (src in vertex.props) {
-                        value = vertex.props[src];
+                    if (oldDif === 0) {
+                        vertex.props[src] = newDif;
                     } else {
-                        value = settings.vertex[src];
+                        let value;
+                        if (src in vertex.props) {
+                            value = vertex.props[src];
+                        } else {
+                            value = settings.vertex[src];
+                        }
+                        vertex.props[src] = newMin + newDif * (value - oldMin) / oldDif;
                     }
-                    vertex.props[src] = newMin + newDif * (value - oldMin) / oldDif;
                     updateSprite(vertex);
                     updateGeometry(vertex);
                 }
@@ -192,7 +247,7 @@ export default function (cell, graph, animation, panel) {
             (data, props) => {
                 const src = validate.receivedSrc(props);
                 const newMin = validate.receivedMin(props);
-                const newMax = validate.receivedMax(props);
+                const newMax = validate.receivedMax(props, newMin);
                 const oldMin = Number.POSITIVE_INFINITY;
                 const oldMax = Number.NEGATIVE_INFINITY;
                 for (const [u, area] of Object.entries(areas)) {
@@ -228,20 +283,31 @@ export default function (cell, graph, animation, panel) {
                         }
                     }
                 }
-                const oldDif = oldMax - oldMin;
-                const newDif = newMax - newMin;
+                let newDif;
+                let oldDif;
+                if (compare(oldMin, oldMax) === 0) {
+                    newDif = (newMin + newMax) / 2;
+                    oldDif = 0;
+                } else {
+                    newDif = newMax - newMin;
+                    oldDif = oldMax - oldMin;
+                }
                 for (const area of Object.values(areas)) {
                     for (const neighbor of Object.values(area.neighbors)) {
                         if (neighbor.props === null) {
                             neighbor.props = {};
                         }
-                        let value;
-                        if (src in neighbor.props) {
-                            value = neighbor.props[src];
+                        if (oldDif === 0) {
+                            neighbor.props[src] = newDif;
                         } else {
-                            value = settings.edge[src];
+                            let value;
+                            if (src in neighbor.props) {
+                                value = neighbor.props[src];
+                            } else {
+                                value = settings.edge[src];
+                            }
+                            neighbor.props[src] = newMin + newDif * (value - oldMin) / oldDif;
                         }
-                        neighbor.props[src] = newMin + newDif * (value - oldMin) / oldDif;
                     }
                 }
                 drawAreas();
