@@ -20,50 +20,63 @@ class Loader(ABC):
 
     def load(self, path):
         g = None
+        vertices = {}
+        edges = {}
         with gzip.open(path) as file:
             for self.i, line in enumerate(file, 1):
                 try:
                     data = json.loads(line)
                 except JSONDecodeError as error:
-                    self._raise(ValueError, error.message)
+                    self._raise(ValueError, error.msg)
                 if not isinstance(data, dict):
-                    self._raise(TypeError, f'must be a dictionary')
+                    self._raise(TypeError, 'must be a dictionary')
 
                 props = data.pop('props', None)
                 if props is not None and not isinstance(props, dict):
-                    self._raise(TypeError, f'props must be None or a dictionary')
+                    self._raise(TypeError, 'props must be None or a dictionary')
 
-                dtype = data.get('type')
-                if dtype == 'settings':
+                type = data.get('type')
+                if type == 'settings':
                     if g is None:
                         directed = False
-                        settings = props.get('graph')
-                        if isinstance(settings, dict):
-                            value = settings.get('directed')
-                            if isinstance(value, bool):
-                                directed = value
+                        if isinstance(props, dict):
+                            settings = props.get('graph')
+                            if isinstance(settings, dict):
+                                value = settings.get('directed')
+                                if isinstance(value, bool):
+                                    directed = value
                         g = self.process_settings(directed, props)
                     else:
-                        self._raise(ValueError, f'duplicate settings')
-                elif dtype == 'vertex':
+                        self._raise(ValueError, 'duplicate settings')
+                elif type == 'vertex':
                     id = self._pop(data, 'id')
-                    if self.has_vertex(g, id):
+                    if id in vertices:
                         self._raise(ValueError, f'duplicate vertex with id {id}')
-                    self.process_vertex(g, id, props)
-                elif dtype == 'edge':
+                    vertices[id] = props
+                elif type == 'edge':
                     source = self._pop(data, 'source')
-                    if not self.has_vertex(g, source):
-                        self._raise(ValueError, 'missing source with id {source}')
+                    if source not in vertices:
+                        self._raise(ValueError, f'missing source with id {source}')
                     target = self._pop(data, 'target')
-                    if not self.has_vertex(g, target):
-                        self._raise(ValueError, 'missing target with id {target}')
+                    if target not in vertices:
+                        self._raise(ValueError, f'missing target with id {target}')
                     if source == target:
                         self._raise(ValueError, 'source and target with same id')
-                    if self.has_edge(g, source, target):
-                        self._raise(ValueError, 'duplicate edge with source {source} and target {target}')
-                    self.process_edge(g, source, target, props)
+                    if (source, target) in edges:
+                        self._raise(ValueError, f'duplicate edge with source {source} and target {target}')
+                    if g is None:
+                        self._raise(ValueError, 'missing settings')
+                    if not directed and (target, source) in edges:
+                        self._raise(ValueError, f'existing edge with source {target} and target {source} but graph is not directed')
+                    edges[source, target] = props
                 else:
-                    self._raise(ValueError, f'unknown type')
+                    self._raise(ValueError, 'unknown type')
+        if g is None:
+            g = self.process_settings(False, None)
+        for id, props in vertices.items():
+            self.process_vertex(g, id, props)
+        for (source, target), props in edges.items():
+            self.process_edge(g, source, target, props)
         return g
 
     @abstractmethod
@@ -71,15 +84,7 @@ class Loader(ABC):
         pass
 
     @abstractmethod
-    def has_vertex(self, g, id):
-        pass
-
-    @abstractmethod
     def process_vertex(self, g, id, props):
-        pass
-
-    @abstractmethod
-    def has_edge(self, g, source, target):
         pass
 
     @abstractmethod
@@ -88,30 +93,12 @@ class Loader(ABC):
 
 
 class Saver(ABC):
-    def _write(self, dtype, data, props, file):
-        data['type'] = dtype
-        data['props'] = props
+    def _write(self, type, data, props, file):
+        data['type'] = type
+        if props:
+            data['props'] = props
         line = f'{json.dumps(data)}\n'
         file.write(line.encode())
-
-    def _serializable(self, props):
-        if props is None:
-            return True
-        if isinstance(props, (bool, int, float, str)):
-            return True
-        if isinstance(props, list):
-            for value in props:
-                if not self._serializable(value):
-                    return False
-            return True
-        if isinstance(props, dict):
-            for key, value in props.items():
-                if not isinstance(key, (int, str)):
-                    return False
-                if not self._serializable(value):
-                    return False
-            return True
-        return False
 
     def save(self, g, path):
         self.validate(g)

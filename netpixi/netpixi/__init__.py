@@ -23,16 +23,16 @@ class Base(ABC):
     def _push_empty(self, type, props):
         self._push(type, {}, props)
 
-    def _push_str(self, type, data, props):
-        for key, value in data.items():
-            if not isinstance(value, (int, str)):
-                raise TypeError(f'{key} must be an integer or a string')
-        self._push(type, data, props)
-
     def _push_int(self, type, data, props):
         for key, value in data.items():
             if not isinstance(value, int) or value < 0:
                 raise TypeError(f'{key} must be a non-negative integer')
+        self._push(type, data, props)
+
+    def _push_str(self, type, data, props):
+        for key, value in data.items():
+            if not isinstance(value, (int, str)):
+                raise TypeError(f'{key} must be an integer or a string')
         self._push(type, data, props)
 
     def _clean_num(self, props, key):

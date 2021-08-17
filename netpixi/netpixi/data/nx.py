@@ -1,5 +1,7 @@
 import networkx as nx
 
+from .. import render
+from ..util import serializable
 from . import Loader, Saver, load, save
 
 
@@ -13,16 +15,10 @@ class NXLoader(Loader):
             g.graph.update(props)
         return g
 
-    def has_vertex(self, g, id):
-        return g.has_node(id)
-
     def process_vertex(self, g, id, props):
         g.add_node(id)
         if props is not None:
             g.nodes[id].update(props)
-
-    def has_edge(self, g, source, target):
-        return g.has_edge(source, target)
 
     def process_edge(self, g, source, target, props):
         g.add_edge(source, target)
@@ -38,21 +34,21 @@ class NXSaver(Saver):
                 raise TypeError('Property directed of graph must be a boolean')
             if directed is not isinstance(g, nx.DiGraph):
                 raise ValueError(f'Property directed of graph must be {not directed}')
-        if not self._serializable(g.graph):
+        if not serializable(g.graph):
             raise ValueError('Properties of graph must be serializable')
         for id in g:
             if not isinstance(id, (int, str)):
                 raise TypeError('Vertex ids must be integers or strings')
-            if not self._serializable(g.nodes[id]):
+            if not serializable(g.nodes[id]):
                 raise ValueError(f'Properties of vertex with id {id} must be serializable')
         for source, target in g.edges:
-            if not self._serializable(g.edges[source, target]):
+            if not serializable(g.edges[source, target]):
                 raise ValueError(f'Properties of edge with source {source} and target {target} must be serializable')
 
     def settings(self, g):
         props = g.graph.copy()
-        if 'directed' not in props:
-            props['directed'] = isinstance(g, nx.DiGraph)
+        if 'directed' not in props and isinstance(g, nx.DiGraph):
+            props['directed'] = True
         return {}, props
 
     def vertices(self, g):
@@ -79,3 +75,8 @@ def load_nx(path):
 
 def save_nx(g, path):
     save(NXSaver, g, path)
+
+
+def render_nx(g, path='temp_nx.net.gz', **kwargs):
+    save_nx(g, path)
+    render(path, **kwargs)
