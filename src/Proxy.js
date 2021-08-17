@@ -191,8 +191,8 @@ export default function (cell, graph, animation, panel) {
                 const src = validate.receivedSrc(props);
                 const newMin = validate.receivedMin(props);
                 const newMax = validate.receivedMax(props, newMin);
-                const oldMin = Number.POSITIVE_INFINITY;
-                const oldMax = Number.NEGATIVE_INFINITY;
+                let oldMin = Number.POSITIVE_INFINITY;
+                let oldMax = Number.NEGATIVE_INFINITY;
                 for (const [id, vertex] of Object.entries(vertices)) {
                     let value;
                     if (vertex.props !== null && src in vertex.props) {
@@ -248,8 +248,8 @@ export default function (cell, graph, animation, panel) {
                 const src = validate.receivedSrc(props);
                 const newMin = validate.receivedMin(props);
                 const newMax = validate.receivedMax(props, newMin);
-                const oldMin = Number.POSITIVE_INFINITY;
-                const oldMax = Number.NEGATIVE_INFINITY;
+                let oldMin = Number.POSITIVE_INFINITY;
+                let oldMax = Number.NEGATIVE_INFINITY;
                 for (const [u, area] of Object.entries(areas)) {
                     for (const [v, neighbor] of Object.entries(area.neighbors)) {
                         let source;

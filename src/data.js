@@ -276,7 +276,7 @@ const validate = {
         if (settings === null) {
             throw 'missing settings';
         }
-        if (!settings.graph.directed && target in edges && source && edges[target]) {
+        if (settings.graph !== null && 'directed' in settings.graph && !settings.graph.directed && target in edges && source in edges[target]) {
             throw `existing edge with source ${target} and target ${source} but graph is not directed`;
         }
     },
