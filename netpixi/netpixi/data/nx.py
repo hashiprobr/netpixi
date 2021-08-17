@@ -80,3 +80,19 @@ def save_nx(g, path):
 def render_nx(g, path='temp_nx.net.gz', **kwargs):
     save_nx(g, path)
     render(path, **kwargs)
+
+
+def vprop_nx(g, key, d):
+    for id, value in d.items():
+        g.nodes[id][key] = value
+
+
+def eprop_nx(g, key, d):
+    for (source, target), value in d.items():
+        g.edges[source, target][key] = value
+
+
+def move_nx(g, layout):
+    for id, (x, y) in layout.items():
+        g.nodes[id]['x'] = x
+        g.nodes[id]['y'] = y

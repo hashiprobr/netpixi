@@ -1,3 +1,4 @@
+import numpy as np
 import graph_tool as gt
 
 from .. import render
@@ -51,9 +52,10 @@ class GTSaver(Saver):
                 raise TypeError('Property directed of graph must be a boolean')
             if directed is not g.is_directed():
                 raise ValueError(f'Property directed of graph must be {not directed}')
-        for key, value in g.gp.items():
-            if not serializable(value[g]):
-                raise ValueError(f'Property {key} of graph must be serializable')
+        for key, map in g.gp.items():
+            if map.value_type() == 'python::object':
+                if not serializable(map[g]):
+                    raise ValueError(f'Property {key} of graph must be serializable')
         if 'id' in g.vp:
             s = set()
             for id in g.vp.id:
@@ -68,10 +70,11 @@ class GTSaver(Saver):
                 id = g.vp.id[v]
             else:
                 id = g.vertex_index[v]
-            for key, value in g.vp.items():
+            for key, map in g.vp.items():
                 if key != 'id':
-                    if not serializable(value[v]):
-                        raise ValueError(f'Property {key} of vertex with id {id} must be serializable')
+                    if map.value_type() == 'python::object':
+                        if not serializable(map[v]):
+                            raise ValueError(f'Property {key} of vertex with id {id} must be serializable')
         for e in g.edges():
             u = e.source()
             v = e.target()
@@ -81,12 +84,23 @@ class GTSaver(Saver):
             else:
                 source = g.vertex_index[u]
                 target = g.vertex_index[v]
-            for key, value in g.ep.items():
-                if not serializable(value[e]):
-                    raise ValueError(f'Property {key} of edge with source {source} and target {target} must be serializable')
+            for key, map in g.ep.items():
+                if map.value_type() == 'python::object':
+                    if not serializable(map[e]):
+                        raise ValueError(f'Property {key} of edge with source {source} and target {target} must be serializable')
 
     def settings(self, g):
-        props = {key: value[g] for key, value in g.gp.items() if value[g] is not None}
+        props = {}
+        for key, map in g.gp.items():
+            type = map.value_type()
+            if type == 'python::object':
+                if map[g] is not None:
+                    props[key] = map[g]
+            else:
+                if type.startswith('vector'):
+                    props[key] = [value for value in map[g]]
+                else:
+                    props[key] = map[g]
         if 'directed' not in props and g.is_directed():
             props['directed'] = True
         return {}, props
@@ -100,7 +114,18 @@ class GTSaver(Saver):
             data = {
                 'id': id,
             }
-            props = {key: value[v] for key, value in g.vp.items() if key != 'id' and value[v] is not None}
+            props = {}
+            for key, map in g.vp.items():
+                if key != 'id':
+                    type = map.value_type()
+                    if type == 'python::object':
+                        if map[v] is not None:
+                            props[key] = map[v]
+                    else:
+                        if type.startswith('vector'):
+                            props[key] = [value for value in map[v]]
+                        else:
+                            props[key] = map[v]
             yield data, props
 
     def edges(self, g):
@@ -117,7 +142,17 @@ class GTSaver(Saver):
                 'source': source,
                 'target': target,
             }
-            props = {key: value[e] for key, value in g.ep.items() if value[e] is not None}
+            props = {}
+            for key, map in g.ep.items():
+                type = map.value_type()
+                if type == 'python::object':
+                    if map[e] is not None:
+                        props[key] = map[e]
+                else:
+                    if type.startswith('vector'):
+                        props[key] = [value for value in map[e]]
+                    else:
+                        props[key] = map[e]
             yield data, props
 
 
@@ -132,3 +167,20 @@ def save_gt(g, path):
 def render_gt(g, path='temp_gt.net.gz', **kwargs):
     save_gt(g, path)
     render(path, **kwargs)
+
+
+def vprop_gt(g, key, m):
+    g.vp[key] = m
+
+
+def eprop_gt(g, key, m):
+    g.ep[key] = m
+
+
+def move_gt(g, layout):
+    g.vp['x'] = g.new_vp('object')
+    g.vp['y'] = g.new_vp('object')
+    for v in g.vertices():
+        x, y = layout[v]
+        g.vp.x[v] = x
+        g.vp.y[v] = y

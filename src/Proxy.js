@@ -147,10 +147,14 @@ export default function (cell, graph, animation, panel) {
                 if (dst !== 'key' && dst !== 'value') {
                     throw 'dst must be key or value';
                 }
-                for (const vertex of Object.values(vertices)) {
+                for (const [id, vertex] of Object.entries(vertices)) {
                     let value = '';
-                    if (vertex.props !== null && src in vertex.props && vertex.props[src] !== null) {
-                        value = vertex.props[src];
+                    if (src === 'id') {
+                        value = id;
+                    } else {
+                        if (vertex.props !== null && src in vertex.props && vertex.props[src] !== null) {
+                            value = vertex.props[src];
+                        }
                     }
                     if (typeof value === 'string') {
                         vertex[dst] = value;
