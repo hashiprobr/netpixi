@@ -136,55 +136,55 @@ class Render:
         self.graph_changer = GraphChanger(uid)
         self.selection_changer = SelectionChanger(uid)
 
-    def delete_vertex_property(self, src):
+    def vertex_clear(self, src):
         self.graph_deleter._push_empty('vertex', {'src': src})
 
-    def delete_edge_property(self, src):
+    def edge_clear(self, src):
         self.graph_deleter._push_empty('edge', {'src': src})
 
-    def copy_vertex_property(self, src, dst):
+    def vertex_copy(self, src, dst):
         self.graph_copier._push_empty('vertex', {'src': src, 'dst': dst})
 
-    def copy_edge_property(self, src, dst):
+    def edge_copy(self, src, dst):
         self.graph_copier._push_empty('edge', {'src': src, 'dst': dst})
 
-    def set_vertex_key(self, src):
+    def vertex_key(self, src):
         self.graph_setter._push_empty('vertex', {'src': src, 'dst': 'key'})
 
-    def set_vertex_value(self, src):
+    def vertex_value(self, src):
         self.graph_setter._push_empty('vertex', {'src': src, 'dst': 'value'})
 
-    def set_edge_label(self, src):
+    def edge_label(self, src):
         self.graph_setter._push_empty('edge', {'src': src})
 
-    def normalize_vertices(self, src, min, max):
+    def vertex_scale(self, src, min, max):
         self.graph_normalizer._push_empty('vertex', {'src': src, 'min': min, 'max': max})
 
-    def normalize_edges(self, src, min, max):
+    def edge_scale(self, src, min, max):
         self.graph_normalizer._push_empty('edge', {'src': src, 'min': min, 'max': max})
 
-    def change_graph(self, **kwargs):
+    def graph(self, **kwargs):
         self.graph_changer._send_settings({'graph': kwargs})
 
-    def change_vertex_defaults(self, **kwargs):
+    def vertex_default(self, **kwargs):
         self.graph_changer._send_settings({'vertex': kwargs})
 
-    def change_edge_defaults(self, **kwargs):
+    def edge_default(self, **kwargs):
         self.graph_changer._send_settings({'edge': kwargs})
 
-    def change_vertex_selection(self, **kwargs):
+    def vertex_selection(self, **kwargs):
         self.selection_changer._push_empty('vertex', kwargs)
 
-    def change_edge_selection(self, **kwargs):
+    def edge_selection(self, **kwargs):
         self.selection_changer._push_empty('edge', kwargs)
 
-    def change_vertex(self, id, **kwargs):
+    def vertex(self, id, **kwargs):
         self.graph_changer._send_vertex(id, kwargs)
 
-    def change_edge(self, source, target, **kwargs):
+    def edge(self, source, target, **kwargs):
         self.graph_changer._send_edge(source, target, kwargs)
 
-    def add_frame(self, duration, **kwargs):
+    def frame(self, duration, **kwargs):
         self.graph_changer._send_frame(duration, kwargs)
 
 
