@@ -1,5 +1,7 @@
 import networkx as nx
 
+from networkx.drawing import layout as draw_nx
+
 from .. import render
 from ..util import serializable
 from . import Loader, Saver, load, save
@@ -79,7 +81,11 @@ def save_nx(g, path):
 
 def render_nx(g, path='temp_nx.net.gz', **kwargs):
     save_nx(g, path)
-    render(path, **kwargs)
+    return render(path, **kwargs)
+
+
+def gprop_nx(g, key, value):
+    g.graph[key] = value
 
 
 def vprop_nx(g, key, d):
@@ -96,3 +102,15 @@ def move_nx(g, layout):
     for id, (x, y) in layout.items():
         g.nodes[id]['x'] = x
         g.nodes[id]['y'] = y
+
+
+__all__ = [
+    'draw_nx',
+    'load_nx',
+    'save_nx',
+    'render_nx',
+    'gprop_nx',
+    'vprop_nx',
+    'eprop_nx',
+    'move_nx',
+]

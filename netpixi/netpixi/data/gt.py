@@ -1,6 +1,12 @@
 import numpy as np
 import graph_tool as gt
 
+from warnings import filterwarnings, resetwarnings
+
+filterwarnings('ignore')
+from graph_tool import draw as draw_gt
+resetwarnings
+
 from .. import render
 from ..util import serializable
 from . import Loader, Saver, load, save
@@ -166,7 +172,14 @@ def save_gt(g, path):
 
 def render_gt(g, path='temp_gt.net.gz', **kwargs):
     save_gt(g, path)
-    render(path, **kwargs)
+    return render(path, **kwargs)
+
+
+def gprop_gt(g, key, value):
+    if key in g.gp:
+        del g.gp[key]
+    g.gp[key] = g.new_gp('object')
+    g.gp[key] = value
 
 
 def vprop_gt(g, key, m):
@@ -184,3 +197,15 @@ def move_gt(g, layout):
         x, y = layout[v]
         g.vp.x[v] = x
         g.vp.y[v] = y
+
+
+__all__ = [
+    'draw_gt',
+    'load_gt',
+    'save_gt',
+    'render_gt',
+    'gprop_gt',
+    'vprop_gt',
+    'eprop_gt',
+    'move_gt',
+]
