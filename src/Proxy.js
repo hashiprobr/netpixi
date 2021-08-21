@@ -157,9 +157,9 @@ export default function (cell, graph, animation, panel) {
                         }
                     }
                     if (typeof value === 'string') {
-                        vertex[dst] = value;
+                        vertex[dst.slice(1)] = value;
                     } else {
-                        vertex[dst] = value.toString();
+                        vertex[dst.slice(1)] = value.toString();
                     }
                     updateSprite(vertex);
                     if (dst === '_key') {

@@ -226,8 +226,8 @@ def move_gt(g, layout):
     g.vp['_y'] = g.new_vp('object')
     for v in g.vertices():
         x, y = layout[v]
-        g.vp.x[v] = x
-        g.vp.y[v] = y
+        g.vp._x[v] = x
+        g.vp._y[v] = y
 
 
 __all__ = [
