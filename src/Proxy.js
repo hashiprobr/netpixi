@@ -144,8 +144,8 @@ export default function (cell, graph, animation, panel) {
             (data, props) => {
                 const src = validate.receivedSrc(props);
                 const dst = validate.receivedDst(props, src);
-                if (dst !== 'key' && dst !== 'value') {
-                    throw 'dst must be key or value';
+                if (dst !== '_key' && dst !== '_value') {
+                    throw 'dst must be _key or _value';
                 }
                 for (const [id, vertex] of Object.entries(vertices)) {
                     let value = '';
@@ -162,7 +162,7 @@ export default function (cell, graph, animation, panel) {
                         vertex[dst] = value.toString();
                     }
                     updateSprite(vertex);
-                    if (dst === 'key') {
+                    if (dst === '_key') {
                         updateGeometry(vertex);
                     }
                 }
