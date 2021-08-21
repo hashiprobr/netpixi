@@ -236,7 +236,8 @@ def peek(path):
                 continue
             dtype = data.get('type')
             if dtype == 'settings':
-                settings['GRAPH'].update(props)
+                if 'graph' in props and isinstance(props['graph'], dict):
+                    settings['GRAPH'].update(props['graph'])
             elif dtype == 'vertex':
                 settings['VERTEX'].update(props)
             elif dtype == 'edge':

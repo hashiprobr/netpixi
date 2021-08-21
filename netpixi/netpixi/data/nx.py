@@ -38,19 +38,50 @@ class NXSaver(Saver):
                 raise ValueError(f'Property directed of graph must be {not directed}')
         if not serializable(g.graph):
             raise ValueError('Properties of graph must be serializable')
+        s = set()
+        for source, target in g.edges:
+            key = [source, target]
+            if not isinstance(g, nx.DiGraph):
+                key.sort()
+            key = (key[0], key[1])
+            if key in s:
+                raise ValueError('Parallel edges not allowed')
+            else:
+                s.add(key)
         for id in g:
             if not isinstance(id, (int, str)):
                 raise TypeError('Vertex ids must be integers or strings')
             if not serializable(g.nodes[id]):
                 raise ValueError(f'Properties of vertex with id {id} must be serializable')
         for source, target in g.edges:
+            if source == target:
+                raise ValueError('Self-loops not allowed')
             if not serializable(g.edges[source, target]):
                 raise ValueError(f'Properties of edge with source {source} and target {target} must be serializable')
 
     def settings(self, g):
         props = g.graph.copy()
-        if 'directed' not in props and isinstance(g, nx.DiGraph):
-            props['directed'] = True
+        if 'edge' in props and isinstance(props['edge'], dict):
+            edge = props.pop('edge')
+        else:
+            edge = {}
+        if 'vertex' in props and isinstance(props['vertex'], dict):
+            vertex = props.pop('vertex')
+        else:
+            vertex = {}
+        if 'graph' in props and isinstance(props['graph'], dict) and len(props) == 1:
+            graph = props.pop('graph')
+        else:
+            graph = props
+            props = {}
+        if 'directed' not in graph and isinstance(g, nx.DiGraph):
+            graph['directed'] = True
+        if graph:
+            props['graph'] = graph
+        if vertex:
+            props['vertex'] = vertex
+        if edge:
+            props['edge'] = edge
         return {}, props
 
     def vertices(self, g):

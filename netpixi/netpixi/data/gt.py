@@ -71,6 +71,16 @@ class GTSaver(Saver):
                     raise ValueError('Vertex ids must be unique')
                 else:
                     s.add(id)
+        s = set()
+        for e in g.edges():
+            key = [g.vertex_index[e.source()], g.vertex_index[e.target()]]
+            if not g.is_directed():
+                key.sort()
+            key = (key[0], key[1])
+            if key in s:
+                raise ValueError('Parallel edges not allowed')
+            else:
+                s.add(key)
         for v in g.vertices():
             if 'id' in g.vp:
                 id = g.vp.id[v]
@@ -90,6 +100,8 @@ class GTSaver(Saver):
             else:
                 source = g.vertex_index[u]
                 target = g.vertex_index[v]
+            if source == target:
+                raise ValueError('Self-loops not allowed')
             for key, map in g.ep.items():
                 if map.value_type() == 'python::object':
                     if not serializable(map[e]):
@@ -107,8 +119,27 @@ class GTSaver(Saver):
                     props[key] = [value for value in map[g]]
                 else:
                     props[key] = map[g]
-        if 'directed' not in props and g.is_directed():
-            props['directed'] = True
+        if 'edge' in props and isinstance(props['edge'], dict):
+            edge = props.pop('edge')
+        else:
+            edge = {}
+        if 'vertex' in props and isinstance(props['vertex'], dict):
+            vertex = props.pop('vertex')
+        else:
+            vertex = {}
+        if 'graph' in props and isinstance(props['graph'], dict) and len(props) == 1:
+            graph = props.pop('graph')
+        else:
+            graph = props
+            props = {}
+        if 'directed' not in graph and g.is_directed():
+            graph['directed'] = True
+        if graph:
+            props['graph'] = graph
+        if vertex:
+            props['vertex'] = vertex
+        if edge:
+            props['edge'] = edge
         return {}, props
 
     def vertices(self, g):
