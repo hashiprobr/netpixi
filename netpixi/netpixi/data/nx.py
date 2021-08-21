@@ -100,8 +100,8 @@ def eprop_nx(g, key, d):
 
 def move_nx(g, layout):
     for id, (x, y) in layout.items():
-        g.nodes[id]['x'] = x
-        g.nodes[id]['y'] = y
+        g.nodes[id]['_x'] = x
+        g.nodes[id]['_y'] = y
 
 
 __all__ = [

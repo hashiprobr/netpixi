@@ -191,8 +191,8 @@ def eprop_gt(g, key, m):
 
 
 def move_gt(g, layout):
-    g.vp['x'] = g.new_vp('object')
-    g.vp['y'] = g.new_vp('object')
+    g.vp['_x'] = g.new_vp('object')
+    g.vp['_y'] = g.new_vp('object')
     for v in g.vertices():
         x, y = layout[v]
         g.vp.x[v] = x

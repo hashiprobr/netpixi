@@ -30,12 +30,12 @@ export default function (cell, graph, animation, panel) {
                 const leaders = [];
                 for (const vertex of Object.values(vertices)) {
                     switch (src) {
-                        case 'key':
+                        case '_key':
                             vertex.key = '';
                             updateSprite(vertex);
                             updateGeometry(vertex);
                             break;
-                        case 'value':
+                        case '_value':
                             vertex.value = '';
                             updateSprite(vertex);
                             break;
@@ -60,7 +60,7 @@ export default function (cell, graph, animation, panel) {
                 for (const [u, area] of Object.entries(areas)) {
                     let changed = false;
                     for (const neighbor of Object.values(area.neighbors)) {
-                        if (src === 'label') {
+                        if (src === '_label') {
                             neighbor.label = '';
                             changed = true;
                         } else {
@@ -444,8 +444,8 @@ export default function (cell, graph, animation, panel) {
                 throw 'unknown selection';
             },
             (data, props) => {
-                pop(props, 'x');
-                pop(props, 'y');
+                pop(props, '_x');
+                pop(props, '_y');
                 const key = validate.receivedKey(props);
                 const value = validate.receivedValue(props);
                 const leaders = new Set();

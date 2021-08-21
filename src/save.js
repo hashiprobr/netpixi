@@ -51,13 +51,13 @@ export default function (graph, filename) {
                     id: parseInt(id),
                 };
                 const props = { ...vertex.props };
-                props.x = vertex.x;
-                props.y = vertex.y;
+                props._x = vertex.x;
+                props._y = vertex.y;
                 if (vertex.key !== '') {
-                    props.key = vertex.key;
+                    props._key = vertex.key;
                 }
                 if (vertex.value !== '') {
-                    props.value = vertex.value;
+                    props._value = vertex.value;
                 }
                 pushLine('vertex', data, props);
             }
@@ -79,7 +79,7 @@ export default function (graph, filename) {
                     };
                     const props = { ...neighbor.props };
                     if (neighbor.label !== '') {
-                        props.label = neighbor.label;
+                        props._label = neighbor.label;
                     }
                     pushLine('edge', data, props);
                 }

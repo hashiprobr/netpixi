@@ -216,16 +216,16 @@ const validate = {
         }
     },
     receivedX(props) {
-        return loosePopNulNum(props, 'x');
+        return loosePopNulNum(props, '_x');
     },
     receivedY(props) {
-        return loosePopNulNum(props, 'y');
+        return loosePopNulNum(props, '_y');
     },
     receivedKey(props) {
-        return loosePopNulStr(props, 'key');
+        return loosePopNulStr(props, '_key');
     },
     receivedValue(props) {
-        return loosePopNulStr(props, 'value');
+        return loosePopNulStr(props, '_value');
     },
     receivedSource(data, vertices) {
         const source = tightPopIntStr(data, 'source');
@@ -281,7 +281,7 @@ const validate = {
         }
     },
     receivedLabel(props) {
-        return loosePopNulStr(props, 'label');
+        return loosePopNulStr(props, '_label');
     },
     isFrame(data) {
         return data.type === 'frame';

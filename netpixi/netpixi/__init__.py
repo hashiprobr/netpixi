@@ -2,6 +2,7 @@ import json
 import gzip
 
 from abc import ABC, abstractmethod
+from json.decoder import JSONDecodeError
 from base64 import b64encode
 
 from shortuuid import uuid
@@ -47,14 +48,14 @@ class Base(ABC):
         self._push_empty('settings', props)
 
     def _send_vertex(self, id, props):
-        self._clean_num(props, 'x')
-        self._clean_num(props, 'y')
-        self._clean_str(props, 'key')
-        self._clean_str(props, 'value')
+        self._clean_num(props, '_x')
+        self._clean_num(props, '_y')
+        self._clean_str(props, '_key')
+        self._clean_str(props, '_value')
         self._push_str('vertex', {'id': id}, props)
 
     def _send_edge(self, source, target, props):
-        self._clean_str(props, 'label')
+        self._clean_str(props, '_label')
         self._push_str('edge', {'source': source, 'target': target}, props)
 
     def _send_frame(self, duration, props):
@@ -142,19 +143,28 @@ class Render:
     def edge_clear(self, src):
         self.graph_deleter._push_empty('edge', {'src': src})
 
+    def vertex_unset_key(self):
+        self.graph_deleter._push_empty('vertex', {'src': '_key'})
+
+    def vertex_unset_value(self):
+        self.graph_deleter._push_empty('vertex', {'src': '_value'})
+
+    def edge_unset_label(self, src):
+        self.graph_deleter._push_empty('edge', {'src': '_label'})
+
     def vertex_copy(self, src, dst):
         self.graph_copier._push_empty('vertex', {'src': src, 'dst': dst})
 
     def edge_copy(self, src, dst):
         self.graph_copier._push_empty('edge', {'src': src, 'dst': dst})
 
-    def vertex_key(self, src):
-        self.graph_setter._push_empty('vertex', {'src': src, 'dst': 'key'})
+    def vertex_set_key(self, src):
+        self.graph_setter._push_empty('vertex', {'src': src, 'dst': '_key'})
 
-    def vertex_value(self, src):
-        self.graph_setter._push_empty('vertex', {'src': src, 'dst': 'value'})
+    def vertex_set_value(self, src):
+        self.graph_setter._push_empty('vertex', {'src': src, 'dst': '_value'})
 
-    def edge_label(self, src):
+    def edge_set_label(self, src):
         self.graph_setter._push_empty('edge', {'src': src})
 
     def vertex_scale(self, src, min, max):
@@ -205,6 +215,40 @@ def open(path, **kwargs):
 
 def open_animation(path):
     return AnimationFile(path)
+
+
+def peek(path):
+    settings = {
+        'GRAPH': {},
+        'VERTEX': {},
+        'EDGE': {},
+    }
+    with gzip.open(path) as file:
+        for line in file:
+            try:
+                data = json.loads(line)
+            except JSONDecodeError:
+                continue
+            if not isinstance(data, dict):
+                continue
+            props = data.pop('props', None)
+            if props is None or not isinstance(props, dict):
+                continue
+            dtype = data.get('type')
+            if dtype == 'settings':
+                settings['GRAPH'].update(props)
+            elif dtype == 'vertex':
+                settings['VERTEX'].update(props)
+            elif dtype == 'edge':
+                settings['EDGE'].update(props)
+    for dtype, props in settings.items():
+        print(dtype)
+        public_props = {key: value for key, value in props.items() if not key.startswith('_')}
+        if public_props:
+            for key, value in public_props.items():
+                print(f'    {key}: {type(value).__name__}')
+        else:
+            print('    no properties')
 
 
 def render(path, aspect=16/9, normalize=True, infinite=False, broker=False):

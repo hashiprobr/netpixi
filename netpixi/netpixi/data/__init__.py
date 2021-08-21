@@ -1,9 +1,8 @@
 import json
 import gzip
 
-from json.decoder import JSONDecodeError
-
 from abc import ABC, abstractmethod
+from json.decoder import JSONDecodeError
 
 
 class Loader(ABC):
