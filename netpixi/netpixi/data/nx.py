@@ -115,20 +115,6 @@ def render_nx(g, path='temp_nx.net.gz', **kwargs):
     return render(path, **kwargs)
 
 
-def gprop_nx(g, key, value):
-    g.graph[key] = value
-
-
-def vprop_nx(g, key, d):
-    for id, value in d.items():
-        g.nodes[id][key] = value
-
-
-def eprop_nx(g, key, d):
-    for (source, target), value in d.items():
-        g.edges[source, target][key] = value
-
-
 def move_nx(g, layout):
     for id, (x, y) in layout.items():
         g.nodes[id]['_x'] = x
@@ -140,8 +126,5 @@ __all__ = [
     'load_nx',
     'save_nx',
     'render_nx',
-    'gprop_nx',
-    'vprop_nx',
-    'eprop_nx',
     'move_nx',
 ]

@@ -206,21 +206,6 @@ def render_gt(g, path='temp_gt.net.gz', **kwargs):
     return render(path, **kwargs)
 
 
-def gprop_gt(g, key, value):
-    if key in g.gp:
-        del g.gp[key]
-    g.gp[key] = g.new_gp('object')
-    g.gp[key] = value
-
-
-def vprop_gt(g, key, m):
-    g.vp[key] = m
-
-
-def eprop_gt(g, key, m):
-    g.ep[key] = m
-
-
 def move_gt(g, layout):
     g.vp['_x'] = g.new_vp('object')
     g.vp['_y'] = g.new_vp('object')
@@ -235,8 +220,5 @@ __all__ = [
     'load_gt',
     'save_gt',
     'render_gt',
-    'gprop_gt',
-    'vprop_gt',
-    'eprop_gt',
     'move_gt',
 ]
