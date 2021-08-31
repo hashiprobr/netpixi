@@ -233,7 +233,7 @@ export default function (cell, graph, animation, panel) {
                         vertex.props = {};
                     }
                     if (oldDif === 0) {
-                        vertex.props[src] = newDif;
+                        vertex.props.size = newDif;
                     } else {
                         let value;
                         if (src in vertex.props) {
@@ -241,7 +241,7 @@ export default function (cell, graph, animation, panel) {
                         } else {
                             value = settings.vertex[src];
                         }
-                        vertex.props[src] = newMin + newDif * (value - oldMin) / oldDif;
+                        vertex.props.size = newMin + newDif * (value - oldMin) / oldDif;
                     }
                     updateSprite(vertex);
                     updateGeometry(vertex);
@@ -302,7 +302,7 @@ export default function (cell, graph, animation, panel) {
                             neighbor.props = {};
                         }
                         if (oldDif === 0) {
-                            neighbor.props[src] = newDif;
+                            neighbor.props.width = newDif;
                         } else {
                             let value;
                             if (src in neighbor.props) {
@@ -310,7 +310,7 @@ export default function (cell, graph, animation, panel) {
                             } else {
                                 value = settings.edge[src];
                             }
-                            neighbor.props[src] = newMin + newDif * (value - oldMin) / oldDif;
+                            neighbor.props.width = newMin + newDif * (value - oldMin) / oldDif;
                         }
                     }
                 }
