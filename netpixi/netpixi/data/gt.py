@@ -215,10 +215,20 @@ def move_gt(g, layout):
         g.vp._y[v] = y
 
 
+def degree_gt(g):
+    vp = g.new_vp('double')
+    va = vp.get_array()
+    vertices = g.get_vertices()
+    n = g.num_vertices()
+    va[:] = g.get_total_degrees(vertices) / (n - 1)
+    return vp
+
+
 __all__ = [
     'draw_gt',
     'load_gt',
     'save_gt',
     'render_gt',
     'move_gt',
+    'degree_gt',
 ]
