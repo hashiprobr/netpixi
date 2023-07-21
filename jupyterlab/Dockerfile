@@ -1,8 +1,7 @@
 FROM python:3.11-slim-bookworm
 ENV PYTHONUNBUFFERED=1
 RUN apt-get update &&\
-    apt-get -y upgrade &&\
-    apt-get -y install python3-graph-tool
+    apt-get -y upgrade
 RUN /usr/local/bin/python -m pip install --upgrade pip
 COPY requirements.txt /home/jupyterlab/.hidden/
 RUN pip install -r /home/jupyterlab/.hidden/requirements.txt
