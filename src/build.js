@@ -7,7 +7,7 @@ import defaults from './defaults';
 import { pop, merge, processGraph, validate, nullSettings } from './data';
 import { loadRemote } from './load';
 
-export default function (path, aspect, normalize, infinite, broker, app, cell) {
+export default function (path, aspect, normalize, infinite, sparse, app, cell) {
     let minX;
     let maxX;
 
@@ -1083,7 +1083,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                         reversed = false;
                     }
                 }
-                if (broker) {
+                if (sparse) {
                     reversed = !reversed;
                 }
                 let u;
