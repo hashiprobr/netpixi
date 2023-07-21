@@ -1,6 +1,5 @@
 import { useInflate } from './zipnet';
 
-
 function seek(file, process) {
     return new Promise((resolve, reject) => {
         const push = useInflate(process, resolve);
@@ -33,7 +32,6 @@ function seek(file, process) {
     });
 }
 
-
 function stream(body, process) {
     return new Promise((resolve, reject) => {
         const push = useInflate(process, resolve);
@@ -59,7 +57,6 @@ function stream(body, process) {
     });
 }
 
-
 function loadLocal(initialize, process) {
     return new Promise((resolve, reject) => {
         const input = document.createElement('input');
@@ -77,7 +74,6 @@ function loadLocal(initialize, process) {
     });
 }
 
-
 function loadRemote(path, process) {
     return fetch(path)
         .then((response) => {
@@ -87,6 +83,5 @@ function loadRemote(path, process) {
             return stream(response.body, process);
         });
 }
-
 
 export { loadLocal, loadRemote };

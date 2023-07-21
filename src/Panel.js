@@ -2,7 +2,6 @@ import save from './save';
 import { importProperties, importAnimation } from './importer';
 import { exportPng, exportSvg, exportVideo } from './exporter';
 
-
 export default function (app, cell, graph, animation, filename) {
     let disabled;
 
@@ -153,7 +152,7 @@ export default function (app, cell, graph, animation, filename) {
 
     const top = document.createElement('div');
     top.style.display = 'flex';
-    top.appendChild(propertiesButton);
+    // top.appendChild(propertiesButton);
     top.appendChild(networkButton);
     top.appendChild(pngButton);
     top.appendChild(svgButton);

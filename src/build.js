@@ -698,7 +698,7 @@ export default function (path, aspect, normalize, infinite, sparse, app, cell) {
         }
 
         function connectMouse() {
-            let hoveredVertex = null;
+            // let hoveredVertex = null;
             let draggedVertex = null;
 
             let selecting = false;
@@ -753,21 +753,21 @@ export default function (path, aspect, normalize, infinite, sparse, app, cell) {
                         stageX = draggedVertex.sprite.position.x;
                         stageY = draggedVertex.sprite.position.y;
                     });
-                    vertex.sprite.on('mouseover', () => {
-                        if (hoveredVertex === null) {
-                            hoveredVertex = vertex;
-                            if (vertex.selected) {
-                                panel.updateOpacity(vertex);
-                                panel.showOpacity();
-                            }
-                        }
-                    });
-                    vertex.sprite.on('mouseout', () => {
-                        if (hoveredVertex === vertex) {
-                            panel.hideOpacity();
-                            hoveredVertex = null;
-                        }
-                    });
+                    // vertex.sprite.on('mouseover', () => {
+                    //     if (hoveredVertex === null) {
+                    //         hoveredVertex = vertex;
+                    //         if (vertex.selected) {
+                    //             panel.updateOpacity(vertex);
+                    //             panel.showOpacity();
+                    //         }
+                    //     }
+                    // });
+                    // vertex.sprite.on('mouseout', () => {
+                    //     if (hoveredVertex === vertex) {
+                    //         panel.hideOpacity();
+                    //         hoveredVertex = null;
+                    //     }
+                    // });
                 }
             }
 
@@ -917,126 +917,126 @@ export default function (path, aspect, normalize, infinite, sparse, app, cell) {
                     event.preventDefault();
                     const result = compare(event.deltaY, 0);
                     if (result !== 0) {
-                        if (hoveredVertex === null || !hoveredVertex.selected) {
-                            let zoom = Math.round(100 * scale);
-                            if (result === -1 || (result === 1 && zoom > 10)) {
-                                const shift = -result * Math.round(zoom / 10);
-                                const ratio = (zoom + shift) / zoom;
-                                app.stage.scale.x *= ratio;
-                                app.stage.scale.y *= ratio;
-                                const error = ratio - 1;
-                                app.stage.position.x -= error * (event.offsetX - app.stage.position.x);
-                                app.stage.position.y -= error * (event.offsetY - app.stage.position.y);
-                                zoom += shift;
-                                scale = zoom / 100;
-                                panel.updateZoom();
-                                if (zoomId !== null) {
-                                    clearTimeout(zoomId);
-                                }
-                                zoomId = setTimeout(() => {
-                                    zoomId = null;
-                                    app.stage.scale.x = 1;
-                                    app.stage.scale.y = 1;
-                                    if (!infinite) {
-                                        updateTexture();
-                                    }
-                                    updateBounds();
-                                    for (const vertex of Object.values(vertices)) {
-                                        updatePosition(vertex);
-                                        if (infinite) {
-                                            updateSpriteStyle(vertex);
-                                        } else {
-                                            updateSprite(vertex);
-                                        }
-                                        updateGeometry(vertex);
-                                    }
-                                    if (infinite) {
-                                        drawAreas();
-                                    } else {
-                                        for (const area of Object.values(areas)) {
-                                            area.graphics.scale.x = scale;
-                                            area.graphics.scale.y = scale;
-                                        }
-                                        for (const neighbor of neighbors) {
-                                            updateLabelPosition(neighbor);
-                                            updateLabelSprite(neighbor);
-                                        }
-                                    }
-                                }, 100);
-                            }
-                        } else {
-                            let opacity = Math.round(100 * hoveredVertex.alpha);
-                            if (result === -1 || (result === 1 && opacity > 10)) {
-                                opacity -= result * Math.round(opacity / 10);
-                                hoveredVertex.alpha = opacity / 100;
-                                drawNeighborAreas(hoveredVertex);
-                                panel.updateOpacity(hoveredVertex);
-                            }
-                        }
-                    }
-                });
-                app.view.addEventListener('dblclick', (event) => {
-                    event.preventDefault();
-                    if (hoveredVertex === null || !hoveredVertex.selected) {
-                        let moved = false;
-                        if (compare(app.stage.position.x, 0) !== 0) {
-                            app.stage.position.x = 0;
-                            moved = true;
-                        }
-                        if (compare(app.stage.position.y, 0) !== 0) {
-                            app.stage.position.y = 0;
-                            moved = true;
-                        }
-                        if (compare(scale, 1) !== 0) {
-                            initializeScale();
-                            if (!infinite) {
-                                updateTexture();
-                            }
-                            updateBounds();
-                            for (const vertex of Object.values(vertices)) {
-                                initializePosition(vertex);
-                                if (infinite) {
-                                    updateSpriteStyle(vertex);
-                                } else {
-                                    updateSprite(vertex);
-                                }
-                                updateGeometry(vertex);
-                            }
-                            if (infinite) {
-                                drawAreas();
-                            } else {
-                                for (const area of Object.values(areas)) {
-                                    area.graphics.scale.x = 1;
-                                    area.graphics.scale.y = 1;
-                                }
-                                for (const neighbor of neighbors) {
-                                    updateLabelPosition(neighbor);
-                                    updateLabelSprite(neighbor);
-                                }
-                            }
+                        // if (hoveredVertex === null || !hoveredVertex.selected) {
+                        let zoom = Math.round(100 * scale);
+                        if (result === -1 || (result === 1 && zoom > 10)) {
+                            const shift = -result * Math.round(zoom / 10);
+                            const ratio = (zoom + shift) / zoom;
+                            app.stage.scale.x *= ratio;
+                            app.stage.scale.y *= ratio;
+                            const error = ratio - 1;
+                            app.stage.position.x -= error * (event.offsetX - app.stage.position.x);
+                            app.stage.position.y -= error * (event.offsetY - app.stage.position.y);
+                            zoom += shift;
+                            scale = zoom / 100;
                             panel.updateZoom();
-                        } else {
-                            if (moved) {
+                            if (zoomId !== null) {
+                                clearTimeout(zoomId);
+                            }
+                            zoomId = setTimeout(() => {
+                                zoomId = null;
+                                app.stage.scale.x = 1;
+                                app.stage.scale.y = 1;
+                                if (!infinite) {
+                                    updateTexture();
+                                }
                                 updateBounds();
                                 for (const vertex of Object.values(vertices)) {
-                                    updateSpriteStyle(vertex);
+                                    updatePosition(vertex);
+                                    if (infinite) {
+                                        updateSpriteStyle(vertex);
+                                    } else {
+                                        updateSprite(vertex);
+                                    }
+                                    updateGeometry(vertex);
                                 }
                                 if (infinite) {
                                     drawAreas();
                                 } else {
-                                    for (const neighbor of neighbors) {
-                                        updateLabelSpriteStyle(neighbor);
+                                    for (const area of Object.values(areas)) {
+                                        area.graphics.scale.x = scale;
+                                        area.graphics.scale.y = scale;
                                     }
+                                    for (const neighbor of neighbors) {
+                                        updateLabelPosition(neighbor);
+                                        updateLabelSprite(neighbor);
+                                    }
+                                }
+                            }, 100);
+                        }
+                        // } else {
+                        //     let opacity = Math.round(100 * hoveredVertex.alpha);
+                        //     if (result === -1 || (result === 1 && opacity > 10)) {
+                        //         opacity -= result * Math.round(opacity / 10);
+                        //         hoveredVertex.alpha = opacity / 100;
+                        //         drawNeighborAreas(hoveredVertex);
+                        //         panel.updateOpacity(hoveredVertex);
+                        //     }
+                        // }
+                    }
+                });
+                app.view.addEventListener('dblclick', (event) => {
+                    event.preventDefault();
+                    // if (hoveredVertex === null || !hoveredVertex.selected) {
+                    let moved = false;
+                    if (compare(app.stage.position.x, 0) !== 0) {
+                        app.stage.position.x = 0;
+                        moved = true;
+                    }
+                    if (compare(app.stage.position.y, 0) !== 0) {
+                        app.stage.position.y = 0;
+                        moved = true;
+                    }
+                    if (compare(scale, 1) !== 0) {
+                        initializeScale();
+                        if (!infinite) {
+                            updateTexture();
+                        }
+                        updateBounds();
+                        for (const vertex of Object.values(vertices)) {
+                            initializePosition(vertex);
+                            if (infinite) {
+                                updateSpriteStyle(vertex);
+                            } else {
+                                updateSprite(vertex);
+                            }
+                            updateGeometry(vertex);
+                        }
+                        if (infinite) {
+                            drawAreas();
+                        } else {
+                            for (const area of Object.values(areas)) {
+                                area.graphics.scale.x = 1;
+                                area.graphics.scale.y = 1;
+                            }
+                            for (const neighbor of neighbors) {
+                                updateLabelPosition(neighbor);
+                                updateLabelSprite(neighbor);
+                            }
+                        }
+                        panel.updateZoom();
+                    } else {
+                        if (moved) {
+                            updateBounds();
+                            for (const vertex of Object.values(vertices)) {
+                                updateSpriteStyle(vertex);
+                            }
+                            if (infinite) {
+                                drawAreas();
+                            } else {
+                                for (const neighbor of neighbors) {
+                                    updateLabelSpriteStyle(neighbor);
                                 }
                             }
                         }
-                    } else {
-                        if (compare(hoveredVertex.alpha, 1) !== 0) {
-                            initializeAlpha(hoveredVertex);
-                            drawNeighborAreas(hoveredVertex);
-                            panel.updateOpacity(hoveredVertex);
-                        }
                     }
+                    // } else {
+                    //     if (compare(hoveredVertex.alpha, 1) !== 0) {
+                    //         initializeAlpha(hoveredVertex);
+                    //         drawNeighborAreas(hoveredVertex);
+                    //         panel.updateOpacity(hoveredVertex);
+                    //     }
+                    // }
                 });
             }
 

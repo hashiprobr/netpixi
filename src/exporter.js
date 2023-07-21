@@ -3,12 +3,11 @@ import streamSaver from 'streamsaver';
 import * as PIXI from 'pixi.js';
 
 import { compare, differences } from './types';
-import { pop, merge } from './data';
+import { merge } from './data';
 
 if (!streamSaver.WritableStream) {
     streamSaver.WritableStream = ponyfill.WritableStream;
 }
-
 
 function exportPng(app, graph, filename) {
     const {
@@ -21,7 +20,7 @@ function exportPng(app, graph, filename) {
         updateGeometry,
     } = graph;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         setExporting(true);
         for (const vertex of Object.values(vertices)) {
             updateSprite(vertex);
@@ -52,20 +51,30 @@ function exportPng(app, graph, filename) {
         const transform = new PIXI.Matrix(1, 0, 0, 1, tx, ty);
         app.renderer.render(app.stage, { renderTexture, clear, transform });
 
-        const image = app.renderer.plugins.extract.image(renderTexture, 'image/png', 1);
+        const canvas = app.renderer.extract.canvas(renderTexture);
 
         renderTexture.destroy();
 
-        const a = document.createElement('a');
-        a.setAttribute('href', pop(image, 'src'));
-        a.setAttribute('download', `${filename}.png`);
-        a.click();
-        a.remove();
+        canvas.toBlob((blob) => {
+            const stream = streamSaver.createWriteStream(`${filename}.png`);
+            const writer = stream.getWriter();
 
-        resolve();
+            window.addEventListener('unload', () => {
+                writer.abort();
+            });
+
+            blob.arrayBuffer()
+                .then((buffer) => {
+                    writer.write(new Uint8Array(buffer));
+                    resolve();
+                })
+                .catch(reject)
+                .finally(() => {
+                    writer.close();
+                });
+        });
     });
 }
-
 
 function exportSvg(app, graph, filename) {
     const {
@@ -80,7 +89,7 @@ function exportSvg(app, graph, filename) {
         updateGeometry,
     } = graph;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const encoder = new TextEncoder();
 
         const stream = streamSaver.createWriteStream(`${filename}.svg`);
@@ -162,7 +171,7 @@ function exportSvg(app, graph, filename) {
                 case 'square':
                     writeRegularPolygon(styleProps, x, y, radius, 4, Math.PI / 4);
                     break;
-                case 'star':
+                case 'star': {
                     const half = radius / 2;
                     let rotation = -Math.PI / 2;
                     const points = [];
@@ -175,6 +184,7 @@ function exportSvg(app, graph, filename) {
                     }
                     writePolygon(styleProps, points);
                     break;
+                }
                 default:
                     writeTag('circle', {
                         ...styleProps,
@@ -395,21 +405,19 @@ function exportSvg(app, graph, filename) {
                 }
             }
             write('</svg>');
+            resolve();
         } catch (error) {
+            reject(error);
+        } finally {
             writer.close();
-            throw error;
         }
-        writer.close();
-        resolve();
     });
 }
-
 
 function exportVideo() {
     return new Promise((resolve) => {
         resolve();
     });
 }
-
 
 export { exportPng, exportSvg, exportVideo };

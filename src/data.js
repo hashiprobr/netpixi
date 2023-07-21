@@ -170,7 +170,7 @@ const validate = {
                 graph: clean(get(props, 'graph'), conditions.graph),
                 vertex: clean(get(props, 'vertex'), conditions.vertex),
                 edge: clean(get(props, 'edge'), conditions.edge),
-                props: props,
+                props,
             };
         }
     },

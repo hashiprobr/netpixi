@@ -2,7 +2,6 @@ import { compare } from './types';
 import { pop, overwrite, union, processGraph, validate } from './data';
 import { loadLocal } from './load';
 
-
 function importProperties(graph, disable) {
     const {
         settings,
@@ -138,7 +137,6 @@ function importProperties(graph, disable) {
         .then(finalize);
 }
 
-
 function importAnimation(graph, animation, disable) {
     const {
         settings,
@@ -226,6 +224,5 @@ function importAnimation(graph, animation, disable) {
     return loadLocal(initialize, process)
         .then(finalize);
 }
-
 
 export { importProperties, importAnimation };

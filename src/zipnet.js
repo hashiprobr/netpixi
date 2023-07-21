@@ -2,7 +2,6 @@ import pako from 'pako';
 
 import { isString, isObject } from './types';
 
-
 function useInflate(process, finalize) {
     const inflate = new pako.Inflate({ to: 'string' });
 
@@ -71,7 +70,6 @@ function useInflate(process, finalize) {
     return push;
 }
 
-
 function useDeflate(process, finalize) {
     const deflate = new pako.Deflate({ gzip: true });
 
@@ -108,6 +106,5 @@ function useDeflate(process, finalize) {
 
     return [pushLine, pushEnd];
 }
-
 
 export { useInflate, useDeflate };

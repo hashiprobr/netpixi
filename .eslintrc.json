@@ -13,7 +13,15 @@
       "warn"
     ],
     "no-throw-literal": [
-      "never"
+      "off"
+    ],
+    "object-shorthand": [
+      "warn",
+      "consistent-as-needed"
+    ],
+    "quote-props": [
+      "error",
+      "consistent-as-needed"
     ],
     "comma-dangle": [
       "error",

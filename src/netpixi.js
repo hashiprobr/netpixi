@@ -4,9 +4,7 @@ import Animation from './Animation';
 import Panel from './Panel';
 import Proxy from './Proxy';
 
-
 const proxies = {};
-
 
 function render(uid, path, aspect, normalize, infinite, sparse) {
     const { app, cell } = main(uid);
@@ -38,7 +36,6 @@ function render(uid, path, aspect, normalize, infinite, sparse) {
         });
 }
 
-
 function call(localUid, globalUid, name, code) {
     const element = document.getElementById(localUid);
     if (globalUid in proxies) {
@@ -48,6 +45,5 @@ function call(localUid, globalUid, name, code) {
         element.innerHTML = 'Render not found';
     }
 }
-
 
 export default { proxies, render, call };

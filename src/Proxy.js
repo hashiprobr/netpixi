@@ -3,7 +3,6 @@ import atob from 'atob';
 import { compare, isFinite, isString } from './types';
 import { pop, overwrite, union, processGraph, validate } from './data';
 
-
 export default function (cell, graph, animation, panel) {
     const {
         settings,

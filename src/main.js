@@ -2,7 +2,6 @@ import * as PIXI from 'pixi.js';
 
 import { isString } from './types';
 
-
 export default function (uid) {
     function getRect() {
         return element.getBoundingClientRect();

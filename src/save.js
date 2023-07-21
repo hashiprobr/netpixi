@@ -7,7 +7,6 @@ if (!streamSaver.WritableStream) {
     streamSaver.WritableStream = ponyfill.WritableStream;
 }
 
-
 function parseInt(value) {
     const valueInt = Number.parseInt(value);
     if (Number.isNaN(valueInt)) {
@@ -15,7 +14,6 @@ function parseInt(value) {
     }
     return valueInt;
 }
-
 
 export default function (graph, filename) {
     const {
