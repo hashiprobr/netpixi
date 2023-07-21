@@ -1,14 +1,10 @@
 import { compare, isFinite, isPositive, isNonNegativeInteger, isString, isObject, conditions } from './types';
-
-
 function get(props, name) {
     if (name in props) {
         return props[name];
     }
     return null;
 }
-
-
 function pop(object, name) {
     if (name in object) {
         const value = object[name];
@@ -17,8 +13,6 @@ function pop(object, name) {
     }
     return null;
 }
-
-
 function popProps(data) {
     const props = pop(data, 'props');
     if (isObject(props)) {
@@ -26,16 +20,12 @@ function popProps(data) {
     }
     throw 'props must be an object';
 }
-
-
 function loosePop(props, name) {
     if (props !== null) {
         return pop(props, name);
     }
     return null;
 }
-
-
 function loosePopNum(props, name) {
     const value = loosePop(props, name);
     if (isPositive(value)) {
@@ -43,8 +33,6 @@ function loosePopNum(props, name) {
     }
     throw `${name} must be a positive number`;
 }
-
-
 function loosePopStr(props, name) {
     const value = loosePop(props, name);
     if (isString(value)) {
@@ -52,7 +40,6 @@ function loosePopStr(props, name) {
     }
     throw `${name} must be a string`;
 }
-
 
 function loosePopNulNum(props, name) {
     const value = loosePop(props, name);
@@ -62,7 +49,6 @@ function loosePopNulNum(props, name) {
     throw `${name} must be null or a finite number`;
 }
 
-
 function loosePopNulStr(props, name) {
     const value = loosePop(props, name);
     if (value === null || isString(value)) {
@@ -70,7 +56,6 @@ function loosePopNulStr(props, name) {
     }
     throw `${name} must be null or a string`;
 }
-
 
 function tightPop(data, name) {
     if (name in data) {
@@ -81,7 +66,6 @@ function tightPop(data, name) {
     throw `missing ${name}`;
 }
 
-
 function tightPopInt(data, name) {
     const value = tightPop(data, name);
     if (isNonNegativeInteger(value)) {
@@ -89,7 +73,6 @@ function tightPopInt(data, name) {
     }
     throw `${name} must be a non-negative integer`;
 }
-
 
 function tightPopIntStr(data, name) {
     const value = tightPop(data, name);
@@ -102,7 +85,6 @@ function tightPopIntStr(data, name) {
     throw `${name} must be an integer or a string`;
 }
 
-
 function clean(over, cond) {
     if (over !== null) {
         for (const name in cond) {
@@ -114,7 +96,6 @@ function clean(over, cond) {
     return over;
 }
 
-
 function overwrite(base, over) {
     if (over === null) {
         return;
@@ -125,7 +106,6 @@ function overwrite(base, over) {
         }
     }
 }
-
 
 function merge(base, over, diff) {
     if (over === null) {
@@ -147,7 +127,6 @@ function merge(base, over, diff) {
     return temp;
 }
 
-
 function union(base, over) {
     if (base === null) {
         return over;
@@ -159,7 +138,6 @@ function union(base, over) {
     }
     return base;
 }
-
 
 function processGraph(data, processSettings, processVertex, processEdge) {
     const props = popProps(data);
@@ -177,7 +155,6 @@ function processGraph(data, processSettings, processVertex, processEdge) {
             throw 'unknown type';
     }
 }
-
 
 const validate = {
     notDuplicateSettings(object) {
@@ -247,14 +224,14 @@ const validate = {
     notMissingEdge(settings, source, target, vertices, areas) {
         let hasStraight;
         let hasReversed;
-        hasStraight = vertices[target].leaders.has(source) && !areas[source].neighbors[target].reversed;
-        hasReversed = vertices[source].leaders.has(target) && areas[target].neighbors[source].reversed;
+        hasStraight = vertices[target].leaders.has(source) && (areas[source].neighbors[target].length === 2 || !areas[source].neighbors[target][0].reversed);
+        hasReversed = vertices[source].leaders.has(target) && (areas[target].neighbors[source].length === 2 || areas[target].neighbors[source][0].reversed);
         if (!hasStraight && !hasReversed) {
             if (settings.graph.directed) {
                 throw `missing edge with source ${source} and target ${target}`;
             } else {
-                hasStraight = vertices[source].leaders.has(target) && !areas[target].neighbors[source].reversed;
-                hasReversed = vertices[target].leaders.has(source) && areas[source].neighbors[target].reversed;
+                hasStraight = vertices[source].leaders.has(target) && (areas[target].neighbors[source].length === 2 || !areas[target].neighbors[source][0].reversed);
+                hasReversed = vertices[target].leaders.has(source) && (areas[source].neighbors[target].length === 2 || areas[source].neighbors[target][0].reversed);
                 if (!hasStraight && !hasReversed) {
                     throw `missing edge with ids ${source} and ${target}`;
                 }
@@ -351,13 +328,11 @@ const validate = {
     },
 };
 
-
 const nullSettings = {
     graph: null,
     vertex: null,
     edge: null,
     props: null,
 };
-
 
 export { pop, overwrite, merge, union, processGraph, validate, nullSettings };

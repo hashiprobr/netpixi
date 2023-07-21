@@ -194,7 +194,8 @@ export default function (app, cell, graph, animation, filename) {
     frameLabel.style.userSelect = 'none';
 
     const middle = document.createElement('div');
-    middle.style.display = 'flex';
+    // middle.style.display = 'flex';
+    middle.style.display = 'none';
     middle.appendChild(animationButton);
     middle.appendChild(media);
     middle.appendChild(frameLabel);

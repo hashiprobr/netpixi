@@ -59,14 +59,16 @@ export default function (cell, graph, animation, panel) {
                 const src = validate.receivedSrc(props);
                 for (const [u, area] of Object.entries(areas)) {
                     let changed = false;
-                    for (const neighbor of Object.values(area.neighbors)) {
-                        if (src === '_label') {
-                            neighbor.label = '';
-                            changed = true;
-                        } else {
-                            if (neighbor.props !== null && src in neighbor.props) {
-                                delete neighbor.props[src];
+                    for (const neighborList of Object.values(area.neighbors)) {
+                        for (const neighbor of neighborList) {
+                            if (src === '_label') {
+                                neighbor.label = '';
                                 changed = true;
+                            } else {
+                                if (neighbor.props !== null && src in neighbor.props) {
+                                    delete neighbor.props[src];
+                                    changed = true;
+                                }
                             }
                         }
                     }
@@ -116,15 +118,17 @@ export default function (cell, graph, animation, panel) {
                 const dst = validate.receivedDst(props, src);
                 for (const [u, area] of Object.entries(areas)) {
                     let changed = false;
-                    for (const neighbor of Object.values(area.neighbors)) {
-                        if (neighbor.props !== null) {
-                            if (src in neighbor.props) {
-                                neighbor.props[dst] = neighbor.props[src];
-                                changed = true;
-                            } else {
-                                if (dst in neighbor.props) {
-                                    delete neighbor.props[dst];
+                    for (const neighborList of Object.values(area.neighbors)) {
+                        for (const neighbor of neighborList) {
+                            if (neighbor.props !== null) {
+                                if (src in neighbor.props) {
+                                    neighbor.props[dst] = neighbor.props[src];
                                     changed = true;
+                                } else {
+                                    if (dst in neighbor.props) {
+                                        delete neighbor.props[dst];
+                                        changed = true;
+                                    }
                                 }
                             }
                         }
@@ -170,15 +174,17 @@ export default function (cell, graph, animation, panel) {
             (data, props) => {
                 const src = validate.receivedSrc(props);
                 for (const [u, area] of Object.entries(areas)) {
-                    for (const neighbor of Object.values(area.neighbors)) {
-                        let value = '';
-                        if (neighbor.props !== null && src in neighbor.props && neighbor.props[src] !== null) {
-                            value = neighbor.props[src];
-                        }
-                        if (typeof value === 'string') {
-                            neighbor.label = value;
-                        } else {
-                            neighbor.label = value.toString();
+                    for (const neighborList of Object.values(area.neighbors)) {
+                        for (const neighbor of neighborList) {
+                            let value = '';
+                            if (neighbor.props !== null && src in neighbor.props && neighbor.props[src] !== null) {
+                                value = neighbor.props[src];
+                            }
+                            if (typeof value === 'string') {
+                                neighbor.label = value;
+                            } else {
+                                neighbor.label = value.toString();
+                            }
                         }
                     }
                     drawEdges(u);
@@ -255,35 +261,37 @@ export default function (cell, graph, animation, panel) {
                 let oldMin = Number.POSITIVE_INFINITY;
                 let oldMax = Number.NEGATIVE_INFINITY;
                 for (const [u, area] of Object.entries(areas)) {
-                    for (const [v, neighbor] of Object.entries(area.neighbors)) {
-                        let source;
-                        let target;
-                        if (neighbor.reversed) {
-                            source = v;
-                            target = u;
-                        } else {
-                            source = u;
-                            target = v;
-                        }
-                        let value;
-                        if (neighbor.props !== null && src in neighbor.props) {
-                            value = neighbor.props[src];
-                        } else {
-                            if (src in settings.edge) {
-                                value = settings.edge[src];
+                    for (const [v, neighborList] of Object.entries(area.neighbors)) {
+                        for (const neighbor of neighborList) {
+                            let source;
+                            let target;
+                            if (neighbor.reversed) {
+                                source = v;
+                                target = u;
                             } else {
-                                throw `edge with source ${source} and target ${target} does not have ${src}`;
+                                source = u;
+                                target = v;
                             }
-                        }
-                        if (isFinite(value)) {
-                            if (compare(oldMin, value) > 0) {
-                                oldMin = value;
+                            let value;
+                            if (neighbor.props !== null && src in neighbor.props) {
+                                value = neighbor.props[src];
+                            } else {
+                                if (src in settings.edge) {
+                                    value = settings.edge[src];
+                                } else {
+                                    throw `edge with source ${source} and target ${target} does not have ${src}`;
+                                }
                             }
-                            if (compare(oldMax, value) < 0) {
-                                oldMax = value;
+                            if (isFinite(value)) {
+                                if (compare(oldMin, value) > 0) {
+                                    oldMin = value;
+                                }
+                                if (compare(oldMax, value) < 0) {
+                                    oldMax = value;
+                                }
+                            } else {
+                                throw `edge with source ${source} and target ${target} has non-numeric ${src}`;
                             }
-                        } else {
-                            throw `edge with source ${source} and target ${target} has non-numeric ${src}`;
                         }
                     }
                 }
@@ -297,20 +305,22 @@ export default function (cell, graph, animation, panel) {
                     oldDif = oldMax - oldMin;
                 }
                 for (const area of Object.values(areas)) {
-                    for (const neighbor of Object.values(area.neighbors)) {
-                        if (neighbor.props === null) {
-                            neighbor.props = {};
-                        }
-                        if (oldDif === 0) {
-                            neighbor.props.width = newDif;
-                        } else {
-                            let value;
-                            if (src in neighbor.props) {
-                                value = neighbor.props[src];
-                            } else {
-                                value = settings.edge[src];
+                    for (const neighborList of Object.values(area.neighbors)) {
+                        for (const neighbor of neighborList) {
+                            if (neighbor.props === null) {
+                                neighbor.props = {};
                             }
-                            neighbor.props.width = newMin + newDif * (value - oldMin) / oldDif;
+                            if (oldDif === 0) {
+                                neighbor.props.width = newDif;
+                            } else {
+                                let value;
+                                if (src in neighbor.props) {
+                                    value = neighbor.props[src];
+                                } else {
+                                    value = settings.edge[src];
+                                }
+                                neighbor.props.width = newMin + newDif * (value - oldMin) / oldDif;
+                            }
                         }
                     }
                 }
@@ -376,13 +386,16 @@ export default function (cell, graph, animation, panel) {
                     let target = validate.receivedTarget(data, vertices, source);
                     [source, target] = validate.notMissingEdge(settings, source, target, vertices, areas);
                     const label = validate.receivedLabel(props);
+                    let neighborList;
                     let neighbor;
                     let u;
                     if (vertices[target].leaders.has(source)) {
-                        neighbor = areas[source].neighbors[target];
+                        neighborList = areas[source].neighbors[target];
+                        neighbor = neighborList[0];
                         u = source;
                     } else {
-                        neighbor = areas[target].neighbors[source];
+                        neighborList = areas[target].neighbors[source];
+                        neighbor = neighborList[neighborList.length - 1];
                         u = target;
                     }
                     if (label !== null) {
@@ -479,13 +492,15 @@ export default function (cell, graph, animation, panel) {
                 }
                 for (const u of leaders) {
                     let changed = false;
-                    for (const [v, neighbor] of Object.entries(areas[u].neighbors)) {
-                        if (selected.has(vertices[v])) {
-                            if (label !== null) {
-                                neighbor.label = label;
+                    for (const [v, neighborList] of Object.entries(areas[u].neighbors)) {
+                        for (const neighbor of neighborList) {
+                            if (selected.has(vertices[v])) {
+                                if (label !== null) {
+                                    neighbor.label = label;
+                                }
+                                neighbor.props = union(neighbor.props, props);
+                                changed = true;
                             }
-                            neighbor.props = union(neighbor.props, props);
-                            changed = true;
                         }
                     }
                     if (changed) {

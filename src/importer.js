@@ -104,12 +104,15 @@ function importProperties(graph, disable) {
         for (const source in overEdges) {
             for (const target in overEdges[source]) {
                 const { label, props } = overEdges[source][target];
+                let neighborList;
                 let neighbor;
                 if (vertices[target].leaders.has(source)) {
-                    neighbor = areas[source].neighbors[target];
+                    neighborList = areas[source].neighbors[target];
+                    neighbor = neighborList[0];
                     leaders.add(source);
                 } else {
-                    neighbor = areas[target].neighbors[source];
+                    neighborList = areas[target].neighbors[source];
+                    neighbor = neighborList[neighborList.length - 1];
                     leaders.add(target);
                 }
                 if (label !== null) {

@@ -44,6 +44,8 @@ class Loader(ABC):
                                 value = settings.get('directed')
                                 if isinstance(value, bool):
                                     directed = value
+                                if len(props) == 1:
+                                    props = settings
                         g = self.process_settings(directed, props)
                     else:
                         self._raise(ValueError, 'duplicate settings')
@@ -134,3 +136,27 @@ def load(Class, path):
 def save(Class, g, path):
     saver = Class()
     saver.save(g, path)
+
+
+def serializable(props):
+    if props is None:
+        return True
+
+    if isinstance(props, (bool, int, float, str)):
+        return True
+
+    if isinstance(props, list):
+        for value in props:
+            if not serializable(value):
+                return False
+        return True
+
+    if isinstance(props, dict):
+        for key, value in props.items():
+            if not isinstance(key, (int, str)):
+                return False
+            if not serializable(value):
+                return False
+        return True
+
+    return False

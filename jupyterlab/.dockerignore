@@ -1,7 +1,9 @@
 env
-notebooks
+__shared__
 **/__pycache__
 **/.ipynb_checkpoints
 **/*.ipynb
 **/*.net
 **/*.net.gz
+package.json
+up.py

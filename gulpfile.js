@@ -33,8 +33,8 @@ function bundle() {
         .pipe(sourcemaps.init({ loadMaps: true }))
         .pipe(uglify())
         .pipe(sourcemaps.write('./', {
-            sourceMappingURLPrefix: '/files',
+            sourceMappingURLPrefix: '/static/.hidden',
             mapFile: (path) => path.replace('.js.map', '.map'),
         }))
-        .pipe(gulp.dest('./netpixi'));
+        .pipe(gulp.dest('./jupyterlab/.hidden'));
 }

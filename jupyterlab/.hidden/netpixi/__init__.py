@@ -1,3 +1,4 @@
+import os
 import json
 import gzip
 
@@ -7,6 +8,7 @@ from base64 import b64encode
 
 from shortuuid import uuid
 from IPython.core.display import display, HTML
+from jupyter_server import serverapp
 
 
 class Base(ABC):
@@ -252,7 +254,11 @@ def peek(path):
             print('    no properties')
 
 
-def render(path, aspect=16/9, normalize=True, infinite=False, broker=False):
+def render(path, aspect=16 / 9, normalize=True, infinite=False, broker=False):
+    server = next(serverapp.list_running_servers())
+    folder = os.getcwd()
+    suffix = folder[len(server['root_dir']):]
+    path = f'/static{suffix}/{path}'
     if not isinstance(aspect, (int, float)):
         raise TypeError(f'aspect must be an integer or a float')
     if aspect < 0.1 or aspect > 10:
@@ -271,5 +277,5 @@ def render(path, aspect=16/9, normalize=True, infinite=False, broker=False):
 
 
 display(HTML(f'''
-    <script src="/files/netpixi.min.js"></script>
+    <script type="application/javascript" src="/static/.hidden/netpixi.min.js"></script>
 '''))

@@ -79,12 +79,7 @@ function loadLocal(initialize, process) {
 
 
 function loadRemote(path, process) {
-    const uri = window.location.pathname;
-    const left = uri.indexOf('/', 1);
-    const right = uri.lastIndexOf('/') + 1;
-    const prefix = uri.slice(left, right);
-
-    return fetch(`/files${prefix}${path}`)
+    return fetch(path)
         .then((response) => {
             if (!response.ok) {
                 throw response.statusText;

@@ -7,7 +7,6 @@ import defaults from './defaults';
 import { pop, merge, processGraph, validate, nullSettings } from './data';
 import { loadRemote } from './load';
 
-
 export default function (path, aspect, normalize, infinite, broker, app, cell) {
     let minX;
     let maxX;
@@ -90,6 +89,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         let scale;
 
+        let defaultGraphics;
         let defaultTexture;
 
         let left;
@@ -176,7 +176,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function initializeTexture() {
-            defaultTexture = new PIXI.RenderTexture.create();
+            defaultGraphics = new PIXI.Graphics();
+            defaultTexture = PIXI.RenderTexture.create();
             updateTexture();
         }
 
@@ -213,8 +214,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             graphics.endFill();
         }
 
-        function drawGraphics(props, radius, bwidth) {
-            const graphics = new PIXI.Graphics();
+        function drawGraphics(graphics, props, radius, bwidth) {
+            graphics.clear();
             if (props.shape !== 'circle') {
                 graphics.beginFill(props.color, 0);
                 graphics.drawCircle(0, 0, radius);
@@ -226,11 +227,11 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             } else {
                 drawGeometry(graphics, props.color, props.shape, radius);
             }
-            return graphics;
         }
 
         function drawTexture(vertex, props) {
-            const graphics = drawGraphics(props, vertex.sprite.radius, vertex.sprite.bwidth);
+            const graphics = new PIXI.Graphics();
+            drawGraphics(graphics, props, vertex.sprite.radius, vertex.sprite.bwidth);
             vertex.sprite.texture = app.renderer.generateTexture(graphics);
             graphics.destroy();
         }
@@ -240,8 +241,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 if (props !== settings.vertex) {
                     drawTexture(vertex, props);
                 }
-            }
-            else {
+            } else {
                 const texture = vertex.sprite.texture;
                 if (props === settings.vertex) {
                     vertex.sprite.texture = defaultTexture;
@@ -304,188 +304,190 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         function drawEdges(u) {
             const graphics = areas[u].graphics;
             graphics.clear();
-            for (const [v, neighbor] of Object.entries(areas[u].neighbors)) {
-                let destroy = true;
-                neighbor.head = null;
-                neighbor.body = null;
-                let s;
-                let t;
-                if (neighbor.reversed) {
-                    s = vertices[v];
-                    t = vertices[u];
-                } else {
-                    s = vertices[u];
-                    t = vertices[v];
-                }
-                let sx;
-                let sy;
-                let tx;
-                let ty;
-                if (infinite) {
-                    sx = s.sprite.position.x;
-                    sy = s.sprite.position.y;
-                    tx = t.sprite.position.x;
-                    ty = t.sprite.position.y;
-                } else {
-                    sx = s.x;
-                    sy = s.y;
-                    tx = t.x;
-                    ty = t.y;
-                }
-                let dx = tx - sx;
-                let dy = ty - sy;
-                const distance = Math.sqrt(dx * dx + dy * dy) - (s.radius + t.radius);
-                if (compare(distance, 0) > 0) {
-                    const props = merge(settings.edge, neighbor.props, differences.edge);
-                    let alpha = props.alpha * s.alpha * t.alpha;
-                    if (selected.size > 0) {
-                        if (s.selected) {
-                            if (!t.selected) {
-                                alpha *= settings.graph.alpha1;
-                            }
-                        } else {
-                            alpha *= settings.graph.alpha1;
-                            if (!t.selected) {
-                                alpha *= settings.graph.alpha2;
-                            }
-                        }
+            for (const [v, neighborList] of Object.entries(areas[u].neighbors)) {
+                for (const neighbor of neighborList) {
+                    let destroy = true;
+                    neighbor.head = null;
+                    neighbor.body = null;
+                    let s;
+                    let t;
+                    if (neighbor.reversed) {
+                        s = vertices[v];
+                        t = vertices[u];
+                    } else {
+                        s = vertices[u];
+                        t = vertices[v];
                     }
-                    if (compare(alpha, 0) > 0) {
-                        alpha = Math.min(alpha, 1);
-                        let size = Math.min(props.width, s.radius, t.radius);
-                        let close = false;
-                        const minimum = 21 * size;
-                        if (compare(distance, minimum) < 0) {
-                            size *= distance / minimum;
-                            close = true;
-                        }
-                        const c1 = props.curve1;
-                        const c2 = props.curve2;
-                        let nx;
-                        let ny;
-                        let x1;
-                        let y1;
-                        let x2;
-                        let y2;
-                        let straight;
-                        let edgeShape;
-                        if (close || (compare(c1, 0) === 0 && compare(c2, 0) === 0)) {
-                            straight = true;
-                            edgeShape = formatLine(sx, sy, tx, ty);
-                        } else {
-                            dx *= 0.2;
-                            dy *= 0.2;
-                            nx = -dy;
-                            ny = dx;
-                            x1 = sx + dx + c1 * nx;
-                            y1 = sy + dy + c1 * ny;
-                            x2 = tx - dx + c2 * nx;
-                            y2 = ty - dy + c2 * ny;
-                            straight = false;
-                            edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
-                        }
-                        let vertexShape;
-                        const radius = size / 2;
-                        vertexShape = formatCircle(sx, sy, s.radius + radius);
-                        const [fx, fy] = calculateIntersection(edgeShape, vertexShape);
-                        vertexShape = formatCircle(tx, ty, t.radius + radius);
-                        const [gx, gy] = calculateIntersection(edgeShape, vertexShape);
-                        let x3;
-                        let y3;
-                        let x4;
-                        let y4;
-                        if (straight) {
-                            edgeShape = formatLine(fx, fy, gx, gy);
-                        } else {
-                            dx = 0.2 * (gx - fx);
-                            dy = 0.2 * (gy - fy);
-                            nx = -dy;
-                            ny = dx;
-                            x3 = fx + dx + c1 * nx;
-                            y3 = fy + dy + c1 * ny;
-                            x4 = gx - dx + c2 * nx;
-                            y4 = gy - dy + c2 * ny;
-                            edgeShape = formatCurve(fx, fy, x3, y3, x4, y4, gx, gy);
-                        }
-                        let visible = !infinite;
-                        if (!visible) {
-                            visible = calculateVisibility(fx, fy, radius) || calculateVisibility(gx, gy, radius);
-                            if (!visible) {
-                                const boundsShape = formatRectangle(radius);
-                                const intersect = Intersection.intersect(edgeShape, boundsShape);
-                                if (intersect.points.length > 0) {
-                                    visible = true;
+                    let sx;
+                    let sy;
+                    let tx;
+                    let ty;
+                    if (infinite) {
+                        sx = s.sprite.position.x;
+                        sy = s.sprite.position.y;
+                        tx = t.sprite.position.x;
+                        ty = t.sprite.position.y;
+                    } else {
+                        sx = s.x;
+                        sy = s.y;
+                        tx = t.x;
+                        ty = t.y;
+                    }
+                    let dx = tx - sx;
+                    let dy = ty - sy;
+                    const distance = Math.sqrt(dx * dx + dy * dy) - (s.radius + t.radius);
+                    if (compare(distance, 0) > 0) {
+                        const props = merge(settings.edge, neighbor.props, differences.edge);
+                        let alpha = props.alpha * s.alpha * t.alpha;
+                        if (selected.size > 0) {
+                            if (s.selected) {
+                                if (!t.selected) {
+                                    alpha *= settings.graph.alpha1;
                                 }
-                            }
-                        }
-                        if (visible || exporting) {
-                            neighbor.size = size;
-                            neighbor.color = props.color;
-                            neighbor.alpha = alpha;
-                            graphics.lineStyle({
-                                width: neighbor.size,
-                                color: neighbor.color,
-                                alpha: neighbor.alpha,
-                                cap: PIXI.LINE_CAP.ROUND,
-                            });
-                            graphics.moveTo(fx, fy);
-                            if (straight) {
-                                graphics.lineTo(gx, gy);
-                                neighbor.body = { straight, fx, fy, gx, gy };
                             } else {
-                                graphics.bezierCurveTo(x3, y3, x4, y4, gx, gy);
-                                neighbor.body = { straight, fx, fy, x3, y3, x4, y4, gx, gy };
-                            }
-                            if (settings.graph.directed) {
-                                if (straight) {
-                                    edgeShape = formatLine(sx, sy, tx, ty);
-                                } else {
-                                    edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
+                                alpha *= settings.graph.alpha1;
+                                if (!t.selected) {
+                                    alpha *= settings.graph.alpha2;
                                 }
-                                const [hx, hy] = calculateIntersection(edgeShape, t.shape);
-                                dx = 4 * (hx - gx);
-                                dy = 4 * (hy - gy);
+                            }
+                        }
+                        if (compare(alpha, 0) > 0) {
+                            alpha = Math.min(alpha, 1);
+                            let size = Math.min(props.width, s.radius, t.radius);
+                            let close = false;
+                            const minimum = 21 * size;
+                            if (compare(distance, minimum) < 0) {
+                                size *= distance / minimum;
+                                close = true;
+                            }
+                            const c1 = props.curve1;
+                            const c2 = props.curve2;
+                            let nx;
+                            let ny;
+                            let x1;
+                            let y1;
+                            let x2;
+                            let y2;
+                            let straight;
+                            let edgeShape;
+                            if (close || (compare(c1, 0) === 0 && compare(c2, 0) === 0)) {
+                                straight = true;
+                                edgeShape = formatLine(sx, sy, tx, ty);
+                            } else {
+                                dx *= 0.2;
+                                dy *= 0.2;
                                 nx = -dy;
                                 ny = dx;
-                                graphics.moveTo(gx, gy);
-                                graphics.lineTo(gx - 3 * dx + nx, gy - 3 * dy + ny);
-                                graphics.moveTo(gx, gy);
-                                graphics.lineTo(gx - 3 * dx - nx, gy - 3 * dy - ny);
-                                neighbor.head = { dx, dy, nx, ny };
+                                x1 = sx + dx + c1 * nx;
+                                y1 = sy + dy + c1 * ny;
+                                x2 = tx - dx + c2 * nx;
+                                y2 = ty - dy + c2 * ny;
+                                straight = false;
+                                edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
                             }
-                            if (neighbor.label !== '') {
-                                if (!('sprite' in neighbor)) {
-                                    neighbors.add(neighbor);
-                                    neighbor.sprite = new PIXI.Sprite(new PIXI.RenderTexture.create());
-                                    neighbor.sprite.anchor.x = 0.5;
-                                    neighbor.sprite.anchor.y = 0.5;
-                                    app.stage.addChild(neighbor.sprite);
+                            let vertexShape;
+                            const radius = size / 2;
+                            vertexShape = formatCircle(sx, sy, s.radius + radius);
+                            const [fx, fy] = calculateIntersection(edgeShape, vertexShape);
+                            vertexShape = formatCircle(tx, ty, t.radius + radius);
+                            const [gx, gy] = calculateIntersection(edgeShape, vertexShape);
+                            let x3;
+                            let y3;
+                            let x4;
+                            let y4;
+                            if (straight) {
+                                edgeShape = formatLine(fx, fy, gx, gy);
+                            } else {
+                                dx = 0.2 * (gx - fx);
+                                dy = 0.2 * (gy - fy);
+                                nx = -dy;
+                                ny = dx;
+                                x3 = fx + dx + c1 * nx;
+                                y3 = fy + dy + c1 * ny;
+                                x4 = gx - dx + c2 * nx;
+                                y4 = gy - dy + c2 * ny;
+                                edgeShape = formatCurve(fx, fy, x3, y3, x4, y4, gx, gy);
+                            }
+                            let visible = !infinite;
+                            if (!visible) {
+                                visible = calculateVisibility(fx, fy, radius) || calculateVisibility(gx, gy, radius);
+                                if (!visible) {
+                                    const boundsShape = formatRectangle(radius);
+                                    const intersect = Intersection.intersect(edgeShape, boundsShape);
+                                    if (intersect.points.length > 0) {
+                                        visible = true;
+                                    }
                                 }
-                                const a = props.lparam;
-                                const b = (1 - a);
+                            }
+                            if (visible || exporting) {
+                                neighbor.size = size;
+                                neighbor.color = props.color;
+                                neighbor.alpha = alpha;
+                                graphics.lineStyle({
+                                    width: neighbor.size,
+                                    color: neighbor.color,
+                                    alpha: neighbor.alpha,
+                                    cap: PIXI.LINE_CAP.ROUND,
+                                });
+                                graphics.moveTo(fx, fy);
                                 if (straight) {
-                                    neighbor.x = b * fx + a * gx;
-                                    neighbor.y = b * fy + a * gy;
+                                    graphics.lineTo(gx, gy);
+                                    neighbor.body = { straight, fx, fy, gx, gy };
                                 } else {
-                                    neighbor.x = b * b * b * fx + 3 * b * b * a * x3 + 3 * b * a * a * x4 + a * a * a * gx;
-                                    neighbor.y = b * b * b * fy + 3 * b * b * a * y3 + 3 * b * a * a * y4 + a * a * a * gy;
+                                    graphics.bezierCurveTo(x3, y3, x4, y4, gx, gy);
+                                    neighbor.body = { straight, fx, fy, x3, y3, x4, y4, gx, gy };
                                 }
-                                if (infinite) {
-                                    neighbor.x /= scale;
-                                    neighbor.y /= scale;
+                                if (settings.graph.directed) {
+                                    if (straight) {
+                                        edgeShape = formatLine(sx, sy, tx, ty);
+                                    } else {
+                                        edgeShape = formatCurve(sx, sy, x1, y1, x2, y2, tx, ty);
+                                    }
+                                    const [hx, hy] = calculateIntersection(edgeShape, t.shape);
+                                    dx = 4 * (hx - gx);
+                                    dy = 4 * (hy - gy);
+                                    nx = -dy;
+                                    ny = dx;
+                                    graphics.moveTo(gx, gy);
+                                    graphics.lineTo(gx - 3 * dx + nx, gy - 3 * dy + ny);
+                                    graphics.moveTo(gx, gy);
+                                    graphics.lineTo(gx - 3 * dx - nx, gy - 3 * dy - ny);
+                                    neighbor.head = { dx, dy, nx, ny };
                                 }
-                                updateLabelPosition(neighbor);
-                                updateLabelSprite(neighbor);
-                                destroy = false;
+                                if (neighbor.label !== '') {
+                                    if (!('sprite' in neighbor)) {
+                                        neighbors.add(neighbor);
+                                        neighbor.sprite = new PIXI.Sprite(PIXI.RenderTexture.create());
+                                        neighbor.sprite.anchor.x = 0.5;
+                                        neighbor.sprite.anchor.y = 0.5;
+                                        app.stage.addChild(neighbor.sprite);
+                                    }
+                                    const a = props.lparam;
+                                    const b = (1 - a);
+                                    if (straight) {
+                                        neighbor.x = b * fx + a * gx;
+                                        neighbor.y = b * fy + a * gy;
+                                    } else {
+                                        neighbor.x = b * b * b * fx + 3 * b * b * a * x3 + 3 * b * a * a * x4 + a * a * a * gx;
+                                        neighbor.y = b * b * b * fy + 3 * b * b * a * y3 + 3 * b * a * a * y4 + a * a * a * gy;
+                                    }
+                                    if (infinite) {
+                                        neighbor.x /= scale;
+                                        neighbor.y /= scale;
+                                    }
+                                    updateLabelPosition(neighbor);
+                                    updateLabelSprite(neighbor);
+                                    destroy = false;
+                                }
                             }
                         }
                     }
-                }
-                if (destroy) {
-                    if ('sprite' in neighbor) {
-                        neighbor.sprite.destroy();
-                        delete neighbor.sprite;
-                        neighbors.delete(neighbor);
+                    if (destroy) {
+                        if ('sprite' in neighbor) {
+                            neighbor.sprite.destroy();
+                            delete neighbor.sprite;
+                            neighbors.delete(neighbor);
+                        }
                     }
                 }
             }
@@ -513,8 +515,8 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
         }
 
         function updateBackground() {
-            app.renderer.backgroundColor = settings.graph.color;
-            app.renderer.backgroundAlpha = settings.graph.alpha;
+            app.renderer.background.color = settings.graph.color;
+            app.renderer.background.alpha = settings.graph.alpha;
             valueText.style.fill = settings.graph.color;
             valueText.style.fontFamily = settings.graph.vfamily;
             labelText.style.fill = settings.graph.color;
@@ -534,14 +536,13 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
             defaultTexture.resize(radius, radius);
             radius /= 2;
             bwidth = Math.min(bwidth, radius / 2);
-            const graphics = drawGraphics(settings.vertex, radius, bwidth);
+            drawGraphics(defaultGraphics, settings.vertex, radius, bwidth);
             matrix.tx = radius;
             matrix.ty = radius;
-            app.renderer.render(graphics, {
+            app.renderer.render(defaultGraphics, {
                 renderTexture: defaultTexture,
                 transform: matrix,
             });
-            graphics.destroy();
         }
 
         function updateBounds() {
@@ -601,7 +602,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 }
             } else {
                 if (!('keySprite' in vertex)) {
-                    vertex.keySprite = new PIXI.Sprite(new PIXI.RenderTexture.create());
+                    vertex.keySprite = new PIXI.Sprite(PIXI.RenderTexture.create());
                     vertex.keySprite.anchor.x = 0.5;
                     vertex.keySprite.anchor.y = 0.5;
                     app.stage.addChild(vertex.keySprite);
@@ -714,7 +715,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
             function toSprites(panel) {
                 for (const vertex of Object.values(vertices)) {
-                    vertex.sprite.interactive = true;
+                    vertex.sprite.eventMode = 'static';
                     vertex.sprite.move = (event) => {
                         if (selected.has(draggedVertex)) {
                             const deltaX = event.offsetX - app.stage.position.x - stageX;
@@ -755,8 +756,10 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     vertex.sprite.on('mouseover', () => {
                         if (hoveredVertex === null) {
                             hoveredVertex = vertex;
-                            panel.updateOpacity(vertex);
-                            panel.showOpacity();
+                            if (vertex.selected) {
+                                panel.updateOpacity(vertex);
+                                panel.showOpacity();
+                            }
                         }
                     });
                     vertex.sprite.on('mouseout', () => {
@@ -914,7 +917,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     event.preventDefault();
                     const result = compare(event.deltaY, 0);
                     if (result !== 0) {
-                        if (hoveredVertex === null) {
+                        if (hoveredVertex === null || !hoveredVertex.selected) {
                             let zoom = Math.round(100 * scale);
                             if (result === -1 || (result === 1 && zoom > 10)) {
                                 const shift = -result * Math.round(zoom / 10);
@@ -974,7 +977,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                 });
                 app.view.addEventListener('dblclick', (event) => {
                     event.preventDefault();
-                    if (hoveredVertex === null) {
+                    if (hoveredVertex === null || !hoveredVertex.selected) {
                         let moved = false;
                         if (compare(app.stage.position.x, 0) !== 0) {
                             app.stage.position.x = 0;
@@ -1042,6 +1045,7 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
 
         function finalize() {
             defaultTexture.destroy();
+            defaultGraphics.destroy();
             labelBackground.destroy();
             labelText.destroy();
             valueText.destroy();
@@ -1103,7 +1107,14 @@ export default function (path, aspect, normalize, infinite, broker, app, cell) {
                     app.stage.addChild(graphics);
                 }
                 vertices[v].leaders.add(u);
-                areas[u].neighbors[v] = { reversed, label, props };
+                if (!(v in areas[u].neighbors)) {
+                    areas[u].neighbors[v] = [];
+                }
+                if (reversed) {
+                    areas[u].neighbors[v].push({ reversed, label, props });
+                } else {
+                    areas[u].neighbors[v].unshift({ reversed, label, props });
+                }
             }
             delete edges[source];
         }

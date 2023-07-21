@@ -1,43 +1,40 @@
 {
   "name": "netpixi",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Python/JavaScript library for social network visualization in JupyterLab.",
+  "license": "ISC",
+  "author": "Marcelo Hashimoto",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/hashiprobr/netpixi.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/hashiprobr/netpixi/issues"
-  },
-  "homepage": "https://github.com/hashiprobr/netpixi#readme",
   "dependencies": {
-    "gsap": "^3.7.0",
+    "gsap": "^3.12.2",
     "kld-intersections": "^0.7.0",
-    "pako": "^2.0.3",
-    "pixi.js": "^6.0.4",
-    "streamsaver": "^2.0.5",
-    "web-streams-polyfill": "^3.0.3"
+    "pako": "^2.1.0",
+    "pixi.js": "^7.2.4",
+    "streamsaver": "^2.0.6",
+    "web-streams-polyfill": "^3.2.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.14.6",
-    "@babel/preset-env": "^7.14.7",
-    "@pixi/graphics-extras": "^6.0.4",
+    "@babel/core": "^7.22.9",
+    "@babel/preset-env": "^7.22.9",
+    "@pixi/graphics-extras": "^7.2.4",
     "babelify": "^10.0.0",
     "browserify": "^17.0.0",
+    "eslint": "^8.45.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-n": "^16.0.1",
+    "eslint-plugin-promise": "^6.1.1",
     "gulp": "^4.0.2",
     "gulp-sourcemaps": "^3.0.0",
     "gulp-uglify": "^3.0.2",
-    "gulplog": "^1.0.0",
+    "gulplog": "^2.0.1",
     "lodash.assign": "^4.2.0",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0",
     "watchify": "^4.0.0"
-  },
-  "type": "module"
+  }
 }

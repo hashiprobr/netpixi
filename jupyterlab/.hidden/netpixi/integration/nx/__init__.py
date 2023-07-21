@@ -1,10 +1,9 @@
 import networkx as nx
 
-from networkx.drawing import layout as draw_nx
+from networkx.drawing import layout as nx_draw
 
-from .. import render
-from ..util import serializable
-from . import Loader, Saver, load, save
+from ... import render
+from .. import Loader, Saver, load, save, serializable
 
 
 class NXLoader(Loader):
@@ -38,24 +37,25 @@ class NXSaver(Saver):
                 raise ValueError(f'Property directed of graph must be {not directed}')
         if not serializable(g.graph):
             raise ValueError('Properties of graph must be serializable')
-        s = set()
-        for source, target in g.edges:
-            key = [source, target]
-            if not isinstance(g, nx.DiGraph):
-                key.sort()
-            key = (key[0], key[1])
-            if key in s:
-                raise ValueError('Parallel edges not allowed')
-            else:
-                s.add(key)
         for id in g:
             if not isinstance(id, (int, str)):
                 raise TypeError('Vertex ids must be integers or strings')
             if not serializable(g.nodes[id]):
                 raise ValueError(f'Properties of vertex with id {id} must be serializable')
+        s = set()
         for source, target in g.edges:
             if source == target:
                 raise ValueError('Self-loops not allowed')
+            if isinstance(g, nx.DiGraph):
+                key = (source, target)
+            else:
+                key = [source, target]
+                key.sort(key=str)
+                key = tuple(key)
+            if key in s:
+                raise ValueError('Parallel edges not allowed')
+            else:
+                s.add(key)
             if not serializable(g.edges[source, target]):
                 raise ValueError(f'Properties of edge with source {source} and target {target} must be serializable')
 
@@ -102,29 +102,29 @@ class NXSaver(Saver):
             yield data, props
 
 
-def load_nx(path):
+def nx_load(path):
     return load(NXLoader, path)
 
 
-def save_nx(g, path):
+def nx_save(g, path):
     save(NXSaver, g, path)
 
 
-def render_nx(g, path='temp_nx.net.gz', **kwargs):
-    save_nx(g, path)
+def nx_render(g, path='nx_temp.net.gz', **kwargs):
+    nx_save(g, path)
     return render(path, **kwargs)
 
 
-def move_nx(g, layout):
+def nx_move(g, layout):
     for id, (x, y) in layout.items():
         g.nodes[id]['_x'] = x
         g.nodes[id]['_y'] = y
 
 
 __all__ = [
-    'draw_nx',
-    'load_nx',
-    'save_nx',
-    'render_nx',
-    'move_nx',
+    'nx_draw',
+    'nx_load',
+    'nx_save',
+    'nx_render',
+    'nx_move',
 ]

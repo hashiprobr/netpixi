@@ -1,74 +1,43 @@
 {
-    "env": {
-        "browser": true,
-        "node": true,
-        "es2021": true
-    },
-    "parserOptions": {
-        "ecmaVersion": 12,
-        "sourceType": "module"
-    },
-    "rules": {
-        // Possible Errors
-        "no-extra-semi": "warn",
-        "no-func-assign": "warn",
-        "no-import-assign": "warn",
-        "valid-typeof": "warn",
-        // Best Practices
-        "curly": [
-            "warn",
-            "all"
-        ],
-        "dot-location": [
-            "warn",
-            "property"
-        ],
-        "dot-notation": "warn",
-        "eqeqeq": [
-            "warn",
-            "always"
-        ],
-        "no-useless-concat": "warn",
-        // Variables
-        "no-undef": "warn",
-        "no-undef-init": "warn",
-        "no-unused-vars": "warn",
-        // Stylistic Issues
-        "comma-dangle": [
-            "warn",
-            {
-                "arrays": "always-multiline",
-                "objects": "always-multiline"
-            }
-        ],
-        "comma-style": [
-            "warn",
-            "last"
-        ],
-        "eol-last": [
-            "warn",
-            "always"
-        ],
-        "quotes": [
-            "warn",
-            "single"
-        ],
-        "semi": [
-            "warn",
-            "always"
-        ],
-        "semi-style": [
-            "warn",
-            "last"
-        ],
-        // ECMAScript 6
-        "arrow-parens": [
-            "warn",
-            "always"
-        ],
-        "no-class-assign": "warn",
-        "no-var": "warn",
-        "prefer-const": "warn",
-        "prefer-template": "warn"
-    }
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": "standard",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-unused-vars": [
+      "warn"
+    ],
+    "no-throw-literal": [
+      "never"
+    ],
+    "comma-dangle": [
+      "error",
+      {
+        "arrays": "always-multiline",
+        "objects": "always-multiline"
+      }
+    ],
+    "indent": [
+      "error",
+      4,
+      {
+        "SwitchCase": 1
+      }
+    ],
+    "semi": [
+      "error",
+      "always"
+    ],
+    "space-before-function-paren": [
+      "error",
+      {
+        "named": "never"
+      }
+    ]
+  }
 }

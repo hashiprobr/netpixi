@@ -63,25 +63,27 @@ export default function (graph, filename) {
             }
 
             for (const [u, area] of Object.entries(areas)) {
-                for (const [v, neighbor] of Object.entries(area.neighbors)) {
-                    let source;
-                    let target;
-                    if (neighbor.reversed) {
-                        source = v;
-                        target = u;
-                    } else {
-                        source = u;
-                        target = v;
+                for (const [v, neighborList] of Object.entries(area.neighbors)) {
+                    for (const neighbor of neighborList) {
+                        let source;
+                        let target;
+                        if (neighbor.reversed) {
+                            source = v;
+                            target = u;
+                        } else {
+                            source = u;
+                            target = v;
+                        }
+                        const data = {
+                            source: parseInt(source),
+                            target: parseInt(target),
+                        };
+                        const props = { ...neighbor.props };
+                        if (neighbor.label !== '') {
+                            props._label = neighbor.label;
+                        }
+                        pushLine('edge', data, props);
                     }
-                    const data = {
-                        source: parseInt(source),
-                        target: parseInt(target),
-                    };
-                    const props = { ...neighbor.props };
-                    if (neighbor.label !== '') {
-                        props._label = neighbor.label;
-                    }
-                    pushLine('edge', data, props);
                 }
             }
 
