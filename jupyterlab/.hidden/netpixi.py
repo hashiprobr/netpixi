@@ -254,7 +254,7 @@ def peek(path):
             print('    no properties')
 
 
-def render(path, aspect=16/9, normalize=True, infinite=False, sparse=False):
+def render(path, aspect=16 / 9, normalize=True, infinite=False, sparse=False, edges=True):
     server = next(serverapp.list_running_servers())
     folder = os.getcwd()
     suffix = folder[len(server['root_dir']):]
@@ -269,10 +269,13 @@ def render(path, aspect=16/9, normalize=True, infinite=False, sparse=False):
         raise TypeError('infinite must be a boolean')
     if not isinstance(sparse, bool):
         raise TypeError('sparse must be a boolean')
+    if not isinstance(edges, bool):
+        raise TypeError('edges must be a boolean')
     normalizeJS = str(normalize).lower()
     infiniteJS = str(infinite).lower()
     sparseJS = str(sparse).lower()
-    uid = run(f"netpixi.render({{}}, '{path}', {aspect}, {normalizeJS}, {infiniteJS}, {sparseJS});")
+    edgesJS = str(edges).lower()
+    uid = run(f"netpixi.render({{}}, '{path}', {aspect}, {normalizeJS}, {infiniteJS}, {sparseJS}, {edgesJS});")
     return Render(uid)
 
 

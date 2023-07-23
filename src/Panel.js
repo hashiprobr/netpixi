@@ -138,17 +138,34 @@ export default function (app, cell, graph, animation, filename) {
     });
 
     const zoomLabel = document.createElement('p');
-    zoomLabel.style.margin = '1em 0 1em 1em';
+    zoomLabel.style.margin = '1em 0 1em 4em';
     zoomLabel.style.fontSize = '.75em';
     zoomLabel.style.whiteSpace = 'nowrap';
     zoomLabel.style.userSelect = 'none';
 
     const opacityLabel = document.createElement('p');
     opacityLabel.style.display = 'none';
-    opacityLabel.style.margin = '1em 0 1em 1em';
+    opacityLabel.style.margin = '1em 0 1em 4em';
     opacityLabel.style.fontSize = '.75em';
     opacityLabel.style.whiteSpace = 'nowrap';
     opacityLabel.style.userSelect = 'none';
+
+    const edgeCheck = document.createElement('input');
+    edgeCheck.style.margin = '1em 0 1em 4em';
+    edgeCheck.type = 'checkbox';
+    edgeCheck.name = 'edges';
+    edgeCheck.checked = graph.getShowEdges();
+    edgeCheck.addEventListener('click', () => {
+        graph.toggleShowEdges();
+    });
+
+    const edgeLabel = document.createElement('label');
+    edgeLabel.style.margin = '1em 0 1em .25em';
+    edgeLabel.style.fontSize = '.75em';
+    edgeLabel.style.whiteSpace = 'nowrap';
+    edgeLabel.style.userSelect = 'none';
+    edgeCheck.for = 'edges';
+    edgeLabel.innerHTML = 'show edges';
 
     const top = document.createElement('div');
     top.style.display = 'flex';
@@ -158,6 +175,8 @@ export default function (app, cell, graph, animation, filename) {
     top.appendChild(svgButton);
     top.appendChild(zoomLabel);
     top.appendChild(opacityLabel);
+    top.appendChild(edgeCheck);
+    top.appendChild(edgeLabel);
 
     const animationButton = createButton('import animation');
     animationButton.addEventListener('click', () => {

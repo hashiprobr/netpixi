@@ -6,10 +6,10 @@ import Proxy from './Proxy';
 
 const proxies = {};
 
-function render(uid, path, aspect, normalize, infinite, sparse) {
+function render(uid, path, aspect, normalize, infinite, sparse, showEdges) {
     const { app, cell } = main(uid);
 
-    build(path, aspect, normalize, infinite, sparse, app, cell)
+    build(path, aspect, normalize, infinite, sparse, showEdges, app, cell)
         .then((graph) => {
             cell.connectToBody(proxies, uid, graph);
 

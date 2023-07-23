@@ -7,7 +7,7 @@ import defaults from './defaults';
 import { pop, merge, processGraph, validate, nullSettings } from './data';
 import { loadRemote } from './load';
 
-export default function (path, aspect, normalize, infinite, sparse, app, cell) {
+export default function (path, aspect, normalize, infinite, sparse, showEdges, app, cell) {
     let minX;
     let maxX;
 
@@ -109,6 +109,15 @@ export default function (path, aspect, normalize, infinite, sparse, app, cell) {
 
         function setExporting(value) {
             exporting = value;
+        }
+
+        function getShowEdges() {
+            return showEdges;
+        }
+
+        function toggleShowEdges() {
+            showEdges = !showEdges;
+            drawAreas();
         }
 
         function formatRectangle(radius) {
@@ -304,6 +313,9 @@ export default function (path, aspect, normalize, infinite, sparse, app, cell) {
         function drawEdges(u) {
             const graphics = areas[u].graphics;
             graphics.clear();
+            if (!showEdges) {
+                return;
+            }
             for (const [v, neighborList] of Object.entries(areas[u].neighbors)) {
                 for (const neighbor of neighborList) {
                     let destroy = true;
@@ -1208,6 +1220,8 @@ export default function (path, aspect, normalize, infinite, sparse, app, cell) {
             getInfinite,
             getScale,
             setExporting,
+            getShowEdges,
+            toggleShowEdges,
             drawEdges,
             drawAreas,
             drawNeighborAreas,
