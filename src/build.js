@@ -4,7 +4,7 @@ import '@pixi/graphics-extras';
 
 import { compare, differences } from './types';
 import defaults from './defaults';
-import { pop, merge, processGraph, validate, nullSettings } from './data';
+import { merge, processGraph, validate, nullSettings } from './data';
 import { loadRemote } from './load';
 
 export default function (path, aspect, normalize, infinite, sparse, showEdges, app, cell) {
@@ -72,13 +72,17 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
             },
             (data, props) => {
                 const source = validate.receivedSource(data, vertices);
-                const target = validate.receivedTarget(data, vertices, source);
-                validate.notDuplicateEdge(source, target, edges);
-                validate.notReversedEdge(settings, source, target, edges);
+                const target = validate.receivedTarget(data, vertices);
                 const label = validate.receivedLabel(props);
                 vertices[source].degree++;
                 vertices[target].degree++;
-                edges[source][target] = { label, props };
+                if (!(source in edges)) {
+                    edges[source] = {};
+                }
+                if (!(target in edges[source])) {
+                    edges[source][target] = [];
+                }
+                edges[source][target].push({ label, props });
                 m++;
             });
     }
@@ -1107,26 +1111,26 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
                     u = source;
                     v = target;
                 }
-                if (edges[source][target].label === null) {
-                    edges[source][target].label = '';
+                for (const neighbor of edges[source][target]) {
+                    neighbor.reversed = reversed;
+                    if (neighbor.label === null) {
+                        neighbor.label = '';
+                    }
+                    if (!(u in areas)) {
+                        const neighbors = {};
+                        const graphics = new PIXI.Graphics();
+                        vertices[u].leaders.add(u);
+                        areas[u] = { neighbors, graphics };
+                        areas[u].neighbors[u] = [];
+                        app.stage.addChild(graphics);
+                    }
+                    vertices[v].leaders.add(u);
+                    if (!(v in areas[u].neighbors)) {
+                        areas[u].neighbors[v] = [];
+                    }
+                    areas[u].neighbors[v].push(neighbor);
                 }
-                const { label, props } = pop(edges[source], target);
-                if (!(u in areas)) {
-                    const neighbors = {};
-                    const graphics = new PIXI.Graphics();
-                    vertices[u].leaders.add(u);
-                    areas[u] = { neighbors, graphics };
-                    app.stage.addChild(graphics);
-                }
-                vertices[v].leaders.add(u);
-                if (!(v in areas[u].neighbors)) {
-                    areas[u].neighbors[v] = [];
-                }
-                if (reversed) {
-                    areas[u].neighbors[v].push({ reversed, label, props });
-                } else {
-                    areas[u].neighbors[v].unshift({ reversed, label, props });
-                }
+                delete edges[source][target];
             }
             delete edges[source];
         }

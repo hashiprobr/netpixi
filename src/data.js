@@ -1,10 +1,12 @@
 import { compare, isFinite, isPositive, isNonNegativeInteger, isString, isObject, conditions } from './types';
+
 function get(props, name) {
     if (name in props) {
         return props[name];
     }
     return null;
 }
+
 function pop(object, name) {
     if (name in object) {
         const value = object[name];
@@ -13,6 +15,7 @@ function pop(object, name) {
     }
     return null;
 }
+
 function popProps(data) {
     const props = pop(data, 'props');
     if (isObject(props)) {
@@ -20,12 +23,14 @@ function popProps(data) {
     }
     throw 'props must be an object';
 }
+
 function loosePop(props, name) {
     if (props !== null) {
         return pop(props, name);
     }
     return null;
 }
+
 function loosePopNum(props, name) {
     const value = loosePop(props, name);
     if (isPositive(value)) {
@@ -33,6 +38,7 @@ function loosePopNum(props, name) {
     }
     throw `${name} must be a positive number`;
 }
+
 function loosePopStr(props, name) {
     const value = loosePop(props, name);
     if (isString(value)) {
@@ -170,7 +176,7 @@ const validate = {
                 graph: clean(get(props, 'graph'), conditions.graph),
                 vertex: clean(get(props, 'vertex'), conditions.vertex),
                 edge: clean(get(props, 'edge'), conditions.edge),
-                props,
+                props: props,
             };
         }
     },
@@ -211,51 +217,45 @@ const validate = {
         }
         return source;
     },
-    receivedTarget(data, vertices, source) {
+    receivedTarget(data, vertices) {
         const target = tightPopIntStr(data, 'target');
         if (!(target in vertices)) {
             throw `missing target with id ${target}`;
         }
-        if (source === target) {
-            throw 'source and target with same id';
-        }
         return target;
     },
-    notMissingEdge(settings, source, target, vertices, areas) {
-        let hasStraight;
-        let hasReversed;
-        hasStraight = vertices[target].leaders.has(source) && (areas[source].neighbors[target].length === 2 || !areas[source].neighbors[target][0].reversed);
-        hasReversed = vertices[source].leaders.has(target) && (areas[target].neighbors[source].length === 2 || areas[target].neighbors[source][0].reversed);
-        if (!hasStraight && !hasReversed) {
-            if (settings.graph.directed) {
-                throw `missing edge with source ${source} and target ${target}`;
-            } else {
-                hasStraight = vertices[source].leaders.has(target) && (areas[target].neighbors[source].length === 2 || !areas[target].neighbors[source][0].reversed);
-                hasReversed = vertices[target].leaders.has(source) && (areas[source].neighbors[target].length === 2 || areas[source].neighbors[target][0].reversed);
-                if (!hasStraight && !hasReversed) {
-                    throw `missing edge with ids ${source} and ${target}`;
+    receivedIndex(data) {
+        const name = 'index';
+        if (name in data) {
+            const index = data[name];
+            delete data[name];
+            if (isNonNegativeInteger(index)) {
+                return index;
+            }
+            throw `${name} must be a non-negative integer`;
+        }
+        return 0;
+    },
+    notMissingEdge(settings, source, target, index, vertices, areas) {
+        let neighbor;
+        let numEdges = 0;
+        if (vertices[target].leaders.has(source)) {
+            for (neighbor of areas[source].neighbors[target]) {
+                if (!settings.graph.directed || !neighbor.reversed) {
+                    numEdges++;
                 }
-                return [target, source];
+            }
+        } else if (vertices[source].leaders.has(target)) {
+            for (neighbor of areas[target].neighbors[source]) {
+                if (!settings.graph.directed || neighbor.reversed) {
+                    numEdges++;
+                }
             }
         }
-        return [source, target];
-    },
-    notDuplicateEdge(source, target, object) {
-        if (source in object) {
-            if (target in object[source]) {
-                throw `duplicate edge with source ${source} and target ${target}`;
-            }
-        } else {
-            object[source] = {};
+        if (index < numEdges) {
+            return;
         }
-    },
-    notReversedEdge(settings, source, target, edges) {
-        if (settings === null) {
-            throw 'missing settings';
-        }
-        if (settings.graph !== null && 'directed' in settings.graph && !settings.graph.directed && target in edges && source in edges[target]) {
-            throw `existing edge with source ${target} and target ${source} but graph is not directed`;
-        }
+        throw `missing edge with source ${source}, target ${target}, and index ${index}`;
     },
     receivedLabel(props) {
         return loosePopNulStr(props, '_label');
@@ -301,7 +301,7 @@ const validate = {
                 if (conditions.edge[name](overEdge[name])) {
                     edge[name] = overEdge[name];
                 } else {
-                    throw `edge with source ${edge.source} and target ${edge.target} has invalid ${name}`;
+                    throw `edge with source ${edge.source}, target ${edge.target}, and index ${edge.index} has invalid ${name}`;
                 }
             }
         }

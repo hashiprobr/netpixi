@@ -42,7 +42,9 @@ export default function (graph, filename) {
         try {
             const [pushLine, pushEnd] = useDeflate(process, finalize);
 
-            pushLine('settings', {}, settings.props);
+            if (settings.props !== null && Object.keys(settings.props).length > 0) {
+                pushLine('settings', {}, settings.props);
+            }
 
             for (const [id, vertex] of Object.entries(vertices)) {
                 const data = {

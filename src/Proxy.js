@@ -381,22 +381,32 @@ export default function (cell, graph, animation, panel) {
                     drawNeighborAreas(vertex);
                 },
                 (data, props) => {
-                    let source = validate.receivedSource(data, vertices);
-                    let target = validate.receivedTarget(data, vertices, source);
-                    [source, target] = validate.notMissingEdge(settings, source, target, vertices, areas);
+                    const source = validate.receivedSource(data, vertices);
+                    const target = validate.receivedTarget(data, vertices);
+                    const index = validate.receivedIndex(data);
+                    validate.notMissingEdge(settings, source, target, index, vertices, areas);
                     const label = validate.receivedLabel(props);
-                    let neighborList;
-                    let neighbor;
                     let u;
+                    let neighbor;
+                    const neighborList = [];
                     if (vertices[target].leaders.has(source)) {
-                        neighborList = areas[source].neighbors[target];
-                        neighbor = neighborList[0];
+                        if (target in areas[source].neighbors) {
+                            for (neighbor of areas[source].neighbors[target]) {
+                                if (!settings.graph.directed || !neighbor.reversed) {
+                                    neighborList.push(neighbor);
+                                }
+                            }
+                        }
                         u = source;
-                    } else {
-                        neighborList = areas[target].neighbors[source];
-                        neighbor = neighborList[neighborList.length - 1];
+                    } else if (vertices[source].leaders.has(target)) {
+                        for (neighbor of areas[target].neighbors[source]) {
+                            if (!settings.graph.directed || neighbor.reversed) {
+                                neighborList.push(neighbor);
+                            }
+                        }
                         u = target;
                     }
+                    neighbor = neighborList[index];
                     if (label !== null) {
                         neighbor.label = label;
                     }
@@ -436,8 +446,9 @@ export default function (cell, graph, animation, panel) {
                     for (const overEdge in overEdges) {
                         const edge = {};
                         edge.source = validate.receivedSource(overEdge, vertices);
-                        edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
-                        [edge.source, edge.target] = validate.notMissingEdge(settings, edge.source, edge.target, vertices, areas);
+                        edge.target = validate.receivedTarget(overEdge, vertices);
+                        edge.index = validate.receivedIndex(overEdge, vertices);
+                        validate.notMissingEdge(settings, edge.source, edge.target, edge.index, vertices, areas);
                         validate.receivedEdge(edge, overEdge);
                         frame.edges.push(edge);
                     }

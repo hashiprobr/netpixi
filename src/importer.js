@@ -44,12 +44,18 @@ function importProperties(graph, disable) {
                 overVertices[id] = { x, y, key, value, props };
             },
             (data, props) => {
-                let source = validate.receivedSource(data, vertices);
-                let target = validate.receivedTarget(data, vertices, source);
-                [source, target] = validate.notMissingEdge(settings, source, target, vertices, areas);
-                validate.notDuplicateEdge(source, target, overEdges);
+                const source = validate.receivedSource(data, vertices);
+                const target = validate.receivedTarget(data, vertices);
+                const index = validate.receivedIndex(data);
+                validate.notMissingEdge(settings, source, target, index, vertices, areas);
                 const label = validate.receivedLabel(props);
-                overEdges[source][target] = { label, props };
+                if (!(source in overEdges)) {
+                    overEdges[source] = {};
+                }
+                if (!(target in overEdges[source])) {
+                    overEdges[source][target] = [];
+                }
+                overEdges[source][target].push({ index, label, props });
             });
     }
 
@@ -102,18 +108,25 @@ function importProperties(graph, disable) {
 
         for (const source in overEdges) {
             for (const target in overEdges[source]) {
-                const { label, props } = overEdges[source][target];
-                let neighborList;
+                const { index, label, props } = overEdges[source][target];
                 let neighbor;
+                const neighborList = [];
                 if (vertices[target].leaders.has(source)) {
-                    neighborList = areas[source].neighbors[target];
-                    neighbor = neighborList[0];
+                    for (neighbor of areas[source].neighbors[target]) {
+                        if (!settings.graph.directed || !neighbor.reversed) {
+                            neighborList.push(neighbor);
+                        }
+                    }
                     leaders.add(source);
-                } else {
-                    neighborList = areas[target].neighbors[source];
-                    neighbor = neighborList[neighborList.length - 1];
+                } else if (vertices[source].leaders.has(target)) {
+                    for (neighbor of areas[target].neighbors[source]) {
+                        if (!settings.graph.directed || neighbor.reversed) {
+                            neighborList.push(neighbor);
+                        }
+                    }
                     leaders.add(target);
                 }
+                neighbor = neighborList[index];
                 if (label !== null) {
                     neighbor.label = label;
                 }
@@ -197,16 +210,19 @@ function importAnimation(graph, animation, disable) {
                 for (const overEdge in overEdges) {
                     const edge = {};
                     edge.source = validate.receivedSource(overEdge, vertices);
-                    edge.target = validate.receivedTarget(overEdge, vertices, edge.source);
-                    [edge.source, edge.target] = validate.notMissingEdge(settings, edge.source, edge.target, vertices, areas);
-                    if (edge.source in edges) {
-                        if (edges[edge.source].has(edge.target)) {
-                            throw `duplicate edge with source ${edge.source} and target ${edge.target}`;
-                        } else {
-                            edges[edge.source].add(edge.target);
-                        }
+                    edge.target = validate.receivedTarget(overEdge, vertices);
+                    edge.index = validate.receivedIndex(overEdge);
+                    validate.notMissingEdge(settings, edge.source, edge.target, edge.index, vertices, areas);
+                    if (!(edge.source in edges)) {
+                        edges[edge.source] = {};
+                    }
+                    if (!(edge.target in edges[edge.source])) {
+                        edges[edge.source][edge.target] = new Set();
+                    }
+                    if (edges[edge.source][edge.target].has(edge.index)) {
+                        throw `duplicate edge with source ${edge.source}, target ${edge.target}, and index ${edge.index}`;
                     } else {
-                        edges[edge.source] = new Set();
+                        edges[edge.source][edge.target].add(edge.index);
                     }
                     validate.receivedEdge(edge, overEdge);
                     frame.edges.push(edge);
