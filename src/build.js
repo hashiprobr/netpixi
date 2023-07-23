@@ -317,9 +317,6 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
         function drawEdges(u) {
             const graphics = areas[u].graphics;
             graphics.clear();
-            if (!showEdges) {
-                return;
-            }
             for (const [v, neighborList] of Object.entries(areas[u].neighbors)) {
                 for (const neighbor of neighborList) {
                     let destroy = true;
@@ -355,7 +352,7 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
                     if (compare(distance, 0) > 0) {
                         const props = merge(settings.edge, neighbor.props, differences.edge);
                         let alpha = props.alpha * s.alpha * t.alpha;
-                        if (selected.size > 0) {
+                        if (selected.size > 0 && !exporting) {
                             if (s.selected) {
                                 if (!t.selected) {
                                     alpha *= settings.graph.alpha1;
@@ -435,7 +432,7 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
                                     }
                                 }
                             }
-                            if (visible || exporting) {
+                            if ((visible && showEdges) || exporting) {
                                 neighbor.size = size;
                                 neighbor.color = props.color;
                                 neighbor.alpha = alpha;
@@ -570,7 +567,7 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
 
         function updateSelected(vertex) {
             let alpha;
-            if (selected.size === 0 || vertex.selected) {
+            if (selected.size === 0 || vertex.selected || exporting) {
                 alpha = 1;
             } else {
                 alpha = settings.graph.alpha0;
@@ -594,7 +591,7 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
                 if (!vertex.sprite.visible) {
                     wronglyVisible = calculateTextVisibility(vertex.keySprite.position.x, vertex.keySprite.position.y, vertex.keySprite.width, vertex.keySprite.height);
                     rightlyVisible = calculateTextVisibility(vertex.keySprite.position.x, vertex.keySprite.position.y, vertex.keyWidth, vertex.keyHeight);
-                    vertex.sprite.visible = wronglyVisible || rightlyVisible;
+                    vertex.sprite.visible = wronglyVisible || rightlyVisible || exporting;
                 }
                 vertex.keySprite.visible = vertex.sprite.visible;
             }
@@ -682,7 +679,7 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
         function updateLabelVisible(neighbor) {
             const wronglyVisible = calculateTextVisibility(neighbor.sprite.position.x, neighbor.sprite.position.y, neighbor.sprite.width, neighbor.sprite.height);
             const rightlyVisible = calculateTextVisibility(neighbor.sprite.position.x, neighbor.sprite.position.y, neighbor.width, neighbor.height);
-            neighbor.sprite.visible = wronglyVisible || rightlyVisible || exporting;
+            neighbor.sprite.visible = ((wronglyVisible || rightlyVisible) && showEdges) || exporting;
         }
 
         function updateLabelSprite(neighbor) {
@@ -1234,6 +1231,7 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
             updateTexture,
             updateBounds,
             updatePosition,
+            updateSelected,
             updateSprite,
             updateGeometry,
             connectMouseToSprites,

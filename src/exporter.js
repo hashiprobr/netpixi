@@ -16,6 +16,7 @@ function exportPng(app, graph, filename) {
         getScale,
         setExporting,
         drawAreas,
+        updateSelected,
         updateSprite,
         updateGeometry,
     } = graph;
@@ -23,11 +24,11 @@ function exportPng(app, graph, filename) {
     return new Promise((resolve, reject) => {
         setExporting(true);
         for (const vertex of Object.values(vertices)) {
+            updateSelected(vertex);
             updateSprite(vertex);
             updateGeometry(vertex);
         }
         drawAreas();
-        setExporting(false);
 
         const clear = false;
 
@@ -71,6 +72,13 @@ function exportPng(app, graph, filename) {
                 .catch(reject)
                 .finally(() => {
                     writer.close();
+                    setExporting(false);
+                    for (const vertex of Object.values(vertices)) {
+                        updateSelected(vertex);
+                        updateSprite(vertex);
+                        updateGeometry(vertex);
+                    }
+                    drawAreas();
                 });
         });
     });
@@ -85,6 +93,7 @@ function exportSvg(app, graph, filename) {
         getScale,
         setExporting,
         drawAreas,
+        updateSelected,
         updateSprite,
         updateGeometry,
     } = graph;
@@ -198,11 +207,11 @@ function exportSvg(app, graph, filename) {
         try {
             setExporting(true);
             for (const vertex of Object.values(vertices)) {
+                updateSelected(vertex);
                 updateSprite(vertex);
                 updateGeometry(vertex);
             }
             drawAreas();
-            setExporting(false);
 
             write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>');
 
@@ -410,6 +419,13 @@ function exportSvg(app, graph, filename) {
             reject(error);
         } finally {
             writer.close();
+            setExporting(false);
+            for (const vertex of Object.values(vertices)) {
+                updateSelected(vertex);
+                updateSprite(vertex);
+                updateGeometry(vertex);
+            }
+            drawAreas();
         }
     });
 }
