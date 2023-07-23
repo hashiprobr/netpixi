@@ -622,7 +622,7 @@ export default function (path, aspect, normalize, infinite, sparse, showEdges, a
                 vertex.keyStyle = {
                     fontSize: settings.graph.kscale * vertex.sprite.radius,
                     fontFamily: props.kfamily,
-                    strokeThickness: vertex.sprite.bwidth / 2,
+                    strokeThickness: vertex.sprite.bwidth,
                 };
                 keyText.text = vertex.key;
                 keyText.style.fontSize = vertex.keyStyle.fontSize;
