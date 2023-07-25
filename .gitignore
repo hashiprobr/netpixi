@@ -1,9 +1,5 @@
-**/__pycache__
-**/.ipynb_checkpoints
-**/*.ipynb
-**/*.net
-**/*.net.gz
-jupyterlab/.venv
+jupyterlab/__shared__
 jupyterlab/.hidden/netpixi.min.js
 jupyterlab/.hidden/netpixi.min.map
+jupyterlab/.venv
 node_modules
