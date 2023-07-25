@@ -3,7 +3,6 @@ import json
 import gzip
 
 from abc import ABC, abstractmethod
-from json.decoder import JSONDecodeError
 from base64 import b64encode
 
 from shortuuid import uuid
@@ -217,41 +216,6 @@ def open(path, **kwargs):
 
 def open_animation(path):
     return AnimationFile(path)
-
-
-def peek(path):
-    settings = {
-        'GRAPH': {},
-        'VERTEX': {},
-        'EDGE': {},
-    }
-    with gzip.open(path) as file:
-        for line in file:
-            try:
-                data = json.loads(line)
-            except JSONDecodeError:
-                continue
-            if not isinstance(data, dict):
-                continue
-            props = data.pop('props', None)
-            if props is None or not isinstance(props, dict):
-                continue
-            dtype = data.get('type')
-            if dtype == 'settings':
-                if 'graph' in props and isinstance(props['graph'], dict):
-                    settings['GRAPH'].update(props['graph'])
-            elif dtype == 'vertex':
-                settings['VERTEX'].update(props)
-            elif dtype == 'edge':
-                settings['EDGE'].update(props)
-    for dtype, props in settings.items():
-        print(dtype)
-        public_props = {key: value for key, value in props.items() if not key.startswith('_')}
-        if public_props:
-            for key, value in public_props.items():
-                print(f'    {key}: {type(value).__name__}')
-        else:
-            print('    no properties')
 
 
 def render(path, aspect=16 / 9, normalize=True, infinite=False, sparse=False, edges=True):

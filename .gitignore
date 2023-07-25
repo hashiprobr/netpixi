@@ -1,9 +1,9 @@
-jupyterlab/env
-jupyterlab/.hidden/netpixi.min.js
-jupyterlab/.hidden/netpixi.min.map
-node_modules
 **/__pycache__
 **/.ipynb_checkpoints
 **/*.ipynb
 **/*.net
 **/*.net.gz
+jupyterlab/.venv
+jupyterlab/.hidden/netpixi.min.js
+jupyterlab/.hidden/netpixi.min.map
+node_modules

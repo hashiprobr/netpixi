@@ -1,9 +1,9 @@
-env
-__shared__
 **/__pycache__
 **/.ipynb_checkpoints
 **/*.ipynb
 **/*.net
 **/*.net.gz
+__shared__
+.venv
 package.json
 up.py
