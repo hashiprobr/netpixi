@@ -1,4 +1,5 @@
 jupyterlab/__shared__
+jupyterlab/.hidden/__pycache__
 jupyterlab/.hidden/netpixi.min.js
 jupyterlab/.hidden/netpixi.min.map
 jupyterlab/.venv

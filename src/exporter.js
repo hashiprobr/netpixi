@@ -360,6 +360,7 @@ function exportSvg(app, graph, filename) {
                         'dy': vertex.keyStyle.fontSize / 3,
                         'font-size': vertex.keyStyle.fontSize,
                         'font-family': vertex.keyStyle.fontFamily,
+                        'paint-order': 'stroke',
                         'stroke-width': vertex.keyStyle.strokeThickness,
                         'stroke': css(props.bcolor),
                         'fill': css(props.color),
