@@ -1,4 +1,5 @@
 __shared__
+.hidden/__pycache__
 .venv
 package.json
 up.py
